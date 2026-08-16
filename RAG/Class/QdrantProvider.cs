@@ -30,11 +30,7 @@ namespace RAG.Class
             if (!collections.Contains(collectionName))
             {
                 // Tạo mới collection với khoảng cách Cosine (Khuyên dùng cho văn bản)
-                await _qdrantClient.CreateCollectionAsync(collectionName, new VectorParams
-                {
-                    Size = dimension,
-                    Distance = Distance.Cosine
-                }, cancellationToken: cancellationToken);
+                await CreateCollectionAsync(cancellationToken);
             }
         }
 
@@ -53,7 +49,7 @@ namespace RAG.Class
                 var point = new PointStruct
                 {
                     Id = data.Id,
-                    Vectors = data.Vector
+                    Vectors = data.Vector,
                 };
 
                 // Gắn payload và giữ nguyên định dạng gốc (int, bool, string...)
@@ -91,12 +87,13 @@ namespace RAG.Class
         /// <summary>
         /// Tìm kiếm các Vector có độ tương đồng cao nhất dựa trên Vector câu hỏi
         /// </summary>
-        public async Task<List<ScoredPointResult>> SearchVectorsAsync(float[] queryVector, int limit = 5, CancellationToken cancellationToken = default)
+        public async Task<List<ScoredPointResult>> SearchVectorsAsync(float[] queryVector, Filter? filter = null, int limit = 5, CancellationToken cancellationToken = default)
         {
             // Thực hiện tìm kiếm chuyên sâu trên Qdrant
             var searchResults = await _qdrantClient.SearchAsync(
                 collectionName: _cfg.Collection,
                 vector: queryVector,
+                filter: filter,
                 limit: ulong.Parse(limit.ToString()),
                 cancellationToken: cancellationToken
             );
@@ -120,13 +117,29 @@ namespace RAG.Class
             return results;
         }
 
-        public async Task CreateCollectionAsync(string name, ulong dimension, CancellationToken cancellationToken = default)
+        public async Task CreateCollectionAsync(CancellationToken cancellationToken = default)
         {
-            await _qdrantClient.CreateCollectionAsync(name, new VectorParams
+            await _qdrantClient.CreateCollectionAsync(_cfg.Collection, new VectorParams
             {
-                Size = dimension,
+                Size = (ulong)_cfg.Dimensions,
                 Distance = Distance.Cosine
-            });
+            }, cancellationToken: cancellationToken);
+
+            await _qdrantClient.CreatePayloadIndexAsync(
+                collectionName: _cfg.Collection,
+                fieldName: "npcNames",
+                schemaType: PayloadSchemaType.Text,
+                indexParams: new PayloadIndexParams
+                {
+                    TextIndexParams = new TextIndexParams
+                    {
+                        Tokenizer = TokenizerType.Word,
+                        Lowercase = true,
+                        PhraseMatching = true
+                    }
+                },
+                cancellationToken: cancellationToken
+            );
         }
 
         public record QdrantPointInput(Guid Id, float[] Vector, Dictionary<string, object> Payload);

@@ -58,7 +58,7 @@ namespace RAG.Extension
                 var options = sp
                     .GetRequiredService<IOptions<QDrantConfig>>()
                     .Value;
-                return new QdrantClient(options.Host, options.Port);
+                return new QdrantClient(options.Host, options.Port, https: true, apiKey: options.ApiKey);
             });
 
             return services;

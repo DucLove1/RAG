@@ -28,17 +28,20 @@ namespace RAG.Controllers
             if (string.IsNullOrWhiteSpace(request.Question))
                 return BadRequest("Question cannot be empty.");
 
-            var response = await _ragPipline.AskAsync(request.Question, _config.topK, cancellationToken);
+            if (string.IsNullOrWhiteSpace(request.npcName))
+                return BadRequest("NPC Name cannot be empty.");
+
+            var response = await _ragPipline.AskAsync(request.npcName, request.npcSystem, request.Question, _config.topK, cancellationToken);
             return Ok(response);
         }
 
         [HttpPost("upload")]
-        async public Task<IActionResult> PostEmbedding([FromForm] List<IFormFile> files, CancellationToken cancellationToken)
+        async public Task<IActionResult> PostEmbedding([FromForm] List<IFormFile> files, [FromForm] string npcNames, CancellationToken cancellationToken)
         {
             if(files == null || files.Count == 0)
                 return BadRequest();
 
-            var chunks = new List<(string text, string? source)>();
+            var chunks = new List<(string npcNames, string text, string? source)>();
             foreach (var file in files)
             {
                 var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
@@ -62,7 +65,7 @@ namespace RAG.Controllers
 
                 foreach(var chunk in TextChunker.ChunkText(raw, _config.chunkSize, _config.chunkOverlap))
                 {
-                    chunks.Add((chunk, file.FileName));
+                    chunks.Add((npcNames, chunk, file.FileName));
                     Console.OutputEncoding = System.Text.Encoding.UTF8;
                     Console.WriteLine($"Chunked text from {file.FileName}: {chunk}");
                 }
@@ -78,7 +81,7 @@ namespace RAG.Controllers
         [HttpPost("create-collection")]
         async public Task<IActionResult> PostCreateCollection(CancellationToken cancellationToken)
         {
-            await _ragPipline.CreateCollection();
+            await _ragPipline.CreateCollection(cancellationToken);
             return Ok();
         }
     }

@@ -1,4 +1,4 @@
 ﻿namespace RAG.Class
 {
-    public record RequestDto(string Question);
+    public record RequestDto(string npcName, string npcSystem, string Question);
 }

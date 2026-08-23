@@ -20,7 +20,7 @@ namespace RAG.Controllers
         }
 
         [HttpPost("ask")]
-        async public Task<IActionResult> Post([FromBody] RequestDto request, CancellationToken cancellationToken)
+        async public Task<IActionResult> Post([FromBody] RequestDto request, CancellationToken cancellationToken = default)
         {
             if (request == null)
                 return BadRequest();
@@ -36,9 +36,9 @@ namespace RAG.Controllers
         }
 
         [HttpPost("upload")]
-        async public Task<IActionResult> PostEmbedding([FromForm] List<IFormFile> files, [FromForm] string npcNames, CancellationToken cancellationToken)
+        async public Task<IActionResult> PostEmbedding([FromForm] List<IFormFile> files, [FromForm] string npcNames, CancellationToken cancellationToken = default)
         {
-            if(files == null || files.Count == 0)
+            if (files == null || files.Count == 0)
                 return BadRequest();
 
             var chunks = new List<(string npcNames, string text, string? source)>();
@@ -63,7 +63,7 @@ namespace RAG.Controllers
                 if (string.IsNullOrEmpty(raw))
                     continue;
 
-                foreach(var chunk in TextChunker.ChunkText(raw, _config.ChunkSize, _config.ChunkOverlap))
+                foreach (var chunk in TextChunker.ChunkText(raw, _config.ChunkSize, _config.ChunkOverlap))
                 {
                     chunks.Add((npcNames, chunk, file.FileName));
                     Console.OutputEncoding = System.Text.Encoding.UTF8;
@@ -71,7 +71,7 @@ namespace RAG.Controllers
                 }
             }
 
-            if(chunks.Count == 0)
+            if (chunks.Count == 0)
                 return BadRequest("No valid files uploaded.");
 
             await _ragPipline.IngestAsync(chunks, cancellationToken);
@@ -79,9 +79,15 @@ namespace RAG.Controllers
         }
 
         [HttpPost("create-collection")]
-        async public Task<IActionResult> PostCreateCollection(CancellationToken cancellationToken)
+        async public Task<IActionResult> PostCreateCollection(CancellationToken cancellationToken = default)
         {
             await _ragPipline.CreateCollection(cancellationToken);
+            return Ok();
+        }
+
+        [HttpGet("check-health")]
+        async public Task<IActionResult> GetCheckHealth(CancellationToken cancellationToken = default)
+        {
             return Ok();
         }
     }

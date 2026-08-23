@@ -1,8 +1,4 @@
-using Qdrant.Client;
-using RAG.Class;
-using RAG.Class.Config;
 using RAG.Extension;
-using RAG.Interface;
 using DotNetEnv;
 
 // load environment variables from .env file
@@ -10,23 +6,22 @@ Env.Load();
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
-// Set up configuration to read from appsettings.json and environment variables
-builder.Services.Configure<QDrantConfig>(builder.Configuration.GetSection(QDrantConfig.SectionName));
-builder.Services.Configure<GroqConfig>(builder.Configuration.GetSection(GroqConfig.SectionName));
-builder.Services.Configure<GeminiEmbeddingModelConfig>(builder.Configuration.GetSection(GeminiEmbeddingModelConfig.SectionName));
-
-
 // Add services to the container.
-
 builder.Services.AddControllers();
+
+// Các provider LLM được đăng ký dạng Keyed Services (Groq / Gemini) trong AddLLM.
 builder.Services.AddLLM(builder.Configuration);
 builder.Services.AddEmbeddingModel(builder.Configuration);
+
 // Đăng ký QdrantClient (Sử dụng gRPC)
 builder.Services.AddQdrant(builder.Configuration);
 
-// Đăng ký Service của bạn
-builder.Services.AddSingleton<RAGPipline>();
-builder.Services.AddSingleton<RagConfig>();
+// Node chuẩn hóa câu hỏi người dùng (viết tắt, sai chính tả, thiếu dấu)
+builder.Services.AddQueryNormalization(builder.Configuration);
+
+// Pipeline RAG + cấu hình prompt/chunking
+builder.Services.AddRagPipeline(builder.Configuration);
+
 // Đăng ký bộ mã hóa mở rộng (giúp đọc được các file mã hóa ANSI/Windows cũ)
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 

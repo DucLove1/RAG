@@ -1,9 +1,11 @@
-﻿namespace RAG.Class.Config
+namespace RAG.Class.Config
 {
     public class RagConfig
     {
-        public int chunkSize { get; set; } = 500;
-        public int chunkOverlap { get; set; } = 50;
-        public int topK { get; set; } = 5;
+        public const string SectionName = "RAG";
+
+        public int ChunkSize { get; set; } = 500;
+        public int ChunkOverlap { get; set; } = 50;
+        public int TopK { get; set; } = 5;
     }
 }

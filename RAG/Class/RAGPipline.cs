@@ -1,4 +1,7 @@
-﻿using Qdrant.Client.Grpc;
+using Microsoft.Extensions.Options;
+using Qdrant.Client.Grpc;
+using RAG.Class.Config;
+using RAG.Class.Constants;
 using RAG.Interface;
 using static RAG.Class.QdrantProvider;
 using static Qdrant.Client.Grpc.Conditions;
@@ -10,20 +13,27 @@ namespace RAG.Class
         private readonly ILLMProvider _llmProvider;
         private readonly IEmbeddingProvider _embeddingProvider;
         private readonly IQdrantProvider _qdrantProvider;
+        private readonly IQueryNormalizer _queryNormalizer;
+        private readonly PromptConfig _promptConfig;
 
-        public RAGPipline(ILLMProvider llmProvider, 
-                            IEmbeddingProvider embeddingProvider, 
-                            IQdrantProvider qdrantProvider)
+        public RAGPipline(ILLMProvider llmProvider,
+                            IEmbeddingProvider embeddingProvider,
+                            IQdrantProvider qdrantProvider,
+                            IQueryNormalizer queryNormalizer,
+                            IOptions<PromptConfig> promptConfig)
         {
             _llmProvider = llmProvider;
             _embeddingProvider = embeddingProvider;
             _qdrantProvider = qdrantProvider;
+            _queryNormalizer = queryNormalizer;
+            _promptConfig = promptConfig.Value;
         }
 
         public async Task CreateCollection(CancellationToken cancellationToken = default)
         {
             await _qdrantProvider.CreateCollectionAsync(cancellationToken);
         }
+
         public async Task IngestAsync(IEnumerable<(string npcNames, string text, string? source)> chunks, CancellationToken cancellationToken = default)
         {
             int dim = await _embeddingProvider.GetDimsAsync();
@@ -39,9 +49,9 @@ namespace RAG.Class
                     embedding,
                     new Dictionary<string, object>
                     {
-                        { "npcNames", npcNames },
-                        { "text", text },
-                        { "source", source ?? string.Empty }
+                        { PayloadFields.NpcNames, npcNames },
+                        { PayloadFields.Text, text },
+                        { PayloadFields.Source, source ?? string.Empty }
                     }
                 );
                 pointsData.Add(point);
@@ -52,35 +62,34 @@ namespace RAG.Class
 
         public async Task<string> AskAsync(string npcName,
                                            string npcSystem,
-                                           string question, 
-                                           int topK, 
+                                           string question,
+                                           int topK,
                                            CancellationToken cancellationToken = default)
         {
+            // Node chuẩn hóa: mở rộng từ viết tắt / sửa chính tả trước khi embedding và dựng prompt.
+            var normalizedQuestion = await _queryNormalizer.NormalizeAsync(question, cancellationToken);
+
             var dims = await _embeddingProvider.GetDimsAsync();
 
             await _qdrantProvider.EnsureCollectionExistsAsync((ulong)dims, cancellationToken);
 
-            var questionEmbedding = await _embeddingProvider.GetEmbeddingsAsync(question, cancellationToken);
+            var questionEmbedding = await _embeddingProvider.GetEmbeddingsAsync(normalizedQuestion, cancellationToken);
 
-            var filterByName = MatchPhrase("npcNames", npcName);
+            var filterByName = MatchPhrase(PayloadFields.NpcNames, npcName);
             var filter = new Filter();
             filter.Must.Add(filterByName);
 
             var resultVectors = await _qdrantProvider.SearchVectorsAsync(questionEmbedding, filter, topK, cancellationToken);
 
             // context sẽ là phần text của các vector kết quả, nối lại với nhau để làm ngữ cảnh cho LLM
-            var context = string.Join("\n", resultVectors.Select(r => r.Payload["text"]));
+            var context = string.Join(
+                _promptConfig.ContextSeparator,
+                resultVectors.Select(r => r.Payload[PayloadFields.Text]));
 
-            // Tạo prompt cho LLM, có thể tùy chỉnh thêm để hướng dẫn LLM trả lời tốt hơn
-            var system = $"Bạn là {npcName}, " +
-                $"bạn có tính cách {npcSystem}, " +
-                "giúp trả lời các câu hỏi dựa trên ngữ cảnh được cung cấp. " +
-                "Nếu không có thì cứ trả lời không biết, giữ câu trả lời thật trung lập";
+            var system = _promptConfig.BuildSystemPrompt(npcName, npcSystem);
+            var user = _promptConfig.BuildUserPrompt(context, normalizedQuestion);
 
-            // User prompt sẽ bao gồm câu hỏi và ngữ cảnh, cách trình bày có thể tùy chỉnh để LLM hiểu rõ hơn
-            var user = $"{context} \n\n {question}\n";
-            var answer = await _llmProvider.AskAsync(system, user, cancellationToken);
-            return answer;
+            return await _llmProvider.AskAsync(system, user, cancellationToken);
         }
     }
 }

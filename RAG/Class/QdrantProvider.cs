@@ -2,6 +2,7 @@
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
 using RAG.Class.Config;
+using RAG.Class.Constants;
 using RAG.Interface;
 
 namespace RAG.Class
@@ -127,7 +128,7 @@ namespace RAG.Class
 
             await _qdrantClient.CreatePayloadIndexAsync(
                 collectionName: _cfg.Collection,
-                fieldName: "npcNames",
+                fieldName: PayloadFields.NpcNames,
                 schemaType: PayloadSchemaType.Text,
                 indexParams: new PayloadIndexParams
                 {

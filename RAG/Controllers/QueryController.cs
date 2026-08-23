@@ -31,7 +31,7 @@ namespace RAG.Controllers
             if (string.IsNullOrWhiteSpace(request.npcName))
                 return BadRequest("NPC Name cannot be empty.");
 
-            var response = await _ragPipline.AskAsync(request.npcName, request.npcSystem, request.Question, _config.topK, cancellationToken);
+            var response = await _ragPipline.AskAsync(request.npcName, request.npcSystem, request.Question, _config.TopK, cancellationToken);
             return Ok(response);
         }
 
@@ -63,7 +63,7 @@ namespace RAG.Controllers
                 if (string.IsNullOrEmpty(raw))
                     continue;
 
-                foreach(var chunk in TextChunker.ChunkText(raw, _config.chunkSize, _config.chunkOverlap))
+                foreach(var chunk in TextChunker.ChunkText(raw, _config.ChunkSize, _config.ChunkOverlap))
                 {
                     chunks.Add((npcNames, chunk, file.FileName));
                     Console.OutputEncoding = System.Text.Encoding.UTF8;

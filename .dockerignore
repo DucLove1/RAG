@@ -1,0 +1,14 @@
+**/.git
+**/.gitignore
+**/.vs
+**/bin
+**/obj
+**/*.user
+
+# Secret: tren Render dat bien moi truong trong Dashboard, khong bao gio nhet
+# .env vao build context.
+**/.env
+
+# Du lieu sinh ra luc chay. Khong duoc dua cache cua may dev vao image:
+# no se cu ngay va che mat Disk duoc mount.
+**/App_Data

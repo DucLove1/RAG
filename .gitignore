@@ -73,3 +73,7 @@ nunit-*.xml
 
 # Visual Studio cache & settings
 .vs/
+# Cache vector cua semantic router: du lieu sinh ra tu appsettings.json, khong phai source.
+# Commit vao se tao diff vo nghia va cu ngay khi ai do sua cau mau.
+App_Data/
+route-vectors.json

@@ -1,4 +1,4 @@
-using RAG.Extension;
+﻿using RAG.Extension;
 using DotNetEnv;
 
 // load environment variables from .env file
@@ -11,6 +11,9 @@ builder.Services.AddControllers();
 
 // Các provider LLM được đăng ký dạng Keyed Services (Groq / Gemini) trong AddLLM.
 builder.Services.AddLLM(builder.Configuration);
+// Cache cho duong hoi dap (chuan hoa + embedding). Phai dang ky TRUOC cac thanh phan bi boc.
+builder.Services.AddQueryCache(builder.Configuration);
+
 builder.Services.AddEmbeddingModel(builder.Configuration);
 
 // Đăng ký QdrantClient (Sử dụng gRPC)
@@ -18,6 +21,9 @@ builder.Services.AddQdrant(builder.Configuration);
 
 // Node chuẩn hóa câu hỏi người dùng (viết tắt, sai chính tả, thiếu dấu)
 builder.Services.AddQueryNormalization(builder.Configuration);
+
+// Node định tuyến ngữ nghĩa: nhận diện câu tán gẫu để trả lời thẳng, bỏ qua truy hồi Qdrant
+builder.Services.AddSemanticRouter(builder.Configuration);
 
 // Pipeline RAG + cấu hình prompt/chunking
 builder.Services.AddRagPipeline(builder.Configuration);

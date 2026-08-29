@@ -7,6 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- App_Data la du lieu sinh ra luc chay (cache vector), khong phai content cua project.
+         Web SDK mac dinh gom moi *.json thanh Content va copy sang build/publish output,
+         nen khong loai tru thi 1.45 MB cache bi nhet vao output va vao Docker image. -->
+    <Content Remove="App_Data\**" />
+    <None Include="App_Data\**" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.15" />
     <PackageReference Include="OpenAI" Version="2.10.0" />

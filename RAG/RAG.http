@@ -1,6 +1,207 @@
 @RAG_HostAddress = http://localhost:5263
 
-GET {{RAG_HostAddress}}/weatherforecast/
+### Health check
+GET {{RAG_HostAddress}}/api/query/check-health
+Accept: application/json
+
+###
+# ==========================================================================
+# CHAN DOAN DINH TUYEN - dung de tinh chinh nguong.
+# Khong goi LLM, khong cham Qdrant nen chay rat re, lap lai thoai mai.
+# ==========================================================================
+
+### Route debug: cau chao hoi (ky vong khop chitchat)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "xin chào bạn" }
+
+### Route debug: sai chinh ta, khong dau (ky vong khop chitchat sau khi chuan hoa)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "chao bn oi, dao nay ntn" }
+
+### Route debug: cau hoi tri thuc (ky vong KHONG route nao khop)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "cửa hàng của bạn bán những loại thuốc gì" }
+
+### Route debug: cau pha tron y dinh (ky vong KHONG khop - MaxRoutableLength chan)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "chào bạn, cho tôi hỏi giá của kiếm sắt là bao nhiêu" }
+
+###
+# ==========================================================================
+# END-TO-END. Kiem tra bang log Grpc.Net.Client:
+#   - Request thoat som  -> 0 dong "Starting gRPC call"
+#   - Request di RAG     -> it nhat 2 dong
+# ==========================================================================
+
+### PHAI THOAT SOM: chao hoi
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "xin chào bạn" }
+
+### PHAI THOAT SOM: sai chinh ta, khong dau
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "chao bn oi, dao nay ntn" }
+
+### PHAI THOAT SOM: cam on
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "cam on ban nhieu nhe" }
+
+### PHAI THOAT SOM: tam biet
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "thôi tôi đi đây" }
+
+### PHAI DI RAG: cau hoi tri thuc
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "cửa hàng của bạn bán những loại thuốc gì" }
+
+### RANH GIOI - phai di RAG du mo dau bang loi chao
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "chào bạn, cho tôi hỏi giá của kiếm sắt là bao nhiêu" }
+
+### RANH GIOI - phai di RAG (gan "ban khoe khong" ve mat ngu nghia)
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "bạn có bán thuốc hồi máu không" }
+
+###
+
+# ==========================================================================
+# GUARDRAIL: cau ngoai the gioi game (route out_of_scope)
+# NPC phai giu vai, khong duoc tra loi
+# ==========================================================================
+
+### PHAI KHOP out_of_scope: hoi ve he thong
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Wills", "npcSystem": "cộc cằn, hay phàn nàn", "Question": "bạn là AI phải không" }
+
+### PHAI KHOP out_of_scope: yeu cau tac vu ngoai game
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Wills", "npcSystem": "cộc cằn, hay phàn nàn", "Question": "viết code python cho tôi" }
+
+### PHAI DI RAG: mua la chi tiet vu an, khong phai hoi thoi tiet that
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Wills", "npcSystem": "cộc cằn, hay phàn nàn", "Question": "tối hôm đó trời có mưa không" }
+
+###
+# ==========================================================================
+# THEM CAU MAU LUC CHAY - co hieu luc ngay, khong can khoi dong lai
+# ==========================================================================
+
+### Them cau dang text (se duoc nhung tu dong)
+POST {{RAG_HostAddress}}/api/query/route-utterances
+Content-Type: application/json
+
+{
+  "route": "out_of_scope",
+  "utterances": [ "cách nấu phở bò", "công thức làm bánh mì" ]
+}
+
+### Them vector da chuan bi san (phai dung 768 chieu, khac vector 0)
+POST {{RAG_HostAddress}}/api/query/route-utterances
+Content-Type: application/json
+
+{
+  "route": "chitchat",
+  "vectors": [ [ 0.012, -0.034, 0.056 ] ]
+}
+
+### Gui ca hai cung luc
+POST {{RAG_HostAddress}}/api/query/route-utterances
+Content-Type: application/json
+
+{
+  "route": "thanks",
+  "utterances": [ "ơn ông nhiều" ],
+  "vectors": []
+}
+
+### Route sai ten -> 400 kem danh sach route hien co
+POST {{RAG_HostAddress}}/api/query/route-utterances
+Content-Type: application/json
+
+{ "route": "khong_ton_tai", "utterances": [ "abc" ] }
+
+###
+
+# ==========================================================================
+# CACHE hoi dap: goi cung mot cau nhieu lan roi xem cache-stats
+# ==========================================================================
+
+### Ti le trung cache (chuan hoa + embedding)
+GET {{RAG_HostAddress}}/api/query/cache-stats
+Accept: application/json
+
+### Goi lan 1 - cache lanh (~5s)
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Wills", "npcSystem": "cộc cằn, hay phàn nàn", "Question": "xin chào ông" }
+
+### Goi lai y het - cache am (~0.4s)
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Wills", "npcSystem": "cộc cằn, hay phàn nàn", "Question": "xin chào ông" }
+
+### Bien the khong dau - truot cache chuan hoa nhung TRUNG cache embedding
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Wills", "npcSystem": "cộc cằn, hay phàn nàn", "Question": "xin chao ong" }
+
+###
+
+# ==========================================================================
+# CACHE SONG QUA RESTART
+#   File: App_Data/query-cache.bin (nhi phan, ~3KB/vector)
+#   Flush dinh ky 300s + flush luc tat. Doi nhanh de test:
+#     QueryCache__FlushIntervalSeconds=10 dotnet run --project RAG
+# ==========================================================================
+
+### 1. Goi vai cau de tao du lieu cache
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Wills", "npcSystem": "cộc cằn, hay phàn nàn", "Question": "xin chào ông" }
+
+### 2. Xem cache-stats truoc khi restart
+GET {{RAG_HostAddress}}/api/query/cache-stats
+Accept: application/json
+
+### 3. Sau khi restart, goi lai dung cau tren -> phai TRUNG cache ngay
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Wills", "npcSystem": "cộc cằn, hay phàn nàn", "Question": "xin chào ông" }
+
+### 4. cache-stats phai co hit ngay o request dau tien sau restart
+GET {{RAG_HostAddress}}/api/query/cache-stats
 Accept: application/json
 
 ###

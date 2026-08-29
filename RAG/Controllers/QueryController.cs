@@ -12,11 +12,13 @@ namespace RAG.Controllers
     {
         private readonly RAGPipline _ragPipline;
         private readonly RagConfig _config;
+        private readonly IQueryCache _queryCache;
 
-        public QueryController(RAGPipline ragPipline, RagConfig config)
+        public QueryController(RAGPipline ragPipline, RagConfig config, IQueryCache queryCache)
         {
             _ragPipline = ragPipline;
             _config = config;
+            _queryCache = queryCache;
         }
 
         [HttpPost("ask")]
@@ -83,6 +85,70 @@ namespace RAG.Controllers
         {
             await _ragPipline.CreateCollection(cancellationToken);
             return Ok();
+        }
+
+        /// <summary>
+        /// Chẩn đoán định tuyến: trả về điểm của mọi route cho một câu hỏi.
+        /// Không gọi LLM và không chạm Qdrant, nên đây là vòng lặp rẻ để tinh chỉnh ngưỡng.
+        /// </summary>
+        [HttpPost("route-debug")]
+        async public Task<IActionResult> PostRouteDebug([FromBody] RouteDebugRequest request, CancellationToken cancellationToken = default)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Question))
+                return BadRequest("Question cannot be empty.");
+
+            var (normalizedQuestion, scores, match) = await _ragPipline.ExplainRouteAsync(request.Question, cancellationToken);
+
+            return Ok(new RouteDebugResponse(request.Question, normalizedQuestion, match?.Name, scores));
+        }
+
+        /// <summary>
+        /// Thêm câu mẫu vào một route đang chạy. Nhận câu dạng text (sẽ được nhúng),
+        /// vector đã chuẩn bị sẵn, hoặc cả hai. Có hiệu lực ngay, không cần khởi động lại.
+        /// </summary>
+        [HttpPost("route-utterances")]
+        async public Task<IActionResult> PostRouteUtterances([FromBody] AddUtterancesRequest request, CancellationToken cancellationToken = default)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.Route))
+                return BadRequest("Route cannot be empty.");
+
+            var utterances = request.Utterances ?? new List<string>();
+            var vectors = request.Vectors ?? new List<float[]>();
+
+            if (utterances.Count == 0 && vectors.Count == 0)
+                return BadRequest("Phải cung cấp ít nhất một câu mẫu hoặc một vector.");
+
+            var result = await _ragPipline.AddRouteUtterancesAsync(request.Route, utterances, vectors, cancellationToken);
+
+            // Không thêm được vì tên route sai hay dữ liệu không hợp lệ là lỗi của người gọi,
+            // nên trả 400 thay vì 200 kèm success=false.
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        /// <summary>
+        /// Tỉ lệ trúng cache. Không có số liệu này thì không cách nào biết cache đang thực sự
+        /// tiết kiệm được gì hay chỉ đang chiếm RAM.
+        /// </summary>
+        [HttpGet("cache-stats")]
+        public IActionResult GetCacheStats()
+        {
+            var stats = _queryCache.GetStats();
+
+            return Ok(new
+            {
+                normalization = new
+                {
+                    hits = stats.NormalizationHits,
+                    misses = stats.NormalizationMisses,
+                    hitRate = Math.Round(stats.NormalizationHitRate, 3)
+                },
+                embedding = new
+                {
+                    hits = stats.EmbeddingHits,
+                    misses = stats.EmbeddingMisses,
+                    hitRate = Math.Round(stats.EmbeddingHitRate, 3)
+                }
+            });
         }
 
         [HttpGet("check-health")]

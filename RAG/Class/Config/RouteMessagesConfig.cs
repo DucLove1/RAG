@@ -26,6 +26,13 @@ namespace RAG.Class.Config
 
         public string RouterDisabled { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Chiến lược định tuyến đang chạy không hỗ trợ thêm câu mẫu lúc chạy. Khác
+        /// <see cref="RouterDisabled"/>: router vẫn đang làm việc bình thường, chỉ là nó không
+        /// nhận diện route bằng vector nên câu mẫu thêm vào sẽ chẳng đi tới đâu.
+        /// </summary>
+        public string NotSupported { get; set; } = string.Empty;
+
         /// <summary>Ký tự nối giữa các tên route khi liệt kê.</summary>
         public string RouteNameSeparator { get; set; } = ", ";
     }

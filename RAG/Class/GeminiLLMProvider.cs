@@ -31,14 +31,14 @@ namespace RAG.Class
             _logger = logger;
         }
 
-        public async Task<string> AskAsync(string system, string user, CancellationToken cancellationToken = default)
+        public async Task<string> AskAsync(string system, string user, string? model = null, CancellationToken cancellationToken = default)
         {
             while (true)
             {
                 try
                 {
                     var key = _rotator.GetCurrentKey();
-                    return await TryAskAsync(system, user, key, cancellationToken);
+                    return await TryAskAsync(system, user, model, key, cancellationToken);
                 }
                 catch (HttpRequestException ex) when (ex.InnerException is HttpRequestException &&
                                                      ex.Message.Contains("429"))
@@ -58,7 +58,7 @@ namespace RAG.Class
             }
         }
 
-        private async Task<string> TryAskAsync(string system, string user, string apiKey, CancellationToken cancellationToken)
+        private async Task<string> TryAskAsync(string system, string user, string? model, string apiKey, CancellationToken cancellationToken)
         {
             var request = new GeminiGenerateContentRequest
             {
@@ -83,7 +83,7 @@ namespace RAG.Class
             var httpClient = _httpClientFactory.CreateClient(HttpClientNames.GeminiLlm);
 
             // Tạo HttpRequestMessage để attach API key per request chứ không bake vào HttpClient.
-            var httpRequest = new HttpRequestMessage(HttpMethod.Post, _config.BuildGenerateContentPath())
+            var httpRequest = new HttpRequestMessage(HttpMethod.Post, _config.BuildGenerateContentPath(model))
             {
                 Content = JsonContent.Create(request)
             };

@@ -16,6 +16,13 @@ namespace RAG.Class.Config
         /// <summary>Provider dùng để chuẩn hóa (mặc định Gemini, độc lập với provider trả lời).</summary>
         public LlmProviderKey Provider { get; set; } = LlmProviderKey.Gemini;
 
+        /// <summary>
+        /// Model riêng cho bước chuẩn hóa. Để trống thì dùng model mặc định của provider
+        /// (<c>GEMINILLM:Model</c> hoặc <c>GROQ:Model</c> trong appsettings.json). Đặt giá trị ở đây để chuẩn hóa chạy
+        /// model rẻ hơn model của những node khác mà vẫn dùng chung pool API key.
+        /// </summary>
+        public string? Model { get; set; }
+
         /// <summary>System prompt mô tả nhiệm vụ chuẩn hóa.</summary>
         public string SystemPrompt { get; set; } = string.Empty;
 

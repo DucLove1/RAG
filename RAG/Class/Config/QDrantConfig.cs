@@ -7,7 +7,7 @@ namespace RAG.Class.Config
     /// Cấu hình kết nối và cấu trúc collection của Qdrant.
     /// <para>
     /// Cố tình KHÔNG có <c>Dimensions</c>. Trước đây trường đó tồn tại song song với
-    /// <c>Gemini:OutputDimensions</c> — hai nguồn sự thật cho cùng một con số. Lệch nhau thì
+    /// <c>EmbeddingModel:OutputDimensions</c> — hai nguồn sự thật cho cùng một con số. Lệch nhau thì
     /// collection được tạo với số chiều khác số chiều vector thật, và triệu chứng duy nhất là
     /// truy hồi trả về kết quả vô nghĩa. Giờ số chiều chỉ đến từ <c>IEmbeddingProvider</c>.
     /// </para>

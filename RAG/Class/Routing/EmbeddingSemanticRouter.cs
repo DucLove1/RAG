@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using RAG.Class.Config;
+using RAG.Class.Constants;
 using RAG.Interface;
 
 namespace RAG.Class.Routing
@@ -12,41 +13,55 @@ namespace RAG.Class.Routing
     /// <see cref="IRouteScorer"/>, và trạng thái dùng chung nằm ở <see cref="RouteCatalog"/>.
     /// </para>
     /// <para>
-    /// Vector được nạp bởi <see cref="SemanticRouterWarmupService"/> chạy nền, nên khởi động ứng dụng
-    /// không phụ thuộc vào nhà cung cấp embedding. Trước khi nạp xong — và trong mọi trường hợp lỗi —
-    /// router trả <c>null</c>, tức là fail-open về đường RAG, giống cách LlmQueryNormalizer
-    /// fail-open về câu hỏi gốc.
+    /// Tự nhúng câu hỏi thay vì nhận vector từ caller: hợp đồng <see cref="ISemanticRouter"/> phải
+    /// phục vụ được cả chiến lược không cần vector nào. Việc này KHÔNG làm tăng số lượt gọi API,
+    /// vì <see cref="IEmbeddingProvider"/> tiêm vào đây đã bị bọc bởi decorator cache — lần nhúng
+    /// sau ở nhánh truy hồi của pipeline là một lần trúng cache.
+    /// <br/>
+    /// Đánh đổi: điều đó chỉ đúng khi <c>QueryCache:Enabled = true</c>. Tắt cache mà vẫn chạy
+    /// chiến lược này thì mỗi request RAG tốn HAI lượt nhúng; module đăng ký sẽ log cảnh báo lúc
+    /// khởi động nếu gặp đúng tổ hợp đó.
+    /// </para>
+    /// <para>
+    /// Vector câu mẫu được nạp bởi <see cref="SemanticRouterWarmupService"/> chạy nền, nên khởi
+    /// động ứng dụng không phụ thuộc vào nhà cung cấp embedding. Trước khi nạp xong — và trong mọi
+    /// trường hợp lỗi — router trả <c>null</c>, tức là fail-open về đường RAG.
     /// </para>
     /// </summary>
-    public sealed class EmbeddingSemanticRouter : ISemanticRouter
+    public sealed class EmbeddingSemanticRouter : ISemanticRouter, IRouteExplainer
     {
         private readonly RouteCatalog _catalog;
         private readonly IRouteScorer _scorer;
-        private readonly RouteUtteranceAdmin _utteranceAdmin;
-        private readonly SemanticRouterConfig _config;
+        private readonly IEmbeddingProvider _embeddingProvider;
+        private readonly EmbeddingRouterConfig _config;
         private readonly ILogger<EmbeddingSemanticRouter> _logger;
 
         public EmbeddingSemanticRouter(RouteCatalog catalog,
                                        IRouteScorer scorer,
-                                       RouteUtteranceAdmin utteranceAdmin,
+                                       IEmbeddingProvider embeddingProvider,
                                        IOptions<SemanticRouterConfig> options,
                                        ILogger<EmbeddingSemanticRouter> logger)
         {
             _catalog = catalog;
             _scorer = scorer;
-            _utteranceAdmin = utteranceAdmin;
-            _config = options.Value;
+            _embeddingProvider = embeddingProvider;
+            _config = options.Value.Embedding;
             _logger = logger;
         }
 
-        public RouteMatch? Route(string question, float[] questionEmbedding)
+        public async Task<RouteMatch?> RouteAsync(string question, CancellationToken cancellationToken = default)
         {
             var routes = _catalog.Routes;
 
             if (routes is null || routes.Count == 0)
                 return null;
 
-            if (!IsRoutable(question, questionEmbedding))
+            if (!IsRoutable(question))
+                return null;
+
+            var questionEmbedding = await EmbedAsync(question, cancellationToken);
+
+            if (questionEmbedding.Length == 0)
                 return null;
 
             var best = FindBest(routes, questionEmbedding);
@@ -64,16 +79,27 @@ namespace RAG.Class.Routing
                 best.Route.SystemPromptTemplate, best.Route.UserPromptTemplate);
         }
 
-        public IReadOnlyList<RouteScore> Explain(string question, float[] questionEmbedding)
+        public async Task<RouteExplanation> ExplainAsync(string normalizedQuestion,
+                                                         CancellationToken cancellationToken = default)
         {
             var routes = _catalog.Routes;
 
             if (routes is null || routes.Count == 0)
-                return Array.Empty<RouteScore>();
+            {
+                return new RouteExplanation(normalizedQuestion, Array.Empty<RouteScore>(), null,
+                    SemanticRouterStrategy.Embedding);
+            }
 
-            var routable = IsRoutable(question, questionEmbedding);
+            var routable = IsRoutable(normalizedQuestion);
+            var questionEmbedding = await EmbedAsync(normalizedQuestion, cancellationToken);
 
-            return routes
+            if (questionEmbedding.Length == 0)
+            {
+                return new RouteExplanation(normalizedQuestion, Array.Empty<RouteScore>(), null,
+                    SemanticRouterStrategy.Embedding);
+            }
+
+            var scores = routes
                 .Select(route =>
                 {
                     var score = _scorer.Score(route.Vectors, questionEmbedding);
@@ -82,20 +108,48 @@ namespace RAG.Class.Routing
                 })
                 .OrderByDescending(score => score.Score)
                 .ToList();
+
+            // Chấm điểm một lần rồi tự suy ra route thắng, thay vì gọi lại đường định tuyến —
+            // vừa tránh một lần nhúng nữa, vừa đảm bảo điểm và kết luận luôn khớp nhau.
+            var winner = routable ? FindBest(routes, questionEmbedding) : null;
+
+            var match = winner is null
+                ? null
+                : new RouteMatch(winner.Route.Name, winner.Score,
+                    winner.Route.SystemPromptTemplate, winner.Route.UserPromptTemplate);
+
+            return new RouteExplanation(normalizedQuestion, scores, match, SemanticRouterStrategy.Embedding);
         }
 
-        public Task<RouteUpdateResult> AddUtterancesAsync(string routeName,
-                                                          IReadOnlyList<string> utterances,
-                                                          IReadOnlyList<float[]> vectors,
-                                                          CancellationToken cancellationToken = default) =>
-            _utteranceAdmin.AddUtterancesAsync(routeName, utterances, vectors, cancellationToken);
-
-        private bool IsRoutable(string question, float[] questionEmbedding)
+        /// <summary>
+        /// Nhúng câu hỏi, fail-open về mảng rỗng. Nhà cung cấp embedding NÉM khi lỗi, và lỗi đó
+        /// không được phép làm hỏng cả request: nhánh truy hồi ngay sau đó sẽ nhúng lại và ném
+        /// tiếp, lúc ấy bộ xử lý lỗi mới dịch nó thành 503 đúng chỗ.
+        /// </summary>
+        private async Task<float[]> EmbedAsync(string question, CancellationToken cancellationToken)
         {
-            if (questionEmbedding.Length == 0)
+            try
+            {
+                return await _embeddingProvider.GetEmbeddingsAsync(question, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Nhúng câu hỏi để định tuyến thất bại, dùng đường RAG.");
+                return Array.Empty<float>();
+            }
+        }
+
+        private bool IsRoutable(string question)
+        {
+            if (string.IsNullOrWhiteSpace(question))
                 return false;
 
             // Câu dài gần như luôn là câu hỏi tri thức, kể cả khi mở đầu bằng một lời chào.
+            // Kiểm tra TRƯỚC khi nhúng để câu dài không tốn lượt gọi API nào.
             if (question.Length > _config.MaxRoutableLength)
                 return false;
 

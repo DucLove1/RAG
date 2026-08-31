@@ -6,8 +6,13 @@ Accept: application/json
 
 ###
 # ==========================================================================
-# CHAN DOAN DINH TUYEN - dung de tinh chinh nguong.
-# Khong goi LLM, khong cham Qdrant nen chay rat re, lap lai thoai mai.
+# CHAN DOAN DINH TUYEN.
+# LUU Y: voi SemanticRouter:Strategy = Llm thi endpoint nay CO goi LLM (mot
+# luot phan loai moi request). Van khong cham Qdrant va van re hon nhieu so voi
+# chay ca duong tra loi. Co tinh KHONG di qua cache dinh tuyen, de ket qua luon
+# phan anh prompt hien tai.
+# Truong "strategy" trong phan hoi cho biet chien luoc nao da quyet dinh;
+# "score" la null voi chien luoc Llm vi no chon nhan chu khong cham diem.
 # ==========================================================================
 
 ### Route debug: cau chao hoi (ky vong khop chitchat)
@@ -28,7 +33,10 @@ Content-Type: application/json
 
 { "Question": "cửa hàng của bạn bán những loại thuốc gì" }
 
-### Route debug: cau pha tron y dinh (ky vong KHONG khop - MaxRoutableLength chan)
+### Route debug: cau pha tron y dinh (ky vong KHONG khop)
+# Voi Strategy=Embedding: bi MaxRoutableLength chan truoc khi cham diem.
+# Voi Strategy=Llm:       phai do LUAT TRONG PROMPT chan ("vua chao vua hoi -> khong_khop").
+# Day la ca dang gia nhat: cosine khong doc hieu duoc, LLM thi doc duoc.
 POST {{RAG_HostAddress}}/api/query/route-debug
 Content-Type: application/json
 
@@ -205,3 +213,174 @@ GET {{RAG_HostAddress}}/api/query/cache-stats
 Accept: application/json
 
 ###
+
+###
+# ==========================================================================
+# ROUTER LLM - chien luoc SemanticRouter:Strategy = Llm (mac dinh)
+# LLM doc cau hoi va chon dung mot nhan; khong dung vector nao.
+# Ket qua da chay that: 9/9 ca duoi day dung.
+# ==========================================================================
+
+### LLM route: chao hoi (ky vong chitchat, score = null)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "xin chào ông" }
+
+### LLM route: cam on, khong dau (ky vong thanks)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "cam on ong nhieu" }
+
+### LLM route: tam biet (ky vong farewell)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "tạm biệt nhé" }
+
+### LLM route: hoi ve AI (ky vong out_of_scope - guardrail)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "bạn là AI phải không" }
+
+### LLM route: cau hoi tri thuc (ky vong null -> di duong RAG)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "kiếm sắt giá bao nhiêu" }
+
+###
+# --------------------------------------------------------------------------
+# RANH GIOI - day la nhung ca de sai nhat, chay lai moi khi sua prompt.
+# --------------------------------------------------------------------------
+
+### RANH GIOI: mua la CHI TIET VU AN, khong phai chuyen ngoai le
+# Ky vong null. Ra out_of_scope la SAI: trong Rainswept thi thoi tiet dem do
+# la du kien dieu tra. Mo ta cua route out_of_scope phai giu duoc ranh gioi nay.
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "tối hôm đó trời có mưa không" }
+
+### RANH GIOI: GIA vat pham trong game, khong phai gia ca thi truong doi thuc
+# Ky vong null. Da tung ra out_of_scope vi "gia cua kiem sat" trong giong cac
+# vi du "gia vang / gia bitcoin" - phai siet mo ta route moi qua duoc.
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "chào bạn, cho tôi hỏi giá của kiếm sắt là bao nhiêu" }
+
+### RANH GIOI: cau ngan, sai chinh ta, van la cau hoi tri thuc (ky vong null)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "k biet ong con nho gi ve dem hom do ko" }
+
+### RANH GIOI: vuot Llm:MaxInputLength (200) -> di thang RAG, KHONG goi LLM
+# Chu y: do dai duoc do TREN CAU DA CHUAN HOA. Cau lap di lap lai se bi bo
+# chuan hoa gop lai con ngan, nen phai dung doan dai that moi cham duoc cua chan.
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "Xin chào ông, tôi là thám tử mới tới thị trấn này hôm qua, trời thì mưa suốt từ sáng nên tôi phải trú nhờ ở quán trọ đầu phố, sáng nay tôi dậy sớm đi một vòng quanh khu chợ cũ rồi ghé qua bến tàu, thấy ở đâu cũng vắng tanh, thật ra tôi chỉ muốn chào ông một tiếng cho phải phép thôi chứ chưa có việc gì cả." }
+
+###
+# ==========================================================================
+# CACHE QUYET DINH DINH TUYEN
+# Chay theo dung thu tu. Khoi dong lai app truoc khi bat dau de moc ve 0.
+# ==========================================================================
+
+### 1. Ghi lai moc: khoi "route" trong phan hoi
+GET {{RAG_HostAddress}}/api/query/cache-stats
+Accept: application/json
+
+### 2. route-debug KHONG duoc dong vao cache - chay 3 lan, moc phai y nguyen
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "chào ông lão" }
+
+### 3. ask lan dau -> route MISS (+1 misses)
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "chào ông buổi sáng nhé" }
+
+### 4. ask lai y het -> route HIT (+1 hits, khong con dong log goi LLM phan loai)
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "chào ông buổi sáng nhé" }
+
+### 5. Cau hoi tri thuc, hoi 2 lan: quyet dinh AM cung phai duoc cache
+# Lan 1 misses+1, lan 2 hits+1. Day la nhom chiem phan lon luu luong.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "ông biết gì về cây kiếm sắt" }
+
+### 6. Kiem lai: route.hits phai tang, hitRate > 0
+GET {{RAG_HostAddress}}/api/query/cache-stats
+Accept: application/json
+
+### 7. Khoi dong lai app roi hoi lai cau o buoc 3 -> route MISS
+# Quyet dinh dinh tuyen CHI song trong RAM (khong ghi xuong query-cache.bin),
+# nhung normalization/embedding VAN hit vi dinh dang file khong doi.
+GET {{RAG_HostAddress}}/api/query/cache-stats
+Accept: application/json
+
+###
+# ==========================================================================
+# CHUNG MINH TIET KIEM EMBEDDING - phan thu loi chinh cua thay doi nay.
+# Doc khoi "embedding" trong cache-stats truoc va sau moi request.
+# Da chay that: cau tan gau = 0, cau tri thuc = 1.
+# ==========================================================================
+
+### A. Moc embedding
+GET {{RAG_HostAddress}}/api/query/cache-stats
+Accept: application/json
+
+### B. Cau tan gau MOI TINH -> hits+misses cua embedding phai tang 0
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "chào ông buổi sáng nhé q1198" }
+
+### C. Cau tri thuc MOI TINH -> tang dung 1
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "ông biết gì về cây kiếm sắt q1198" }
+
+### D. Doi chieu
+GET {{RAG_HostAddress}}/api/query/cache-stats
+Accept: application/json
+
+###
+# ==========================================================================
+# CHUYEN CHIEN LUOC - khong sua mot dong code nao.
+#
+#   SemanticRouter__Strategy=Embedding   (bien moi truong hoac appsettings)
+#     - Chay lai 5 ca dau: diem quay lai dang SO, strategy = "Embedding"
+#     - Warm-up phai nap 160 cau mau tu CACHE, khong goi API embedding
+#     - route-utterances duoi day -> HTTP 200
+#
+#   SemanticRouter__Strategy=Llm
+#     - route-utterances duoi day -> HTTP 400 kem message NotSupported
+#
+#   SemanticRouter__Strategy=Off
+#     - Moi cau di RAG, route-debug tra scores rong va strategy = "Off"
+#     - route-utterances -> HTTP 400 kem message RouterDisabled
+#
+# BAY DI TRU: khoi dong voi ten khoa CU (SemanticRouter__VectorCachePath hoac
+# SemanticRouter__Enabled) thi app PHAI khong khoi dong duoc, kem thong bao
+# chi ro ten moi. Neu no van khoi dong binh thuong thi bay da hong.
+# ==========================================================================
+
+### route-utterances: ket qua phu thuoc chien luoc dang chay
+POST {{RAG_HostAddress}}/api/query/route-utterances
+Content-Type: application/json
+
+{ "Route": "chitchat", "Utterances": ["chào ông lão ơi"] }

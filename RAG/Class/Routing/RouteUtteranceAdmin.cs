@@ -12,7 +12,7 @@ namespace RAG.Class.Routing
     /// router vẫn không cần khóa và request đang chạy không bao giờ thấy trạng thái nửa vời.
     /// </para>
     /// </summary>
-    public sealed class RouteUtteranceAdmin
+    public sealed class RouteUtteranceAdmin : IRouteUtteranceAdmin
     {
         private readonly IEmbeddingProvider _embeddingProvider;
         private readonly IRouteUtteranceStore _utteranceStore;

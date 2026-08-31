@@ -972,3 +972,82 @@ Hai điều quan trọng được xác nhận:
 `docker build` và `docker run` chưa chạy được (Docker Desktop không khởi động trên máy). Nội dung
 Dockerfile là suy ra từ tài liệu Render và từ phép thử mô phỏng ở mục 4, chưa phải chạy thật trong
 container. Cần tự chạy thử trước khi tin.
+
+---
+
+# Phụ lục E — Chuyển sang định tuyến bằng LLM (đảo ngược quyết định ở §1)
+
+## Quyết định bị đảo
+
+§1 của chính tài liệu này chốt rằng `ISemanticRouter.Route()` **nhận sẵn `float[]`**, để pipeline
+nhúng đúng một lần dùng chung cho cả định tuyến lẫn truy hồi. Lập luận đó đúng khi chỉ có một cách
+nhận diện route. Nay có thêm chiến lược hỏi thẳng LLM — **không cần vector nào** — thì tham số đó
+trở thành chi tiết của một chiến lược rò rỉ vào hợp đồng chung, và nó bắt câu tán gẫu trả giá một
+lượt nhúng mà không bao giờ dùng tới.
+
+Hợp đồng mới: `Task<RouteMatch?> RouteAsync(string question, CancellationToken)`. Chiến lược nào
+cần vector thì tự lấy qua `IEmbeddingProvider` — vốn đã bị bọc bởi decorator cache, nên lần nhúng
+sau ở nhánh truy hồi là cache hit và tổng vẫn đúng một lượt gọi API. Ràng buộc kèm theo: điều đó
+chỉ đúng khi `QueryCache:Enabled = true` (cạm bẫy 5.10 trong `context.md`).
+
+`Explain` và `AddUtterancesAsync` tách hẳn ra thành `IRouteExplainer` và `IRouteUtteranceAdmin`
+(ISP) — cái sau vì nó nhận `float[]`, tức mang sẵn giả định "route nhận diện bằng vector".
+
+## Vì sao nhãn trần chứ không phải JSON
+
+Đầu ra là một token thuộc tập đóng. JSON chỉ thêm chỗ để mô hình làm sai (code fence, đổi tên khóa,
+lồng object), tốn output token trong hạn mức 256, mà không chở thêm trường nào. `LlmQueryNormalizer`
+đã chứng minh hợp đồng "xuất đúng một dòng" chạy tốt trên stack này.
+
+Bộ phân tích vẫn phải chịu được model nói nhiều — một prompt tốt làm chuyện đó hiếm đi chứ không
+làm nó biến mất. Đã kiểm chứng bằng cách **cố tình** thay system prompt bằng bản bắt mô hình suy
+luận từng bước rồi trả lời dạng `Nhãn: **chitchat**.`: 4/4 ca vẫn đọc đúng, 0 dòng cảnh báo.
+
+## Vì sao BỎ `MaxRoutableLength` khỏi chiến lược LLM
+
+Cửa chặn 60 ký tự sinh ra để né câu pha trộn ý định, thứ mà cosine không phân biệt nổi. LLM đọc
+hiểu được, nên luật đó chuyển thành một dòng trong prompt. Chiến lược LLM có `MaxInputLength = 200`
+riêng, nới rộng hơn nhiều và chỉ nhằm chặn đoạn văn dài.
+
+Lưu ý khi kiểm chứng: độ dài được đo **trên câu đã chuẩn hóa**. Một đoạn lặp đi lặp lại 302 ký tự
+bị bộ chuẩn hóa gộp còn 61 ký tự nên không chạm cửa chặn — phải dùng đoạn dài thật.
+
+## Kết quả đo (chạy thật, không phải suy luận)
+
+| Phép kiểm | Kết quả |
+|---|---|
+| 9 ca `route-debug`, chiến lược `Llm` | **9/9** |
+| 9 ca đó, chiến lược `Embedding` | **9/9**, điểm quay lại dạng số |
+| Câu tán gẫu → số lượt gọi lớp embedding | **0** (trước đây là 1) |
+| Câu tri thức → số lượt gọi lớp embedding | **1** |
+| Cache định tuyến: câu mới hỏi 3 lần | miss, hit, hit |
+| Quyết định âm (câu RAG) hỏi 2 lần | miss rồi hit — **có** được cache |
+| `route-debug` gọi 3 lần | bộ đếm cache **không đổi** (không đi qua cache, đúng chủ ý) |
+| `Strategy=Embedding` warm-up | 4 route / 160 câu mẫu, **nguồn: cache** (đường dẫn lồng mới bind đúng) |
+| `route-utterances`: `Embedding` / `Llm` / `Off` | 200 / 400 `NotSupported` / 400 `RouterDisabled` |
+| Khởi động với khóa cũ `SemanticRouter__VectorCachePath` | app **từ chối khởi động**, nêu đích danh tên mới |
+| File `query-cache.bin` cũ | vẫn nạp được (9 chuẩn hóa + 9 vector), định dạng không đổi |
+
+## Ca ranh giới đã suýt sai — giữ lại làm bài kiểm nhận
+
+`"chào bạn, cho tôi hỏi giá của kiếm sắt là bao nhiêu"` ban đầu bị phân vào `out_of_scope`, vì mô
+tả route đó nói "hỏi giá cả thị trường" và "giá của kiếm sắt" trông giống các ví dụ *giá vàng /
+giá bitcoin*. Sửa bằng cách nói rõ trong `Description`: giá cả **ngoài đời** mới thuộc nhãn này,
+còn **giá vật phẩm trong game là câu hỏi cần tra cứu**.
+
+Đây cùng loại với cạm bẫy §5.5 (câu mẫu `out_of_scope` không được nhắc tới thời tiết): ranh giới
+"ngoài phạm vi" luôn là chỗ dễ sai nhất, và giờ nó nằm trong `Description` chứ không nằm ở ngưỡng.
+
+## Chưa kiểm chứng được
+
+Fail-open khi key LLM hỏng **chưa chạy thử trực tiếp**: `DotNetEnv.Env.Load()` mặc định ghi đè biến
+môi trường của shell, nên không đặt được key sai mà không sửa `.env` thật (cạm bẫy §5.12). Đường
+fail-open dùng đúng hình dạng try/catch của `LlmQueryNormalizer` — kể cả `catch (OperationCanceledException)
+{ throw; }` đặt trước `catch (Exception)` — và nhánh "không đọc được nhãn" thì đã kiểm chứng gián tiếp
+qua phép thử model nói nhiều.
+
+## Hướng tối ưu về sau (ngoài phạm vi đợt này)
+
+Chuẩn hóa và phân loại giờ là hai lượt gọi Gemini liền kề nhau, cùng một dạng việc. Gộp thành **một**
+lượt trả về "câu đã chuẩn hóa + nhãn" sẽ cắt một round-trip cho mọi request nguội. Đổi lại là ghép
+hai trách nhiệm vào một node và một prompt.

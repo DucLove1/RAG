@@ -34,8 +34,11 @@ COPY --from=build /app/publish .
 #
 # Doi mount path khac thi ghi de ba bien duoi day trong Environment cua Render.
 # ---------------------------------------------------------------------------
-ENV SemanticRouter__VectorCachePath=/var/data/route-vectors.json
-ENV SemanticRouter__UtteranceStorePath=/var/data/route-utterances.json
+# LUU Y ve ten bien: hai bien cua router nam trong section con Embedding. Dat nham ten cu
+# (SemanticRouter__VectorCachePath) thi app TU CHOI khoi dong kem thong bao chi ro ten moi — co y
+# nhu vay, vi bind hut se im lang day cache ra ngoai Disk va nhung lai 160 cau mau moi lan deploy.
+ENV SemanticRouter__Embedding__VectorCachePath=/var/data/route-vectors.json
+ENV SemanticRouter__Embedding__UtteranceStorePath=/var/data/route-utterances.json
 ENV QueryCache__PersistPath=/var/data/query-cache.bin
 
 # Tao san thu muc de app van chay binh thuong khi CHUA gan Disk.

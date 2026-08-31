@@ -23,7 +23,7 @@ namespace RAG.Extension.DependencyInjection
             services.AddSingleton<IRouteDiagnostics, RouteDiagnosticsService>();
 
             // IIngestionService đã được đăng ký ở AddIngestion; IRouteAdmin do façade đảm nhiệm
-            // vì nó chỉ chuyển tiếp thẳng sang ISemanticRouter.
+            // vì nó chỉ chuyển tiếp thẳng sang IRouteUtteranceAdmin.
             services.AddSingleton<RagPipeline>();
             services.AddSingleton<IRagPipeline>(sp => sp.GetRequiredService<RagPipeline>());
             services.AddSingleton<IRouteAdmin>(sp => sp.GetRequiredService<RagPipeline>());

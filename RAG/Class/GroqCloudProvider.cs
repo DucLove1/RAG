@@ -1,4 +1,4 @@
-﻿using OpenAI;
+using OpenAI;
 using OpenAI.Chat;
 using RAG.Class.Config;
 using RAG.Class.Constants;
@@ -25,7 +25,7 @@ namespace RAG.Class
             _logger = logger;
         }
 
-        public async Task<string> AskAsync(string system, string user, CancellationToken cancellationToken = default)
+        public async Task<string> AskAsync(string system, string user, string? model = null, CancellationToken cancellationToken = default)
         {
             var messages = new List<ChatMessage>
             {
@@ -38,10 +38,14 @@ namespace RAG.Class
                 try
                 {
                     var key = _rotator.GetCurrentKey();
-                    var chatClient = _clientCache.GetOrAdd(key, k =>
+                    var effectiveModel = string.IsNullOrWhiteSpace(model) ? _config.Model : model;
+
+                    // Model bake vào ChatClient lúc khởi tạo, nên khóa cache phải gồm cả model:
+                    // cache theo mình API key thì consumer thứ hai sẽ dùng lại client của model thứ nhất.
+                    var chatClient = _clientCache.GetOrAdd($"{key}|{effectiveModel}", _ =>
                         new ChatClient(
-                            model: _config.Model,
-                            credential: new ApiKeyCredential(k),
+                            model: effectiveModel,
+                            credential: new ApiKeyCredential(key),
                             options: new OpenAIClientOptions { Endpoint = new Uri(_config.Url) }));
 
                     var response = await chatClient.CompleteChatAsync(

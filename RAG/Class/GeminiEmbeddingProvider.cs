@@ -54,7 +54,7 @@ namespace RAG.Class
         /// trong lô là một request đối với hạn mức embed. Vì vậy lô phải nhỏ hơn hạn mức mỗi phút và
         /// giữa các lô phải có khoảng nghỉ.
         /// </para>
-        /// Khi chưa cấu hình BatchUrl, hoặc endpoint không hỗ trợ, sẽ lùi về nhúng từng câu.
+        /// Khi chưa cấu hình BatchEmbedContentPathTemplate, hoặc endpoint không hỗ trợ, sẽ lùi về nhúng từng câu.
         /// Riêng lỗi 429 thì KHÔNG lùi mà ném <see cref="EmbeddingRateLimitedException"/> để caller thử lại sau.
         /// </summary>
         public async Task<IReadOnlyList<float[]>> GetEmbeddingsBatchAsync(IReadOnlyList<string> inputs,
@@ -63,9 +63,9 @@ namespace RAG.Class
             if (inputs.Count == 0)
                 return Array.Empty<float[]>();
 
-            if (string.IsNullOrWhiteSpace(_config.BatchUrl))
+            if (string.IsNullOrWhiteSpace(_config.BatchEmbedContentPathTemplate))
             {
-                _logger.LogDebug("Chưa cấu hình BatchUrl, nhúng từng câu một cho {Count} câu.", inputs.Count);
+                _logger.LogDebug("Chưa cấu hình BatchEmbedContentPathTemplate, nhúng từng câu một cho {Count} câu.", inputs.Count);
                 return await EmbedOneByOneAsync(inputs, cancellationToken);
             }
 
@@ -142,7 +142,7 @@ namespace RAG.Class
                 };
 
                 var httpClient = CreateClient();
-                var httpRequest = new HttpRequestMessage(HttpMethod.Post, _config.BatchUrl)
+                var httpRequest = new HttpRequestMessage(HttpMethod.Post, _config.BuildBatchEmbedContentPath())
                 {
                     Content = JsonContent.Create(payload)
                 };
@@ -261,7 +261,7 @@ namespace RAG.Class
             try
             {
                 var httpClient = CreateClient();
-                var httpRequest = new HttpRequestMessage(HttpMethod.Post, _config.Url)
+                var httpRequest = new HttpRequestMessage(HttpMethod.Post, _config.BuildEmbedContentPath())
                 {
                     Content = JsonContent.Create(BuildRequest(input))
                 };

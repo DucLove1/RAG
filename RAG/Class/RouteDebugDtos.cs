@@ -7,13 +7,19 @@ namespace RAG.Class
     public record RouteDebugRequest([NotBlank] string Question);
 
     /// <summary>
-    /// Kết quả chẩn đoán: điểm của mọi route kèm ngưỡng tương ứng, để tinh chỉnh ngưỡng
-    /// mà không phải đọc log.
+    /// Kết quả chẩn đoán: đánh giá của mọi route, để tinh chỉnh mà không phải đọc log.
     /// </summary>
+    /// <param name="Strategy">
+    /// Chiến lược đã đưa ra quyết định. Không có trường này thì một phản hồi toàn <c>score: null</c>
+    /// không phân biệt được "router LLM đang chạy" với "router embedding vừa hỏng".
+    /// </param>
+    /// <param name="MatchedScore">Điểm của route thắng; <c>null</c> khi chiến lược không chấm điểm.</param>
     public record RouteDebugResponse(
         string Question,
         string NormalizedQuestion,
+        string Strategy,
         string? MatchedRoute,
+        double? MatchedScore,
         IReadOnlyList<RouteScore> Scores);
 
     /// <summary>

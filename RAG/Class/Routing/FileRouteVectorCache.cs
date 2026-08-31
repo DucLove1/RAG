@@ -16,7 +16,7 @@ namespace RAG.Class.Routing
     /// </summary>
     public sealed class FileRouteVectorCache : IRouteVectorCache
     {
-        private readonly SemanticRouterConfig _config;
+        private readonly EmbeddingRouterConfig _config;
         private readonly IHostEnvironment _environment;
         private readonly ILogger<FileRouteVectorCache> _logger;
 
@@ -24,7 +24,7 @@ namespace RAG.Class.Routing
                                     IHostEnvironment environment,
                                     ILogger<FileRouteVectorCache> logger)
         {
-            _config = options.Value;
+            _config = options.Value.Embedding;
             _environment = environment;
             _logger = logger;
         }

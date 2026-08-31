@@ -12,6 +12,10 @@ namespace RAG.Extension.DependencyInjection
     {
         public static IServiceCollection AddEmbeddingModel(this IServiceCollection services, IConfiguration configuration)
         {
+            // Section vừa đổi tên; lý do phải nổ thay vì chỉ log nằm ở ObsoleteEmbeddingKeys.
+            if (configuration.GetSection(ObsoleteEmbeddingKeys.ObsoleteSectionName).Exists())
+                throw new InvalidOperationException(ObsoleteEmbeddingKeys.Message);
+
             services.AddValidatedOptions<GeminiEmbeddingModelConfig>(
                 configuration, GeminiEmbeddingModelConfig.SectionName);
 
@@ -27,12 +31,14 @@ namespace RAG.Extension.DependencyInjection
             });
 
             // Cấu hình HttpClient thuộc về composition root, không phải constructor của provider.
-            // Không đặt BaseAddress: Url và BatchUrl đều là URL tuyệt đối, dùng luôn cho rõ ràng.
+            // BaseAddress là base url, còn đường dẫn của từng endpoint do provider dựng từ Model —
+            // nhờ vậy tên model chỉ khai MỘT lần, thay vì lặp lại trong hai URL tuyệt đối như trước.
             // Không còn bake key vào header — provider sẽ attach per request.
             services.AddHttpClient(HttpClientNames.GeminiEmbedding, (sp, client) =>
             {
                 var options = sp.GetRequiredService<IOptions<GeminiEmbeddingModelConfig>>().Value;
 
+                client.BaseAddress = OptionsRegistration.BuildBaseAddress(options.Url);
                 client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
             });
 

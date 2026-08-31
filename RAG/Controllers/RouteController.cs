@@ -31,8 +31,13 @@ namespace RAG.Controllers
         }
 
         /// <summary>
-        /// Chẩn đoán định tuyến: trả về điểm của mọi route cho một câu hỏi.
-        /// Không gọi LLM và không chạm Qdrant, nên đây là vòng lặp rẻ để tinh chỉnh ngưỡng.
+        /// Chẩn đoán định tuyến: trả về đánh giá của mọi route cho một câu hỏi.
+        /// Không sinh câu trả lời và không chạm Qdrant.
+        /// <para>
+        /// Với <c>SemanticRouter:Strategy = Llm</c> thì endpoint này CÓ gọi LLM (một lượt phân
+        /// loại), khác với bản trước vốn chỉ nhúng vector. Vẫn rẻ hơn nhiều so với chạy cả đường
+        /// trả lời, và cố tình không đi qua cache định tuyến để kết quả luôn phản ánh prompt hiện tại.
+        /// </para>
         /// </summary>
         [HttpPost("route-debug")]
         public async Task<IActionResult> PostRouteDebug([FromBody] RouteDebugRequest request,
@@ -43,7 +48,9 @@ namespace RAG.Controllers
             return Ok(new RouteDebugResponse(
                 request.Question,
                 explanation.NormalizedQuestion,
+                explanation.Strategy.ToString(),
                 explanation.Match?.Name,
+                explanation.Match?.Score,
                 explanation.Scores));
         }
 
@@ -98,6 +105,14 @@ namespace RAG.Controllers
                     hits = stats.EmbeddingHits,
                     misses = stats.EmbeddingMisses,
                     hitRate = Math.Round(stats.EmbeddingHitRate, 3)
+                },
+                // Tầng đắt nhất khi trượt với chiến lược định tuyến bằng LLM: mỗi lần trượt là một
+                // lượt gọi mô hình đầy đủ. Luôn 0 khi chạy chiến lược Embedding.
+                route = new
+                {
+                    hits = stats.RouteHits,
+                    misses = stats.RouteMisses,
+                    hitRate = Math.Round(stats.RouteHitRate, 3)
                 }
             });
         }
@@ -119,6 +134,7 @@ namespace RAG.Controllers
             RouteUpdateStatus.NotReady => _messages.NotReady,
             RouteUpdateStatus.NothingAdded => _messages.NothingAdded,
             RouteUpdateStatus.RouterDisabled => _messages.RouterDisabled,
+            RouteUpdateStatus.NotSupported => _messages.NotSupported,
             _ => string.Empty
         };
     }

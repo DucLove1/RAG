@@ -1,23 +1,21 @@
+using RAG.Class.Constants;
 using RAG.Interface;
 
 namespace RAG.Class.Routing
 {
     /// <summary>
     /// Null Object cho <see cref="ISemanticRouter"/>: không route nào khớp, luôn đi đường RAG.
-    /// Được đăng ký khi node định tuyến bị tắt hoặc không khai báo route hợp lệ nào,
-    /// nhờ đó pipeline không cần biết đến cờ Enabled.
+    /// Được đăng ký khi <c>SemanticRouter:Strategy = Off</c> hoặc không khai báo route hợp lệ nào,
+    /// nhờ đó pipeline không cần biết đến chiến lược đang chạy.
     /// </summary>
-    public sealed class PassthroughSemanticRouter : ISemanticRouter
+    public sealed class PassthroughSemanticRouter : ISemanticRouter, IRouteExplainer
     {
-        public RouteMatch? Route(string question, float[] questionEmbedding) => null;
+        public Task<RouteMatch?> RouteAsync(string question, CancellationToken cancellationToken = default) =>
+            Task.FromResult<RouteMatch?>(null);
 
-        public IReadOnlyList<RouteScore> Explain(string question, float[] questionEmbedding) =>
-            Array.Empty<RouteScore>();
-
-        public Task<RouteUpdateResult> AddUtterancesAsync(string routeName,
-                                                          IReadOnlyList<string> utterances,
-                                                          IReadOnlyList<float[]> vectors,
-                                                          CancellationToken cancellationToken = default) =>
-            Task.FromResult(RouteUpdateResult.RouterDisabled());
+        public Task<RouteExplanation> ExplainAsync(string normalizedQuestion,
+                                                   CancellationToken cancellationToken = default) =>
+            Task.FromResult(new RouteExplanation(normalizedQuestion, Array.Empty<RouteScore>(), null,
+                SemanticRouterStrategy.Off));
     }
 }

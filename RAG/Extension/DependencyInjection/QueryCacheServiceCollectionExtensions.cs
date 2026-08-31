@@ -25,6 +25,7 @@ namespace RAG.Extension.DependencyInjection
                 services.AddSingleton<NullQueryCache>();
                 services.AddSingleton<INormalizationCache>(sp => sp.GetRequiredService<NullQueryCache>());
                 services.AddSingleton<IEmbeddingCache>(sp => sp.GetRequiredService<NullQueryCache>());
+                services.AddSingleton<IRouteDecisionCache>(sp => sp.GetRequiredService<NullQueryCache>());
                 services.AddSingleton<IQueryCacheStatistics>(sp => sp.GetRequiredService<NullQueryCache>());
                 return services;
             }
@@ -45,6 +46,7 @@ namespace RAG.Extension.DependencyInjection
             // NHIỀU instance, và service flush sẽ lưu cái cache mà pipeline không hề dùng.
             services.AddSingleton<INormalizationCache>(sp => sp.GetRequiredService<MemoryQueryCache>());
             services.AddSingleton<IEmbeddingCache>(sp => sp.GetRequiredService<MemoryQueryCache>());
+            services.AddSingleton<IRouteDecisionCache>(sp => sp.GetRequiredService<MemoryQueryCache>());
             services.AddSingleton<IQueryCacheStatistics>(sp => sp.GetRequiredService<MemoryQueryCache>());
             services.AddSingleton<IPersistableQueryCache>(sp => sp.GetRequiredService<MemoryQueryCache>());
 

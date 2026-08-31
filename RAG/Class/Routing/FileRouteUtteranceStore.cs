@@ -12,7 +12,7 @@ namespace RAG.Class.Routing
     /// </summary>
     public sealed class FileRouteUtteranceStore : IRouteUtteranceStore
     {
-        private readonly SemanticRouterConfig _config;
+        private readonly EmbeddingRouterConfig _config;
         private readonly IHostEnvironment _environment;
         private readonly ILogger<FileRouteUtteranceStore> _logger;
 
@@ -20,7 +20,7 @@ namespace RAG.Class.Routing
                                        IHostEnvironment environment,
                                        ILogger<FileRouteUtteranceStore> logger)
         {
-            _config = options.Value;
+            _config = options.Value.Embedding;
             _environment = environment;
             _logger = logger;
         }

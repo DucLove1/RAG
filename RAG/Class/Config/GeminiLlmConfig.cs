@@ -43,8 +43,10 @@ namespace RAG.Class.Config
         [Range(1, 3600)]
         public int RateLimitCooldownSeconds { get; set; } = 60;
 
-        public string BuildGenerateContentPath() =>
-            string.Format(GenerateContentPathTemplate, Model);
+        /// <summary><paramref name="model"/> để trống thì dùng <see cref="Model"/> mặc định.</summary>
+        public string BuildGenerateContentPath(string? model = null) =>
+            string.Format(GenerateContentPathTemplate,
+                string.IsNullOrWhiteSpace(model) ? Model : model);
 
         public IEnumerable<ValidationResult> Validate(ValidationContext context)
         {

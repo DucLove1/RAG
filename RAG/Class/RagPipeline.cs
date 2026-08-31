@@ -16,17 +16,17 @@ namespace RAG.Class
         private readonly IAskService _askService;
         private readonly IIngestionService _ingestionService;
         private readonly IRouteDiagnostics _routeDiagnostics;
-        private readonly ISemanticRouter _semanticRouter;
+        private readonly IRouteUtteranceAdmin _routeUtteranceAdmin;
 
         public RagPipeline(IAskService askService,
                            IIngestionService ingestionService,
                            IRouteDiagnostics routeDiagnostics,
-                           ISemanticRouter semanticRouter)
+                           IRouteUtteranceAdmin routeUtteranceAdmin)
         {
             _askService = askService;
             _ingestionService = ingestionService;
             _routeDiagnostics = routeDiagnostics;
-            _semanticRouter = semanticRouter;
+            _routeUtteranceAdmin = routeUtteranceAdmin;
         }
 
         public Task<string> AskAsync(string npcName,
@@ -52,6 +52,6 @@ namespace RAG.Class
                                                                IReadOnlyList<string> utterances,
                                                                IReadOnlyList<float[]> vectors,
                                                                CancellationToken cancellationToken = default) =>
-            _semanticRouter.AddUtterancesAsync(routeName, utterances, vectors, cancellationToken);
+            _routeUtteranceAdmin.AddUtterancesAsync(routeName, utterances, vectors, cancellationToken);
     }
 }

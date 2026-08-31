@@ -6,7 +6,7 @@ namespace RAG.Class.Caching
     /// Null Object cho các interface cache: luôn báo trượt và không lưu gì.
     /// Được đăng ký khi QueryCache:Enabled = false, nhờ đó các decorator không cần biết đến cờ bật/tắt.
     /// </summary>
-    public sealed class NullQueryCache : INormalizationCache, IEmbeddingCache, IQueryCacheStatistics
+    public sealed class NullQueryCache : INormalizationCache, IEmbeddingCache, IRouteDecisionCache, IQueryCacheStatistics
     {
         public bool TryGetNormalizedQuestion(string question, out string normalized)
         {
@@ -24,6 +24,14 @@ namespace RAG.Class.Caching
 
         public void SetEmbedding(string text, float[] vector) { }
 
-        public QueryCacheStats GetStats() => new(0, 0, 0, 0);
+        public bool TryGetRoute(string question, out RouteMatch? route)
+        {
+            route = null;
+            return false;
+        }
+
+        public void SetRoute(string question, RouteMatch? route) { }
+
+        public QueryCacheStats GetStats() => new(0, 0, 0, 0, 0, 0);
     }
 }

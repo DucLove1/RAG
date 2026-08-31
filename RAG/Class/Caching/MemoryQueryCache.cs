@@ -14,10 +14,11 @@ namespace RAG.Class.Caching
     /// snapshot để <see cref="QueryCachePersistenceService"/> lưu xuống đĩa.
     /// </summary>
     public sealed class MemoryQueryCache
-        : INormalizationCache, IEmbeddingCache, IQueryCacheStatistics, IPersistableQueryCache, IDisposable
+        : INormalizationCache, IEmbeddingCache, IRouteDecisionCache, IQueryCacheStatistics, IPersistableQueryCache, IDisposable
     {
         private const string NormalizationPrefix = "norm:";
         private const string EmbeddingPrefix = "emb:";
+        private const string RoutePrefix = "route:";
 
         private readonly MemoryCache _cache;
         private readonly QueryCacheConfig _config;
@@ -42,6 +43,8 @@ namespace RAG.Class.Caching
         private long _normalizationMisses;
         private long _embeddingHits;
         private long _embeddingMisses;
+        private long _routeHits;
+        private long _routeMisses;
 
         /// <summary>Đếm số lần ghi, để service flush biết có gì mới đáng lưu hay không.</summary>
         private long _writeCount;
@@ -147,16 +150,62 @@ namespace RAG.Class.Caching
             Interlocked.Increment(ref _writeCount);
         }
 
+        public bool TryGetRoute(string question, out RouteMatch? route)
+        {
+            if (_cache.TryGetValue(RoutePrefix + question, out RouteDecision? cached) && cached is not null)
+            {
+                Interlocked.Increment(ref _routeHits);
+                route = cached.Match;
+                return true;
+            }
+
+            Interlocked.Increment(ref _routeMisses);
+            route = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Lưu quyết định định tuyến. Bọc trong <see cref="RouteDecision"/> để một quyết định
+        /// "không route nào khớp" vẫn là một giá trị có mặt trong cache — <c>MemoryCache</c> không
+        /// phân biệt được <c>null</c> đã lưu với entry chưa từng tồn tại.
+        /// <para>
+        /// KHÔNG tăng <c>_writeCount</c>, và cũng KHÔNG có mặt trong <see cref="ExportSnapshot"/>:
+        /// quyết định định tuyến chỉ sống trong RAM. Lý do là vân tay của file cache chỉ gồm model
+        /// và số chiều embedding — nó không nói gì về bảng route, nên một quyết định lưu xuống đĩa
+        /// sẽ sống lại sau khi người ta sửa mô tả route hay prompt phân loại. Cho vân tay bao luôn
+        /// bảng route thì mỗi lần chỉnh prompt lại vứt sạch phần vector, tức là phá đúng thứ mà
+        /// file cache sinh ra để giữ. Tăng <c>_writeCount</c> còn khiến service flush ghi lại toàn
+        /// bộ file cho dữ liệu vốn không nằm trong file.
+        /// </para>
+        /// </summary>
+        public void SetRoute(string question, RouteMatch? route)
+        {
+            // Quyết định âm nhận thời hạn ngắn hơn: router fail-open nên "LLM quyết định đi đường
+            // RAG" và "LLM vừa lỗi" không phân biệt được từ bên ngoài. Cùng cơ chế đang bảo vệ kết
+            // quả chuẩn hóa giống hệt câu gốc.
+            var minutes = route is null
+                ? _config.NoRouteExpirationMinutes
+                : _config.RouteDecisionExpirationMinutes;
+
+            _cache.Set(RoutePrefix + question, new RouteDecision(route), BuildOptions(minutes, (_, _, _, _) => { }));
+        }
+
         public QueryCacheStats GetStats() => new(
             Interlocked.Read(ref _normalizationHits),
             Interlocked.Read(ref _normalizationMisses),
             Interlocked.Read(ref _embeddingHits),
-            Interlocked.Read(ref _embeddingMisses));
+            Interlocked.Read(ref _embeddingMisses),
+            Interlocked.Read(ref _routeHits),
+            Interlocked.Read(ref _routeMisses));
 
         /// <summary>
         /// Chụp lại N entry được dùng gần đây nhất của mỗi loại. Trần áp riêng cho từng loại: vector
         /// tốn khoảng 3KB mỗi cái nên là phần quyết định dung lượng file, còn kết quả chuẩn hóa chỉ
         /// khoảng 100 byte nên giữ nhiều cũng không đáng kể.
+        /// <para>
+        /// Cố tình KHÔNG có quyết định định tuyến: lý do ghi ở <see cref="SetRoute"/>. Nhờ vậy định
+        /// dạng file trên đĩa không đổi và file cache cũ vẫn đọc được.
+        /// </para>
         /// </summary>
         public QueryCacheSnapshot ExportSnapshot(int maxEntries)
         {
@@ -265,5 +314,11 @@ namespace RAG.Class.Caching
 
             public float[] Vector { get; }
         }
+
+        /// <summary>
+        /// Bọc quyết định định tuyến để phân biệt "đã quyết định là không route nào khớp" với
+        /// "chưa từng gặp câu này" — <c>MemoryCache</c> trả về <c>null</c> cho cả hai.
+        /// </summary>
+        private sealed record RouteDecision(RouteMatch? Match);
     }
 }

@@ -18,7 +18,13 @@ namespace RAG.Interface
         NothingAdded = 3,
 
         /// <summary>Node định tuyến đang tắt.</summary>
-        RouterDisabled = 4
+        RouterDisabled = 4,
+
+        /// <summary>
+        /// Chiến lược định tuyến đang chạy không nhận diện route bằng vector, nên câu mẫu thêm
+        /// vào sẽ chẳng đi tới đâu. Khác <see cref="RouterDisabled"/>: router vẫn đang làm việc.
+        /// </summary>
+        NotSupported = 5
     }
 
     /// <summary>
@@ -64,5 +70,8 @@ namespace RAG.Interface
 
         public static RouteUpdateResult RouterDisabled() =>
             new(RouteUpdateStatus.RouterDisabled, string.Empty, 0, 0, 0, false, Array.Empty<string>());
+
+        public static RouteUpdateResult NotSupported() =>
+            new(RouteUpdateStatus.NotSupported, string.Empty, 0, 0, 0, false, Array.Empty<string>());
     }
 }

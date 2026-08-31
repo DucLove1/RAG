@@ -38,19 +38,18 @@ namespace RAG.Class.Answering
                                            int topK,
                                            CancellationToken cancellationToken = default)
         {
-            // Node chuẩn hóa: mở rộng từ viết tắt / sửa chính tả trước khi embedding và dựng prompt.
+            // Node chuẩn hóa: mở rộng từ viết tắt / sửa chính tả trước khi định tuyến và dựng prompt.
             var normalizedQuestion = await _queryNormalizer.NormalizeAsync(question, cancellationToken);
 
-            // Vector câu hỏi được tính đúng một lần, dùng chung cho cả định tuyến lẫn truy hồi.
-            var questionEmbedding = await _embeddingProvider.GetEmbeddingsAsync(normalizedQuestion, cancellationToken);
-
-            // Node định tuyến: câu tán gẫu được trả lời thẳng, bỏ qua hoàn toàn kho vector.
+            // Node định tuyến chạy TRƯỚC bước nhúng: câu tán gẫu được trả lời thẳng và không tốn
+            // lượt gọi API embedding nào. Bản trước nhúng trước rồi mới định tuyến, nên 100% câu
+            // tán gẫu vẫn phải trả giá một lượt nhúng mà không dùng tới.
             // Không route nào khớp (null) thì mặc định đi đường truy hồi.
-            var route = _semanticRouter.Route(normalizedQuestion, questionEmbedding);
+            var route = await _semanticRouter.RouteAsync(normalizedQuestion, cancellationToken);
 
             return route is not null
                 ? await AnswerWithoutRetrievalAsync(npcName, npcSystem, normalizedQuestion, route, cancellationToken)
-                : await AnswerWithRetrievalAsync(npcName, npcSystem, normalizedQuestion, questionEmbedding, topK, cancellationToken);
+                : await AnswerWithRetrievalAsync(npcName, npcSystem, normalizedQuestion, topK, cancellationToken);
         }
 
         /// <summary>
@@ -65,18 +64,24 @@ namespace RAG.Class.Answering
             _llmProvider.AskAsync(
                 route.BuildSystemPrompt(npcName, npcSystem),
                 route.BuildUserPrompt(question),
-                cancellationToken);
+                cancellationToken: cancellationToken);
 
         /// <summary>
-        /// Nhánh RAG mặc định: tìm ngữ cảnh trong kho vector rồi mới sinh câu trả lời.
+        /// Nhánh RAG mặc định: nhúng câu hỏi, tìm ngữ cảnh trong kho vector rồi mới sinh câu trả lời.
+        /// <para>
+        /// Việc nhúng nằm ở đây chứ không ở đầu pipeline vì chỉ nhánh này mới cần tới vector.
+        /// Chiến lược định tuyến bằng embedding cũng nhúng câu hỏi, nhưng nó đi qua decorator cache
+        /// nên lần nhúng ở đây là một lần trúng cache — tổng vẫn đúng một lượt gọi API mỗi request.
+        /// </para>
         /// </summary>
         private async Task<string> AnswerWithRetrievalAsync(string npcName,
                                                             string npcSystem,
                                                             string question,
-                                                            float[] questionEmbedding,
                                                             int topK,
                                                             CancellationToken cancellationToken)
         {
+            var questionEmbedding = await _embeddingProvider.GetEmbeddingsAsync(question, cancellationToken);
+
             // Không gọi EnsureCollectionExistsAsync ở đây: đường trả lời chỉ ĐỌC, và collection đã
             // được đảm bảo ở đường nạp dữ liệu. Bản trước gọi ở mỗi request, tốn một round-trip
             // gRPC cho 100% traffic mà không lần nào làm gì khác ngoài xác nhận điều đã biết.
@@ -92,7 +97,7 @@ namespace RAG.Class.Answering
             return await _llmProvider.AskAsync(
                 _promptConfig.BuildSystemPrompt(npcName, npcSystem),
                 _promptConfig.BuildUserPrompt(context, question),
-                cancellationToken);
+                cancellationToken: cancellationToken);
         }
     }
 }

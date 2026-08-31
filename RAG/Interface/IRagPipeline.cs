@@ -36,8 +36,13 @@ namespace RAG.Interface
     public interface IRouteDiagnostics
     {
         /// <summary>
-        /// Chuẩn hóa và nhúng câu hỏi rồi trả về điểm của mọi route.
-        /// KHÔNG gọi LLM sinh câu trả lời và KHÔNG chạm kho vector, nên rất rẻ để tinh chỉnh ngưỡng.
+        /// Chuẩn hóa câu hỏi rồi trả về đánh giá của mọi route.
+        /// KHÔNG sinh câu trả lời và KHÔNG chạm kho vector.
+        /// <para>
+        /// Chi phí phụ thuộc chiến lược đang chạy: với <c>Embedding</c> đây là một lần nhúng, rẻ
+        /// và lặp lại thoải mái; với <c>Llm</c> đây là một lượt gọi mô hình đầy đủ — vẫn rẻ hơn
+        /// nhiều so với chạy cả đường trả lời, nhưng không còn miễn phí như trước.
+        /// </para>
         /// </summary>
         Task<RouteExplanation> ExplainRouteAsync(string question, CancellationToken cancellationToken = default);
     }

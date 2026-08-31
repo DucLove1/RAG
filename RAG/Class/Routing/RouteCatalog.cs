@@ -85,24 +85,14 @@ namespace RAG.Class.Routing
                 .GroupBy(entry => entry.Route, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(group => group.Key, group => group.ToList(), StringComparer.OrdinalIgnoreCase);
 
-            var built = new List<RouteVectors>(_config.Routes.Count);
+            // Luật "route nào dùng được và prompt của nó là gì" nằm ở RouteTableFactory, dùng chung
+            // với chiến lược định tuyến bằng LLM. Ở đây chỉ còn đúng phần riêng: gắn vector vào.
+            var resolved = RouteTableFactory.Resolve(_config, _promptConfig, _logger);
+            var built = new List<RouteVectors>(resolved.Count);
 
-            foreach (var route in _config.Routes)
+            foreach (var route in resolved)
             {
-                if (string.IsNullOrWhiteSpace(route.Name) || string.IsNullOrWhiteSpace(route.UserPromptTemplate))
-                {
-                    _logger.LogWarning("Bỏ qua route thiếu Name hoặc UserPromptTemplate.");
-                    continue;
-                }
-
-                if (!route.UserPromptTemplate.Contains("{0}", StringComparison.Ordinal))
-                {
-                    _logger.LogWarning("UserPromptTemplate của route {Route} không chứa {{0}}, câu hỏi sẽ bị bỏ khỏi prompt.",
-                        route.Name);
-                }
-
                 var routeVectors = route.Utterances
-                    .Where(utterance => !string.IsNullOrWhiteSpace(utterance))
                     .Select(utterance => configVectors.TryGetValue(utterance, out var vector) ? vector : null)
                     .Where(vector => IsUsable(vector, dims))
                     .Select(vector => vector!)
@@ -117,14 +107,10 @@ namespace RAG.Class.Routing
                     continue;
                 }
 
-                var systemTemplate = string.IsNullOrWhiteSpace(route.SystemPromptTemplate)
-                    ? _promptConfig.AnswerSystemTemplate
-                    : route.SystemPromptTemplate;
-
                 built.Add(new RouteVectors(
                     route.Name,
-                    route.SimilarityThreshold ?? _config.SimilarityThreshold,
-                    systemTemplate,
+                    route.Threshold,
+                    route.SystemPromptTemplate,
                     route.UserPromptTemplate,
                     routeVectors));
             }

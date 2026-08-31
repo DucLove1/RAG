@@ -8,10 +8,13 @@ namespace RAG.Interface
         long NormalizationHits,
         long NormalizationMisses,
         long EmbeddingHits,
-        long EmbeddingMisses)
+        long EmbeddingMisses,
+        long RouteHits,
+        long RouteMisses)
     {
         public double NormalizationHitRate => Ratio(NormalizationHits, NormalizationMisses);
         public double EmbeddingHitRate => Ratio(EmbeddingHits, EmbeddingMisses);
+        public double RouteHitRate => Ratio(RouteHits, RouteMisses);
 
         private static double Ratio(long hits, long misses) =>
             hits + misses == 0 ? 0d : (double)hits / (hits + misses);
@@ -53,6 +56,39 @@ namespace RAG.Interface
         /// đồng nghĩa với việc câu đó vĩnh viễn không bao giờ khớp route nào.
         /// </summary>
         void SetEmbedding(string text, float[] vector);
+    }
+
+    /// <summary>
+    /// Cache quyết định định tuyến. Đây là tầng đắt nhất khi trượt: chiến lược định tuyến bằng LLM
+    /// trả giá một lượt gọi mô hình đầy đủ cho mỗi lần trượt, còn trong game NPC thì câu chào và
+    /// câu cảm ơn lặp lại rất nhiều.
+    /// <para>
+    /// Cache được cả <c>RouteMatch</c> chứ không chỉ tên route, và điều đó CHỈ an toàn vì bảng
+    /// route không đổi trong suốt vòng đời tiến trình — xem ghi chú <c>IOptions</c> (không phải
+    /// <c>IOptionsMonitor</c>) trong <c>SemanticRouterConfig</c>. Ai đổi sang reload-on-change
+    /// phải xử lý luôn chỗ này.
+    /// </para>
+    /// </summary>
+    public interface IRouteDecisionCache
+    {
+        /// <summary>
+        /// <c>true</c> nghĩa là đã có quyết định trong cache. Khi đó <paramref name="route"/> bằng
+        /// <c>null</c> mang nghĩa "đã quyết định KHÔNG route nào khớp" — khác hẳn với giá trị trả
+        /// về <c>false</c>, tức là "chưa từng gặp câu này".
+        /// </summary>
+        bool TryGetRoute(string question, out RouteMatch? route);
+
+        /// <summary>
+        /// Lưu quyết định. Quyết định âm (<paramref name="route"/> là <c>null</c>) BẮT BUỘC phải
+        /// được lưu: câu hỏi tri thức là phần lớn lưu lượng, không cache thì chúng trả giá một
+        /// lượt gọi LLM mỗi lần.
+        /// <para>
+        /// Cài đặt nên cho quyết định âm thời hạn ngắn hơn, vì router fail-open: "LLM quyết định
+        /// đi đường RAG" và "LLM vừa lỗi" không phân biệt được từ bên ngoài — cùng một vấn đề mà
+        /// tham số <c>unchanged</c> của <see cref="INormalizationCache"/> đang xử lý.
+        /// </para>
+        /// </summary>
+        void SetRoute(string question, RouteMatch? route);
     }
 
     /// <summary>

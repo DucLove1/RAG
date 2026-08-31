@@ -34,6 +34,7 @@ namespace RAG.Class.Normalization
                 var normalized = await _llmProvider.AskAsync(
                     _config.SystemPrompt,
                     _config.BuildUserPrompt(question),
+                    _config.Model,
                     cancellationToken);
 
                 if (!IsAcceptable(normalized, question))

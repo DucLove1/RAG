@@ -16,7 +16,7 @@ namespace RAG.Class.Routing
     public sealed class SemanticRouterWarmupService : BackgroundService
     {
         private readonly IRouterWarmup _router;
-        private readonly SemanticRouterConfig _config;
+        private readonly EmbeddingRouterConfig _config;
         private readonly ILogger<SemanticRouterWarmupService> _logger;
 
         public SemanticRouterWarmupService(IRouterWarmup router,
@@ -24,7 +24,7 @@ namespace RAG.Class.Routing
                                            ILogger<SemanticRouterWarmupService> logger)
         {
             _router = router;
-            _config = options.Value;
+            _config = options.Value.Embedding;
             _logger = logger;
         }
 

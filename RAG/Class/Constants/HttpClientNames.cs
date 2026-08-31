@@ -6,5 +6,7 @@ namespace RAG.Class.Constants
     public static class HttpClientNames
     {
         public const string GeminiLlm = nameof(GeminiLlm);
+
+        public const string GeminiEmbedding = nameof(GeminiEmbedding);
     }
 }

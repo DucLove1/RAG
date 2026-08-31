@@ -47,7 +47,10 @@ Người dùng có yêu cầu rõ ràng, đã áp dụng nhất quán trong toà
 6. **Keyed Services** cho nhiều implementation cùng interface (`ILLMProvider` → Groq/Gemini).
    `KeyedLlmProviderResolver` là **nơi duy nhất** trong application code chạm `IServiceProvider`
    (composition root trong `Extension.cs` thì không tính).
-7. **Toàn bộ đăng ký DI tập trung** ở `Extension/Extension.cs`, mỗi node một method `AddXxx`.
+7. **Đăng ký DI theo module** ở `Extension/DependencyInjection/`, mỗi node một file
+   `*ServiceCollectionExtensions.cs` với một method `AddXxx`. `AddRagStack` gọi hết theo đúng
+   thứ tự — thứ tự đó là quan trọng (cache phải đăng ký trước các thành phần bị bọc) nên nó
+   được khóa trong code chứ không nằm rải trong `Program.cs` như trước.
 
 ---
 
@@ -160,16 +163,19 @@ Free tier: `embed_content_free_tier_requests` = **100/phút**.
 API đang từ chối. `EmbeddingRateLimitedException` tách riêng ca này: `404/400`/lỗi mạng thì lùi,
 `429` thì **dừng ngay** và để warm-up thử lại sau.
 
-### 5.3 `GetEmbeddingsAsync` nuốt lỗi HTTP
+### 5.3 `GetEmbeddingsAsync` nuốt lỗi HTTP — ĐÃ SỬA
 
-`GeminiEmbeddingProvider.GetEmbeddingsAsync` có `//response.EnsureSuccessStatusCode();` **bị comment
-từ trước** → lỗi API trả `Array.Empty<float>()` chứ không ném exception.
+**Trước đây:** `//response.EnsureSuccessStatusCode();` bị comment, nên lỗi API trả
+`Array.Empty<float>()` chứ không ném. Vector rỗng đi thẳng vào truy hồi Qdrant, cho ra ngữ cảnh rác,
+rồi LLM dựng câu trả lời trên đống rác đó — sai hoàn toàn mà không có triệu chứng nào.
 
-Đây là lý do mọi vector đều phải qua `IsUsable()` (đúng số chiều + `HasMagnitude`) trước khi vào
-cache. Nếu không, vector rác sẽ được ghi ra file và sống qua mọi lần khởi động.
+**Bây giờ:** `PostSingleAsync` ném cho MỌI trường hợp không lấy được vector dùng được — kể cả
+phản hồi 200 nhưng rỗng. `EmbeddingRateLimitedException` (429) → **429**,
+`EmbeddingUnavailableException` (còn lại) → **503**, ánh xạ trong `RagExceptionHandler`.
 
-**Đây vẫn là bug tiềm ẩn trên đường truy hồi** — bị rate-limit là gửi vector rỗng thẳng vào Qdrant.
-Chưa sửa vì ngoài phạm vi (sẽ đổi hành vi của đường hỏi đáp).
+**Vẫn giữ nguyên:** đường *batch* tiếp tục trả `null` cho lỗi lùi-được (404/400/lỗi mạng) để lùi về
+nhúng từng câu — chỉ đường *single* mới ném. Và mọi vector vẫn phải qua `IsUsable()` trước khi vào
+cache: xem 5.3b, lý do đó độc lập với việc ném hay không.
 
 ### 5.3b Cache kết quả fail-open sẽ đóng băng lỗi tạm thời thành VĨNH VIỄN
 
@@ -245,50 +251,76 @@ toàn bộ lịch sử git không thấy chuỗi nào giống API key. (Một ph
 
 ## 6. Bản đồ file
 
+Cập nhật sau đợt refactor SOLID (xem `## 9`).
+
 ```
 RAG/
-  Program.cs                        thứ tự đăng ký = thứ tự pipeline
-  appsettings.json                  prompt, ngưỡng, 158 câu mẫu
+  Program.cs                        chỉ còn AddRagStack — thứ tự đăng ký nằm trong DI, không ở đây
+  appsettings.json                  prompt, ngưỡng, câu mẫu, chunking, thông báo lỗi
   .env                              secret + URL (gitignored)
   Design game.docx                  thiết kế game — đọc khi cần hiểu domain
   Interface/
+    IRagPipeline.cs                 IAskService / IIngestionService / IRouteDiagnostics / IRouteAdmin
+    IVectorStore.cs                 + VectorRecord, VectorHit, VectorSearchFilter (KHÔNG có kiểu Qdrant)
     ISemanticRouter.cs              Route() đồng bộ + Explain() + AddUtterancesAsync()
+    IRouteScorer.cs                 quy tắc gộp điểm nhiều câu mẫu -> một điểm route
+    IRouterWarmup.cs                để hosted service không phụ thuộc lớp cụ thể
+    IChunkingStrategy.cs / IDocumentTextExtractor.cs
+    DocumentSource.cs               + IngestionResult (không dùng IFormFile ở tầng nghiệp vụ)
+    DocumentChunk.cs / RouteExplanation.cs
     RouteMatch.cs                   + RouteScore
-    RouteUpdateResult.cs
-    IRouteVectorCache.cs            cache vector câu mẫu
-    IRouteUtteranceStore.cs         + StoredUtterance
-    IEmbeddingProvider.cs           + ModelId, GetEmbeddingsBatchAsync
-    IQueryCache.cs                  + QueryCacheStats
+    RouteUpdateResult.cs            + RouteUpdateStatus (mã, KHÔNG mang câu chữ)
+    IRouteVectorCache.cs / IRouteUtteranceStore.cs
+    IEmbeddingProvider.cs           ModelId, Dimensions (property, không async), batch
+    IQueryCache.cs                  INormalizationCache / IEmbeddingCache /
+                                    IQueryCacheStatistics / IPersistableQueryCache
     IQueryCacheStore.cs             + QueryCacheSnapshot
-    EmbeddingRateLimitedException.cs
+    EmbeddingRateLimitedException.cs   429 -> DỪNG
+    EmbeddingUnavailableException.cs   lỗi khác -> 503 (bug §5.3 đã sửa)
   Class/
-    RAGPipline.cs                   (chú ý: thiếu chữ 'e', tên gốc của dự án)
-    GeminiEmbeddingProvider.cs      batch + fallback + xử lý 429
-    RouteDebugDtos.cs
-    Config/SemanticRouterConfig.cs
+    RagPipeline.cs                  façade mỏng, mỗi method một dòng ủy quyền
+    GeminiEmbeddingProvider.cs      batch + fallback + 429; NÉM thay vì trả mảng rỗng
+    GeminiLLMProvider.cs / GroqCloudProvider.cs / KeyedLlmProviderResolver.cs
+    Answering/AskPipeline.cs        lõi đường trả lời
+    Retrieval/QdrantVectorStore.cs  nơi DUY NHẤT import Qdrant.Client.Grpc (ngoài composition root)
+    Ingestion/
+      DocumentIngestionService.cs   rút văn bản -> cắt đoạn -> nhúng theo lô -> ghi
+      SentenceAwareChunker.cs       thay TextChunker static
+      PlainTextExtractor.cs         .txt/.md/.json; thêm PDF = thêm 1 lớp
     Routing/
-      EmbeddingSemanticRouter.cs    ~450 dòng, class trung tâm
+      EmbeddingSemanticRouter.cs    ~120 dòng, CHỈ so khớp
+      RouteCatalog.cs               trạng thái dùng chung + Rebuild (copy-on-write)
+      RouteCatalogBuilder.cs        nạp vector, IRouterWarmup
+      RouteUtteranceAdmin.cs        thêm câu mẫu lúc chạy
+      MaxSimilarityScorer.cs        MAX chứ không phải trung bình — xem §5.6
+      RouteDiagnosticsService.cs
       PassthroughSemanticRouter.cs  Null Object
       SemanticRouterWarmupService.cs
       FileRouteVectorCache.cs / NullRouteVectorCache.cs
       FileRouteUtteranceStore.cs / NullRouteUtteranceStore.cs
     Caching/
-      MemoryQueryCache.cs           cache RAM co chan tran / NullQueryCache.cs
+      MemoryQueryCache.cs           cache RAM có chặn trần / NullQueryCache.cs
       CachingQueryNormalizer.cs     decorator
-      CachingEmbeddingProvider.cs   decorator, batch cung di qua cache
-      FileQueryCacheStore.cs        ghi nhi phan / NullQueryCacheStore.cs
-      QueryCachePersistenceService.cs  write-behind: flush dinh ky + luc tat
+      CachingEmbeddingProvider.cs   decorator, batch cũng đi qua cache
+      FileQueryCacheStore.cs        ghi nhị phân / NullQueryCacheStore.cs
+      QueryCachePersistenceService.cs  write-behind: flush định kỳ + lúc tắt
+    Config/                         mỗi node một options class, có DataAnnotations
+    Constants/                      hằng số giao thức + PayloadFilterMode
+    Validation/NotBlankAttribute.cs
   Extension/
-    Extension.cs                    toàn bộ DI
+    DependencyInjection/            mỗi module một file AddXxx; RagStack khóa thứ tự
+    Errors/RagExceptionHandler.cs   exception nghiệp vụ -> mã HTTP
+    AtomicFileWriter.cs             ghi file tạm rồi đổi tên, dùng chung 3 kho
     VectorMath.cs                   cosine đầy đủ (KHÔNG giả định vector đã chuẩn hóa L2)
     AppDataPath.cs                  giải đường dẫn theo ContentRootPath
-  Controllers/QueryController.cs
-  RAG.http                          24 request kiểm thử sẵn
+  Controllers/
+    QueryController.cs              ask (chỉ nhận IAskService)
+    IngestionController.cs          upload, create-collection
+    RouteController.cs              route-debug, route-utterances, cache-stats
+  RAG.http                          request kiểm thử sẵn
 docs/semantic-router-plan.md        kế hoạch + 2 phụ lục kết quả đo
 context.md                          file này
 ```
-
----
 
 ## 6b. Triển khai trên Render
 
@@ -316,7 +348,7 @@ không loại trừ thì cache máy dev bị đóng gói vào image.
 - **Build sạch**, 0 warning, 0 error (`dotnet build RAG.slnx`).
 - Đã kiểm chứng end-to-end: 4 route khớp đúng (0.838–0.913), câu hỏi trong game đi RAG (0.45–0.66),
   thêm câu mẫu lúc chạy có hiệu lực ngay và sống sót qua restart.
-- **CHƯA COMMIT GÌ CẢ.** Toàn bộ thay đổi còn trong working tree.
+- Đợt refactor SOLID ở `## 9` đã xong, build sạch và chạy thật đạt. Xem mục đó trước khi sửa tiếp.
 
 ### Chạy
 
@@ -332,22 +364,78 @@ ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5263 \
 
 ## 8. Việc còn lại / nợ kỹ thuật
 
-Xếp theo giá trị:
+Đợt refactor ở `## 9` đã xử lý các mục 1, 4, 6, 8 của danh sách cũ. Còn lại:
 
-1. **`EnsureCollectionExistsAsync` chạy 1 round-trip gRPC ở MỌI request ask** (100% traffic).
-   Cache lại kết quả check, hoặc chỉ chạy lúc ingest — sửa ~3 dòng, lợi hơn cả router.
-2. **Endpoint `route-utterances` chưa có xác thực.** Nếu API mở ra ngoài, người lạ thêm câu mẫu là
+1. **Endpoint `route-utterances` chưa có xác thực.** Nếu API mở ra ngoài, người lạ thêm câu mẫu là
    lái được NPC trả lời sai chủ đích.
-3. **Chưa có đường xóa câu mẫu đã thêm** — phải sửa `App_Data/route-utterances.json` rồi restart.
-4. **Sửa `EnsureSuccessStatusCode` ở `GetEmbeddingsAsync`** (mục 5.3) — đang âm thầm gửi vector rỗng
-   vào Qdrant khi bị rate-limit.
-5. **Chưa có test.** Đáng viết cho `VectorMath.CosineSimilarity` (đặc biệt ca vector CHƯA chuẩn hóa:
-   `[2,0,0]` vs `[5,0,0]` phải ra 1.0) và logic ngưỡng của router — đây là code đầu tiên trong repo
-   có logic quyết định sai được mà không kêu.
-6. **`WeatherForecastController.cs` + `WeatherForecast.cs`** là rác scaffold còn sống.
-7. **120 câu mẫu là bản nháp do Claude viết** — nên thay bằng ngôn ngữ người chơi thật sự dùng.
-8. `RAGPipline` thiếu chữ 'e'; `QueryController` inject `RagConfig` thô thay vì `IOptions<>`.
-   Cả hai là nợ có sẵn, sửa được nhưng chạm nhiều chỗ.
-9. **Phần Docker của cache CHƯA được chạy thử** — Docker Desktop không khởi động được lúc làm.
-   Cần tự kiểm chứng `docker run -v rag-cache:/app/App_Data ...` hai lần liên tiếp: lần thứ hai phải
-   khởi động mà không gọi Gemini lần nào. Xem Phụ lục 4 mục 7 của plan doc.
+2. **Chưa có đường xóa câu mẫu đã thêm** — phải sửa `App_Data/route-utterances.json` rồi restart.
+3. **Chưa có test.** Vẫn là nợ lớn nhất, và giờ có thêm chỗ đáng test:
+   `VectorMath.CosineSimilarity` (ca vector CHƯA chuẩn hóa: `[2,0,0]` vs `[5,0,0]` phải ra 1.0),
+   `SentenceAwareChunker` (ca overlap >= chunkSize phải không lặp vô tận), và ngưỡng của router.
+   Chưa làm vì người dùng chốt KHÔNG thêm NuGet package nào, mà test project cần xUnit.
+4. **160 câu mẫu là bản nháp do Claude viết** — nên thay bằng ngôn ngữ người chơi thật sự dùng.
+5. **Phần Docker của cache VẪN CHƯA chạy thử** — Docker Desktop không khởi động được (cả lần trước
+   lẫn lần này). Cần tự kiểm chứng `docker run -v rag-cache:/var/data ...` hai lần liên tiếp:
+   lần thứ hai phải khởi động mà không gọi Gemini lần nào.
+6. **Không có retry/backoff cho HTTP.** Đã đặt timeout qua config (`Gemini:TimeoutSeconds`,
+   `GEMINILLM:TimeoutSeconds`), nhưng một lỗi mạng thoáng qua giờ thành 503 thẳng cho người chơi.
+   Sửa đúng cần `Microsoft.Extensions.Http.Resilience` — lại vướng ràng buộc không thêm package.
+
+---
+
+## 9. Đợt refactor SOLID (đã xong)
+
+Phạm vi do người dùng chốt: refactor **sâu** (tách lớp, đổi tên), **giữ nguyên cây thư mục gốc**,
+**không thêm NuGet package nào**, và sửa bug §5.3 theo hướng **ném exception**.
+
+### Bug đã sửa
+
+| | Trước | Sau |
+|---|---|---|
+| §5.3 embedding nuốt lỗi HTTP | trả `Array.Empty<float>()` → vector rỗng vào Qdrant → câu trả lời dựng trên ngữ cảnh rác, **không triệu chứng** | ném `EmbeddingUnavailableException` / `EmbeddingRateLimitedException` → **503 / 429** kèm ProblemDetails |
+| Hai nguồn sự thật cho số chiều | `QDRANT:Dimensions` **và** `Gemini:OutputDimensions`; `EnsureCollectionExistsAsync` nhận tham số rồi **bỏ qua** | xoá `QDRANT:Dimensions`; số chiều chỉ đến từ `IEmbeddingProvider.Dimensions` |
+| `ListCollections` ở MỌI request ask | 1 round-trip gRPC cho 100% traffic | **0** trên đường ask; cổng một-lần trong kho vector cho đường ingest |
+| Rò rỉ file tạm khi upload | `Path.GetTempFileName()` không bao giờ xoá | đọc thẳng từ stream của request |
+| `.pdf` bị bỏ **im lặng** | nằm trong whitelist nhưng không nhánh nào đọc | bộ đọc tự khai định dạng; file không hỗ trợ được báo rõ trong response |
+| Bịa `Guid.NewGuid()` khi id Qdrant hỏng | giấu điểm dữ liệu hỏng | bỏ point đó + log warning |
+
+**Thay đổi có thể phá client:** `POST api/query/ask` giờ trả **429/503** khi Gemini lỗi, thay vì
+200 kèm câu trả lời rác. `QDRANT__DIMENSIONS` đã bị xoá khỏi `.env` — **nhớ xoá cả trên Render**.
+
+### SOLID
+
+- **DIP** — `IVectorStore` thay `IQdrantProvider`: interface không còn `using static` chính
+  implementation của nó, và pipeline không còn tự dựng `Qdrant.Client.Grpc.Filter`.
+  Hai hosted service giờ phụ thuộc `IRouterWarmup` / `IPersistableQueryCache` thay vì lớp cụ thể.
+- **SRP** — `EmbeddingSemanticRouter` 474 → ~120 dòng (tách `RouteCatalog`, `RouteCatalogBuilder`,
+  `RouteUtteranceAdmin`, `MaxSimilarityScorer`). `RAGPipline` → `RagPipeline` façade mỏng +
+  `AskPipeline` / `DocumentIngestionService` / `RouteDiagnosticsService`. `Extension.cs` 335 dòng
+  → 11 file theo module. `QueryController` 160 dòng → 3 controller.
+- **ISP** — `IQueryCache` tách thành 4 interface; controller đọc số liệu không còn thấy đường ghi.
+  Pipeline tách thành 4 vai trò; controller `ask` không có cách nào gọi nhầm `IngestAsync`.
+- **OCP** — `IDocumentTextExtractor` + `IChunkingStrategy` (thay `TextChunker` static);
+  thêm PDF = thêm một lớp, không sửa controller.
+
+### Hết hardcode
+
+Whitelist định dạng, thông báo lỗi, `Distance.Cosine`, tham số tokenizer, `MatchPhrase`,
+hằng số cắt đoạn, `ErrorBodyLogLimit`, timeout HTTP, đường dẫn `/openapi`, và **toàn bộ câu chữ
+của endpoint quản trị route** đều đã ra `appsettings.json`. Section mới: `Chunking`, `Ingestion`,
+`ErrorResponses`, `RouteMessages`, `OpenApi`.
+
+Ngoài ra: mọi options class được `ValidateDataAnnotations().ValidateOnStart()` — thiếu một biến
+môi trường giờ làm app **không khởi động được** kèm thông báo rõ, thay vì chết ở request đầu tiên
+bằng `UriFormatException`.
+
+### Đã kiểm chứng
+
+Build 0 warning / 0 error. Chạy thật, so với mốc chụp trước khi sửa:
+
+- **Điểm định tuyến giống hệt tới 6 chữ số thập phân** trên 4 câu kiểm thử (chitchat / thanks /
+  farewell / câu hỏi trong game) — đây là bài kiểm tra chính của việc tách router.
+- Đường ask đúng cả hai nhánh; upload + truy hồi trả về đúng đoạn vừa nạp.
+- Đặt sai `GEMINI__APIKEY` → **503** kèm ProblemDetails (trước đây là 200 kèm câu trả lời rác).
+- Xoá `GEMINILLM__URL` → app **không khởi động**, báo đúng tên field thiếu.
+- 0 lần `ListCollections` sau nhiều request ask; cache hit tăng khi hỏi lại; thư mục temp không
+  sinh file rác sau upload.
+- **Chưa kiểm chứng được:** phần Docker (xem mục 5 ở trên).

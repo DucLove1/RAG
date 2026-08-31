@@ -14,11 +14,11 @@ namespace RAG.Class.Caching
     public sealed class CachingEmbeddingProvider : IEmbeddingProvider
     {
         private readonly IEmbeddingProvider _inner;
-        private readonly IQueryCache _cache;
+        private readonly IEmbeddingCache _cache;
         private readonly ILogger<CachingEmbeddingProvider> _logger;
 
         public CachingEmbeddingProvider(IEmbeddingProvider inner,
-                                        IQueryCache cache,
+                                        IEmbeddingCache cache,
                                         ILogger<CachingEmbeddingProvider> logger)
         {
             _inner = inner;
@@ -28,7 +28,7 @@ namespace RAG.Class.Caching
 
         public string ModelId => _inner.ModelId;
 
-        public Task<int> GetDimsAsync() => _inner.GetDimsAsync();
+        public int Dimensions => _inner.Dimensions;
 
         public async Task<float[]> GetEmbeddingsAsync(string input, CancellationToken cancellationToken = default)
         {
@@ -43,7 +43,7 @@ namespace RAG.Class.Caching
 
             var vector = await _inner.GetEmbeddingsAsync(input, cancellationToken);
 
-            await CacheIfUsableAsync(input, vector);
+            CacheIfUsable(input, vector);
 
             return vector;
         }
@@ -86,7 +86,7 @@ namespace RAG.Class.Caching
                 var vector = i < embedded.Count ? embedded[i] : Array.Empty<float>();
                 results[missingIndexes[i]] = vector;
 
-                await CacheIfUsableAsync(missingInputs[i], vector);
+                CacheIfUsable(missingInputs[i], vector);
             }
 
             return results;
@@ -102,11 +102,9 @@ namespace RAG.Class.Caching
         /// động lại. Bộ kiểm tra tương ứng khi nạp từ file nằm ở MemoryQueryCache.ImportSnapshot.
         /// </para>
         /// </summary>
-        private async Task CacheIfUsableAsync(string input, float[] vector)
+        private void CacheIfUsable(string input, float[] vector)
         {
-            var dims = await _inner.GetDimsAsync();
-
-            if (vector.Length != dims || !VectorMath.HasMagnitude(vector))
+            if (vector.Length != _inner.Dimensions || !VectorMath.HasMagnitude(vector))
             {
                 _logger.LogDebug("Không cache vector không hợp lệ cho: {Input}", input);
                 return;

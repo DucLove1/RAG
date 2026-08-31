@@ -12,11 +12,11 @@ namespace RAG.Class.Caching
     public sealed class CachingQueryNormalizer : IQueryNormalizer
     {
         private readonly IQueryNormalizer _inner;
-        private readonly IQueryCache _cache;
+        private readonly INormalizationCache _cache;
         private readonly ILogger<CachingQueryNormalizer> _logger;
 
         public CachingQueryNormalizer(IQueryNormalizer inner,
-                                      IQueryCache cache,
+                                      INormalizationCache cache,
                                       ILogger<CachingQueryNormalizer> logger)
         {
             _inner = inner;

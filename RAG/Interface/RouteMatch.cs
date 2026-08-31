@@ -3,7 +3,7 @@
     /// <summary>
     /// Kết quả khi một route "trả lời thẳng" thắng ngưỡng tương đồng.
     /// Chỉ mang template chứ không mang chuỗi đã render, để pipeline giữ đúng vai trò dựng prompt
-    /// và bản thân RAGPipline không bao giờ phải nhìn thấy "{0}".
+    /// và bản thân đường trả lời không bao giờ phải nhìn thấy "{0}".
     /// </summary>
     /// <param name="Name">Tên route, dùng cho log và chẩn đoán.</param>
     /// <param name="Score">Điểm cosine cao nhất của route này.</param>

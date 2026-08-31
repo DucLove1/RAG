@@ -1,53 +1,53 @@
 using Microsoft.Extensions.Options;
 using RAG.Class.Config;
 using RAG.Class.Constants;
+using RAG.Class.Dto;
 using RAG.Interface;
 using System.Net;
-using System.Text.Json.Serialization;
 
 namespace RAG.Class
 {
     public class GeminiEmbeddingProvider : IEmbeddingProvider
     {
-        private const int ErrorBodyLogLimit = 500;
-
-        private readonly HttpClient _httpClient;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly GeminiEmbeddingModelConfig _config;
         private readonly ILogger<GeminiEmbeddingProvider> _logger;
 
-        public GeminiEmbeddingProvider(HttpClient httpClient,
+        public GeminiEmbeddingProvider(IHttpClientFactory httpClientFactory,
                                        IOptions<GeminiEmbeddingModelConfig> cfg,
                                        ILogger<GeminiEmbeddingProvider> logger)
         {
             _config = cfg.Value;
-            _httpClient = httpClient;
+            _httpClientFactory = httpClientFactory;
             _logger = logger;
-            ConfigureHttpClient();
-        }
-
-        private void ConfigureHttpClient()
-        {
-            _httpClient.BaseAddress = new Uri(_config.Url);
-            _httpClient.DefaultRequestHeaders.Clear();
-            _httpClient.DefaultRequestHeaders.Add(GeminiApiDefaults.ApiKeyHeader, _config.ApiKey);
-        }
-
-        public string ModelId => _config.Model;
-
-        public async Task<int> GetDimsAsync()
-        {
-            return await Task.FromResult(_config.OutputDimensions);
         }
 
         /// <summary>
-        /// Giữ nguyên hành vi khoan dung sẵn có của đường truy hồi: lỗi API trả về mảng rỗng
-        /// chứ không ném exception, để một lần hỏng không làm gãy request của người dùng.
+        /// Lấy client đã được cấu hình sẵn ở composition root.
+        /// <para>
+        /// Bản trước nhận thẳng một <c>HttpClient</c> rồi tự sửa header và <c>BaseAddress</c> ngay trong
+        /// constructor — khác hẳn cách <c>GeminiLLMProvider</c> làm, và đặt việc cấu hình hạ tầng
+        /// vào trong lớp nghiệp vụ. Giờ hai provider Gemini dùng chung một khuôn.
+        /// </para>
         /// </summary>
-        public async Task<float[]> GetEmbeddingsAsync(string input, CancellationToken cancellationToken = default)
-        {
-            var result = await PostSingleAsync(input, cancellationToken);
-            return result.Vector ?? Array.Empty<float>();
-        }
+        private HttpClient CreateClient() => _httpClientFactory.CreateClient(HttpClientNames.GeminiEmbedding);
+
+        public string ModelId => _config.Model;
+
+        public int Dimensions => _config.OutputDimensions;
+
+        /// <summary>
+        /// Nhúng một câu.
+        /// <para>
+        /// NÉM khi nhà cung cấp lỗi, chứ không trả mảng rỗng như bản trước. Mảng rỗng là kết quả
+        /// "trông như hợp lệ" nhưng sai: nó đi thẳng vào truy hồi Qdrant, cho ra ngữ cảnh rác, rồi
+        /// LLM dựng câu trả lời trên đống rác đó mà không có triệu chứng nào lộ ra ngoài.
+        /// </para>
+        /// </summary>
+        /// <exception cref="EmbeddingRateLimitedException">Bị giới hạn tần suất (429).</exception>
+        /// <exception cref="EmbeddingUnavailableException">Lỗi khác, hoặc phản hồi không đọc được.</exception>
+        public Task<float[]> GetEmbeddingsAsync(string input, CancellationToken cancellationToken = default) =>
+            PostSingleAsync(input, cancellationToken);
 
         /// <summary>
         /// Nhúng theo lô qua endpoint batchEmbedContents.
@@ -116,7 +116,7 @@ namespace RAG.Class
                     Requests = chunk.Select(BuildRequest).ToArray()
                 };
 
-                response = await _httpClient.PostAsJsonAsync(_config.BatchUrl, payload, cancellationToken);
+                response = await CreateClient().PostAsJsonAsync(_config.BatchUrl, payload, cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -180,37 +180,76 @@ namespace RAG.Class
             // Tuần tự chứ không song song: bắn đồng thời hàng trăm request rất dễ dính rate limit.
             for (var i = 0; i < inputs.Count; i++)
             {
-                var result = await PostSingleAsync(inputs[i], cancellationToken);
-
-                // Dừng ngay khi bị giới hạn tần suất: cố đi tiếp chỉ làm cạn thêm hạn mức
-                // và đẩy thời điểm phục hồi ra xa hơn.
-                if (result.RateLimited)
+                try
+                {
+                    results[i] = await PostSingleAsync(inputs[i], cancellationToken);
+                }
+                catch (EmbeddingRateLimitedException ex)
+                {
+                    // Dừng ngay khi bị giới hạn tần suất: cố đi tiếp chỉ làm cạn thêm hạn mức
+                    // và đẩy thời điểm phục hồi ra xa hơn. Bọc lại để caller biết đã nhúng tới đâu.
                     throw new EmbeddingRateLimitedException(
-                        $"Bị giới hạn tần suất sau khi nhúng {i}/{inputs.Count} câu.");
-
-                results[i] = result.Vector ?? Array.Empty<float>();
+                        $"Bị giới hạn tần suất sau khi nhúng {i}/{inputs.Count} câu. {ex.Message}");
+                }
             }
 
             return results;
         }
 
-        private async Task<(bool RateLimited, float[]? Vector)> PostSingleAsync(string input,
-                                                                                CancellationToken cancellationToken)
+        /// <summary>
+        /// Gọi embedContent cho đúng một câu. Ném cho MỌI trường hợp không lấy được vector dùng được.
+        /// </summary>
+        private async Task<float[]> PostSingleAsync(string input, CancellationToken cancellationToken)
         {
-            var response = await _httpClient.PostAsJsonAsync(_config.Url, BuildRequest(input), cancellationToken);
+            HttpResponseMessage response;
+
+            try
+            {
+                response = await CreateClient().PostAsJsonAsync(_config.Url, BuildRequest(input), cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new EmbeddingUnavailableException("Lỗi mạng khi gọi embedContent.", ex);
+            }
 
             using (response)
             {
                 if (response.StatusCode == HttpStatusCode.TooManyRequests)
-                    return (true, null);
+                {
+                    var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                    throw new EmbeddingRateLimitedException($"embedContent bị giới hạn tần suất: {Truncate(body)}");
+                }
 
                 if (!response.IsSuccessStatusCode)
-                    return (false, null);
+                {
+                    var body = await response.Content.ReadAsStringAsync(cancellationToken);
+                    throw new EmbeddingUnavailableException(
+                        $"embedContent thất bại ({(int)response.StatusCode}): {Truncate(body)}");
+                }
 
-                var result = await response.Content
-                    .ReadFromJsonAsync<GoogleEmbeddingResponse>(cancellationToken: cancellationToken);
+                GoogleEmbeddingResponse? result;
+                try
+                {
+                    result = await response.Content
+                        .ReadFromJsonAsync<GoogleEmbeddingResponse>(cancellationToken: cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    throw new EmbeddingUnavailableException("Không đọc được phản hồi embedContent.", ex);
+                }
 
-                return (false, result?.Embedding?.Values);
+                var vector = result?.Embedding?.Values;
+
+                // Phản hồi 200 nhưng không có vector vẫn là hỏng. Để lọt xuống dưới thì vector rỗng
+                // lại đi vào Qdrant đúng như bug cũ, chỉ khác là qua một đường khác.
+                if (vector is null || vector.Length == 0)
+                    throw new EmbeddingUnavailableException("embedContent trả về phản hồi không có vector.");
+
+                return vector;
             }
         }
 
@@ -221,45 +260,9 @@ namespace RAG.Class
             OutputDimensionality = _config.OutputDimensions
         };
 
-        private static string Truncate(string value) =>
-            value.Length <= ErrorBodyLogLimit ? value : value[..ErrorBodyLogLimit] + "...";
+        private string Truncate(string value) =>
+            value.Length <= _config.ErrorBodyLogLimit
+                ? value
+                : value[.._config.ErrorBodyLogLimit] + "...";
     }
-}
-
-// --- Hệ thống DTOs để Map dữ liệu JSON theo chuẩn của Google ---
-public record GoogleEmbeddingRequest
-{
-    [JsonPropertyName("model")] public string Model { get; init; } = "models/text-embedding-004";
-    [JsonPropertyName("content")] public GoogleContent Content { get; init; } = new();
-    [JsonPropertyName("output_dimensionality")] public int OutputDimensionality { get; init; } = 1024;
-}
-
-public record GoogleContent
-{
-    [JsonPropertyName("parts")] public GooglePart[] Parts { get; init; } = Array.Empty<GooglePart>();
-}
-
-public record GooglePart
-{
-    [JsonPropertyName("text")] public string Text { get; init; } = string.Empty;
-}
-
-public record GoogleEmbeddingResponse
-{
-    [JsonPropertyName("embedding")] public GoogleVectorData? Embedding { get; init; }
-}
-
-public record GoogleVectorData
-{
-    [JsonPropertyName("values")] public float[] Values { get; init; } = Array.Empty<float>();
-}
-
-public record GoogleBatchEmbeddingRequest
-{
-    [JsonPropertyName("requests")] public GoogleEmbeddingRequest[] Requests { get; init; } = Array.Empty<GoogleEmbeddingRequest>();
-}
-
-public record GoogleBatchEmbeddingResponse
-{
-    [JsonPropertyName("embeddings")] public GoogleVectorData[]? Embeddings { get; init; }
 }

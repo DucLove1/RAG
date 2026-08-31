@@ -56,18 +56,8 @@ namespace RAG.Class.Routing
 
             try
             {
-                var directory = Path.GetDirectoryName(path);
-                if (!string.IsNullOrEmpty(directory))
-                    Directory.CreateDirectory(directory);
-
-                var temporaryPath = path + ".tmp";
-
-                await using (var stream = File.Create(temporaryPath))
-                {
-                    await JsonSerializer.SerializeAsync(stream, utterances, cancellationToken: cancellationToken);
-                }
-
-                File.Move(temporaryPath, path, overwrite: true);
+                await AtomicFileWriter.WriteAsync(path,
+                    stream => JsonSerializer.SerializeAsync(stream, utterances, cancellationToken: cancellationToken));
 
                 _logger.LogInformation("Đã lưu {Count} câu mẫu bổ sung vào {Path}.", utterances.Count, path);
                 return true;

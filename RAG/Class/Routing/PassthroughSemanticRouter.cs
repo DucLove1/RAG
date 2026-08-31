@@ -18,8 +18,6 @@ namespace RAG.Class.Routing
                                                           IReadOnlyList<string> utterances,
                                                           IReadOnlyList<float[]> vectors,
                                                           CancellationToken cancellationToken = default) =>
-            Task.FromResult(new RouteUpdateResult(false,
-                "Node định tuyến đang tắt (SemanticRouter:Enabled = false) nên không thể thêm câu mẫu.",
-                0, 0, 0, false));
+            Task.FromResult(RouteUpdateResult.RouterDisabled());
     }
 }

@@ -3,10 +3,10 @@ using RAG.Interface;
 namespace RAG.Class.Caching
 {
     /// <summary>
-    /// Null Object cho <see cref="IQueryCache"/>: luôn báo trượt và không lưu gì.
+    /// Null Object cho các interface cache: luôn báo trượt và không lưu gì.
     /// Được đăng ký khi QueryCache:Enabled = false, nhờ đó các decorator không cần biết đến cờ bật/tắt.
     /// </summary>
-    public sealed class NullQueryCache : IQueryCache
+    public sealed class NullQueryCache : INormalizationCache, IEmbeddingCache, IQueryCacheStatistics
     {
         public bool TryGetNormalizedQuestion(string question, out string normalized)
         {

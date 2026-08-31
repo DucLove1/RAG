@@ -13,7 +13,8 @@ namespace RAG.Class.Caching
     /// Cache trong RAM, có chặn trần số entry và tự đẩy entry nguội ra, kèm khả năng xuất/nạp
     /// snapshot để <see cref="QueryCachePersistenceService"/> lưu xuống đĩa.
     /// </summary>
-    public sealed class MemoryQueryCache : IQueryCache, IDisposable
+    public sealed class MemoryQueryCache
+        : INormalizationCache, IEmbeddingCache, IQueryCacheStatistics, IPersistableQueryCache, IDisposable
     {
         private const string NormalizationPrefix = "norm:";
         private const string EmbeddingPrefix = "emb:";
@@ -71,10 +72,10 @@ namespace RAG.Class.Caching
         /// Vân tay của dữ liệu cache: model và số chiều — hai thứ làm cho toàn bộ vector cũ trở nên
         /// vô giá trị. Dùng để bỏ file cache trên đĩa khi cấu hình embedding thay đổi.
         /// </summary>
-        internal string Fingerprint { get; }
+        public string Fingerprint { get; }
 
         /// <summary>Service flush so sánh giá trị này với lần trước để biết có cần ghi đĩa không.</summary>
-        internal long WriteCount => Interlocked.Read(ref _writeCount);
+        public long WriteCount => Interlocked.Read(ref _writeCount);
 
         public void Dispose() => _cache.Dispose();
 
@@ -157,7 +158,7 @@ namespace RAG.Class.Caching
         /// tốn khoảng 3KB mỗi cái nên là phần quyết định dung lượng file, còn kết quả chuẩn hóa chỉ
         /// khoảng 100 byte nên giữ nhiều cũng không đáng kể.
         /// </summary>
-        internal QueryCacheSnapshot ExportSnapshot(int maxEntries)
+        public QueryCacheSnapshot ExportSnapshot(int maxEntries)
         {
             var limit = Math.Max(0, maxEntries);
 
@@ -184,7 +185,7 @@ namespace RAG.Class.Caching
         /// Phòng cả trường hợp file bị sửa tay hoặc hỏng.
         /// </para>
         /// </summary>
-        internal int ImportSnapshot(QueryCacheSnapshot snapshot)
+        public int ImportSnapshot(QueryCacheSnapshot snapshot)
         {
             var imported = 0;
 

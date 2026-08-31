@@ -22,6 +22,14 @@
         /// </summary>
         Task<IReadOnlyList<float[]>> GetEmbeddingsBatchAsync(IReadOnlyList<string> inputs, CancellationToken cancellationToken = default);
 
-        Task<int> GetDimsAsync();
+        /// <summary>
+        /// Số chiều của vector.
+        /// <para>
+        /// Là property đồng bộ chứ không phải <c>Task</c>: mọi cài đặt đều trả về một giá trị lấy từ
+        /// cấu hình, không chạm I/O. Bản cũ khai báo async nên làm lây <c>await</c> ra sáu nơi không hề chờ
+        /// đợi gì, và còn khiến decorator cache phải await một lần cho MỖI phần tử của lô.
+        /// </para>
+        /// </summary>
+        int Dimensions { get; }
     }
 }

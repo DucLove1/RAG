@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using RAG.Class.Config;
+using RAG.Interface;
 
 namespace RAG.Class.Routing
 {
@@ -14,11 +15,11 @@ namespace RAG.Class.Routing
     /// </summary>
     public sealed class SemanticRouterWarmupService : BackgroundService
     {
-        private readonly EmbeddingSemanticRouter _router;
+        private readonly IRouterWarmup _router;
         private readonly SemanticRouterConfig _config;
         private readonly ILogger<SemanticRouterWarmupService> _logger;
 
-        public SemanticRouterWarmupService(EmbeddingSemanticRouter router,
+        public SemanticRouterWarmupService(IRouterWarmup router,
                                            IOptions<SemanticRouterConfig> options,
                                            ILogger<SemanticRouterWarmupService> logger)
         {

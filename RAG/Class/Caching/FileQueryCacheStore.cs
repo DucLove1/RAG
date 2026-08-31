@@ -121,10 +121,6 @@ namespace RAG.Class.Caching
 
             try
             {
-                var directory = Path.GetDirectoryName(path);
-                if (!string.IsNullOrEmpty(directory))
-                    Directory.CreateDirectory(directory);
-
                 // Mọi vector phải cùng số chiều thì mới ghi được số chiều một lần ở đầu khối.
                 // Vector lệch chiều là dấu hiệu dữ liệu hỏng nên bị loại luôn, không ghi xuống đĩa.
                 var dims = snapshot.Embeddings.Count > 0 ? snapshot.Embeddings[0].Vector.Length : 0;
@@ -136,13 +132,10 @@ namespace RAG.Class.Caching
                         snapshot.Embeddings.Count - embeddings.Count);
                 }
 
-                // Ghi ra file tạm rồi đổi tên: tiến trình chết giữa chừng thì file cũ vẫn nguyên vẹn
-                // thay vì để lại một file cụt mà lần sau đọc vào sẽ hỏng.
-                var temporaryPath = path + ".tmp";
-
-                using (var stream = File.Create(temporaryPath))
-                using (var writer = new BinaryWriter(stream, Encoding.UTF8))
+                AtomicFileWriter.Write(path, stream =>
                 {
+                    using var writer = new BinaryWriter(stream, Encoding.UTF8);
+
                     writer.Write(Magic);
                     writer.Write(fingerprint);
 
@@ -162,9 +155,7 @@ namespace RAG.Class.Caching
                         foreach (var value in entry.Vector)
                             writer.Write(value);
                     }
-                }
-
-                File.Move(temporaryPath, path, overwrite: true);
+                });
 
                 _logger.LogInformation("Đã ghi cache hỏi đáp: {Norm} chuẩn hóa, {Emb} vector vào {Path}.",
                     snapshot.Normalizations.Count, embeddings.Count, path);

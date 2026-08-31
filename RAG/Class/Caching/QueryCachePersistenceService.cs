@@ -18,7 +18,7 @@ namespace RAG.Class.Caching
     /// </summary>
     public sealed class QueryCachePersistenceService : BackgroundService
     {
-        private readonly MemoryQueryCache _cache;
+        private readonly IPersistableQueryCache _cache;
         private readonly IQueryCacheStore _store;
         private readonly QueryCacheConfig _config;
         private readonly ILogger<QueryCachePersistenceService> _logger;
@@ -26,7 +26,7 @@ namespace RAG.Class.Caching
         /// <summary>Giá trị WriteCount tại lần flush gần nhất; khác đi nghĩa là có gì đó mới.</summary>
         private long _lastFlushedWriteCount;
 
-        public QueryCachePersistenceService(MemoryQueryCache cache,
+        public QueryCachePersistenceService(IPersistableQueryCache cache,
                                             IQueryCacheStore store,
                                             IOptions<QueryCacheConfig> options,
                                             ILogger<QueryCachePersistenceService> logger)

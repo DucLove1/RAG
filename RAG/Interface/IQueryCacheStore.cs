@@ -20,7 +20,7 @@ namespace RAG.Interface
     /// <summary>
     /// Nơi lưu cache hỏi đáp xuống đĩa để nó sống qua khởi động lại và qua việc tạo lại container.
     /// <para>
-    /// Tách khỏi <see cref="IQueryCache"/> có chủ đích: cache lo phần tra cứu trong RAM, còn kho này
+    /// Tách khỏi các interface cache có chủ đích: cache lo phần tra cứu trong RAM, còn kho này
     /// lo phần bền vững. Nhờ vậy đổi sang Redis hay S3 chỉ phải thay implementation ở đây.
     /// </para>
     /// </summary>

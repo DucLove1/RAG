@@ -18,17 +18,13 @@ namespace RAG.Interface
     }
 
     /// <summary>
-    /// Cache cho đường hỏi đáp: kết quả chuẩn hóa câu hỏi và vector embedding.
+    /// Cache kết quả chuẩn hóa câu hỏi.
     /// <para>
-    /// Cả hai đều là hàm thuần theo đầu vào (cùng một câu luôn cho ra cùng kết quả), nên cache là
-    /// đúng đắn về mặt ngữ nghĩa. Trong game NPC, người chơi lặp lại câu hỏi rất nhiều
-    /// ("xin chào", "cảm ơn"), và node chuẩn hóa còn gom mọi biến thể sai chính tả về một dạng
-    /// duy nhất trước khi tới bước embedding — nên tỉ lệ trúng cache thực tế rất cao.
+    /// Đây là chỗ tiết kiệm lớn nhất trên mỗi request trúng cache: chuẩn hóa là một lần gọi LLM
+    /// đầy đủ (~300-800ms), đắt hơn hẳn một lần gọi embedding.
     /// </para>
-    /// Tách thành abstraction riêng để sau này đổi sang Redis hay cache trên đĩa chỉ phải thay
-    /// implementation, không đụng tới các decorator đang dùng nó.
     /// </summary>
-    public interface IQueryCache
+    public interface INormalizationCache
     {
         bool TryGetNormalizedQuestion(string question, out string normalized);
 
@@ -42,16 +38,52 @@ namespace RAG.Interface
         /// đóng băng thành vĩnh viễn.
         /// </param>
         void SetNormalizedQuestion(string question, string normalized, bool unchanged);
+    }
 
+    /// <summary>
+    /// Cache vector embedding. Đánh thẳng vào nút thắt chính là hạn mức request mỗi phút
+    /// của nhà cung cấp.
+    /// </summary>
+    public interface IEmbeddingCache
+    {
         bool TryGetEmbedding(string text, out float[] vector);
 
         /// <summary>
-        /// Lưu vector. Caller phải tự kiểm tra vector hợp lệ TRƯỚC khi gọi: nhà cung cấp embedding
-        /// trả mảng rỗng khi API lỗi thay vì ném exception, và cache một vector rỗng đồng nghĩa với
-        /// việc câu đó vĩnh viễn không bao giờ khớp route nào.
+        /// Lưu vector. Caller phải tự kiểm tra vector hợp lệ TRƯỚC khi gọi: cache một vector rỗng
+        /// đồng nghĩa với việc câu đó vĩnh viễn không bao giờ khớp route nào.
         /// </summary>
         void SetEmbedding(string text, float[] vector);
+    }
 
+    /// <summary>
+    /// Số liệu của cache, tách riêng vì đây là mối quan tâm của đường vận hành chứ không phải
+    /// của các decorator. Bản trước gộp cả ba vai trò vào một interface, nên controller chỉ muốn
+    /// đọc tỉ lệ trúng cũng phải phụ thuộc vào cả hai đường ghi (ISP).
+    /// </summary>
+    public interface IQueryCacheStatistics
+    {
         QueryCacheStats GetStats();
+    }
+
+    /// <summary>
+    /// Khả năng xuất/nạp snapshot để lưu cache xuống đĩa.
+    /// <para>
+    /// Tồn tại để <c>QueryCachePersistenceService</c> phụ thuộc vào một abstraction thay vì vào
+    /// lớp <c>MemoryQueryCache</c> cụ thể như trước (DIP).
+    /// </para>
+    /// </summary>
+    public interface IPersistableQueryCache
+    {
+        /// <summary>Vân tay của model + số chiều; đổi thì file cache cũ phải bị bỏ.</summary>
+        string Fingerprint { get; }
+
+        /// <summary>Số lần ghi, để service flush biết có gì mới đáng lưu hay không.</summary>
+        long WriteCount { get; }
+
+        /// <summary>Chụp lại N entry được dùng gần đây nhất của mỗi loại.</summary>
+        QueryCacheSnapshot ExportSnapshot(int maxEntries);
+
+        /// <summary>Nạp snapshot từ đĩa. Trả về số entry thực sự nạp được.</summary>
+        int ImportSnapshot(QueryCacheSnapshot snapshot);
     }
 }

@@ -78,25 +78,14 @@ namespace RAG.Class.Routing
 
             try
             {
-                var directory = Path.GetDirectoryName(path);
-                if (!string.IsNullOrEmpty(directory))
-                    Directory.CreateDirectory(directory);
-
-                // Ghi ra file tạm rồi đổi tên: nếu tiến trình chết giữa chừng thì cache cũ vẫn nguyên vẹn
-                // thay vì để lại một file JSON cụt mà lần sau đọc vào sẽ hỏng.
-                var temporaryPath = path + ".tmp";
-
-                await using (var stream = File.Create(temporaryPath))
+                var payload = new CachePayload
                 {
-                    var payload = new CachePayload
-                    {
-                        Fingerprint = fingerprint,
-                        Vectors = vectors.ToDictionary(entry => entry.Key, entry => entry.Value)
-                    };
-                    await JsonSerializer.SerializeAsync(stream, payload, JsonOptions, cancellationToken);
-                }
+                    Fingerprint = fingerprint,
+                    Vectors = vectors.ToDictionary(entry => entry.Key, entry => entry.Value)
+                };
 
-                File.Move(temporaryPath, path, overwrite: true);
+                await AtomicFileWriter.WriteAsync(path,
+                    stream => JsonSerializer.SerializeAsync(stream, payload, JsonOptions, cancellationToken));
 
                 _logger.LogInformation("Đã ghi cache vector cho {Count} câu mẫu vào {Path}.", vectors.Count, path);
             }

@@ -64,6 +64,7 @@ namespace RAG.Extension.Errors
         private (int Status, string Title) Map(Exception exception) => exception switch
         {
             EmbeddingRateLimitedException => (StatusCodes.Status429TooManyRequests, _config.RateLimitedTitle),
+            AllApiKeysRateLimitedException => (StatusCodes.Status429TooManyRequests, _config.RateLimitedTitle),
             EmbeddingUnavailableException => (StatusCodes.Status503ServiceUnavailable, _config.EmbeddingUnavailableTitle),
             _ => (StatusCodes.Status500InternalServerError, _config.UnexpectedTitle)
         };

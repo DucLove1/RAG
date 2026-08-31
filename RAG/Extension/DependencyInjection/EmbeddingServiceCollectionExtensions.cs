@@ -7,7 +7,7 @@ using RAG.Class.Caching;
 
 namespace RAG.Extension.DependencyInjection
 {
-    /// <summary>Đăng ký nhà cung cấp embedding cùng decorator cache bọc quanh nó.</summary>
+    /// <summary>Đăng ký nhà cung cấp embedding cùng rotator key và decorator cache bọc quanh nó.</summary>
     public static class EmbeddingServiceCollectionExtensions
     {
         public static IServiceCollection AddEmbeddingModel(this IServiceCollection services, IConfiguration configuration)
@@ -15,21 +15,32 @@ namespace RAG.Extension.DependencyInjection
             services.AddValidatedOptions<GeminiEmbeddingModelConfig>(
                 configuration, GeminiEmbeddingModelConfig.SectionName);
 
+            // Rotator key cho pool Gemini Embedding.
+            services.AddKeyedSingleton<IApiKeyRotator>(ApiKeyPoolKey.GeminiEmbedding, (sp, _) =>
+            {
+                var options = sp.GetRequiredService<IOptions<GeminiEmbeddingModelConfig>>().Value;
+                return new ApiKeyRotator(
+                    options.ApiKeys,
+                    "Gemini Embedding",
+                    TimeSpan.FromSeconds(options.RateLimitCooldownSeconds),
+                    sp.GetRequiredService<ILogger<ApiKeyRotator>>());
+            });
+
             // Cấu hình HttpClient thuộc về composition root, không phải constructor của provider.
             // Không đặt BaseAddress: Url và BatchUrl đều là URL tuyệt đối, dùng luôn cho rõ ràng.
+            // Không còn bake key vào header — provider sẽ attach per request.
             services.AddHttpClient(HttpClientNames.GeminiEmbedding, (sp, client) =>
             {
                 var options = sp.GetRequiredService<IOptions<GeminiEmbeddingModelConfig>>().Value;
 
                 client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-                client.DefaultRequestHeaders.Remove(GeminiApiDefaults.ApiKeyHeader);
-                client.DefaultRequestHeaders.Add(GeminiApiDefaults.ApiKeyHeader, options.ApiKey);
             });
 
             // Bọc cache quanh provider thật (Decorator): mọi consumer vẫn chỉ thấy IEmbeddingProvider.
             services.AddSingleton<IEmbeddingProvider>(sp =>
             {
-                var inner = ActivatorUtilities.CreateInstance<GeminiEmbeddingProvider>(sp);
+                var rotator = sp.GetRequiredKeyedService<IApiKeyRotator>(ApiKeyPoolKey.GeminiEmbedding);
+                var inner = ActivatorUtilities.CreateInstance<GeminiEmbeddingProvider>(sp, rotator);
 
                 return new CachingEmbeddingProvider(
                     inner,

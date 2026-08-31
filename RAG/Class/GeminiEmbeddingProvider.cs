@@ -11,24 +11,22 @@ namespace RAG.Class
     {
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly GeminiEmbeddingModelConfig _config;
+        private readonly IApiKeyRotator _rotator;
         private readonly ILogger<GeminiEmbeddingProvider> _logger;
 
         public GeminiEmbeddingProvider(IHttpClientFactory httpClientFactory,
                                        IOptions<GeminiEmbeddingModelConfig> cfg,
+                                       IApiKeyRotator rotator,
                                        ILogger<GeminiEmbeddingProvider> logger)
         {
             _config = cfg.Value;
             _httpClientFactory = httpClientFactory;
+            _rotator = rotator;
             _logger = logger;
         }
 
         /// <summary>
-        /// Lấy client đã được cấu hình sẵn ở composition root.
-        /// <para>
-        /// Bản trước nhận thẳng một <c>HttpClient</c> rồi tự sửa header và <c>BaseAddress</c> ngay trong
-        /// constructor — khác hẳn cách <c>GeminiLLMProvider</c> làm, và đặt việc cấu hình hạ tầng
-        /// vào trong lớp nghiệp vụ. Giờ hai provider Gemini dùng chung một khuôn.
-        /// </para>
+        /// Lấy client đã được cấu hình sẵn ở composition root (không bake key vào nó).
         /// </summary>
         private HttpClient CreateClient() => _httpClientFactory.CreateClient(HttpClientNames.GeminiEmbedding);
 
@@ -101,11 +99,38 @@ namespace RAG.Class
 
         /// <summary>
         /// Trả về null khi lô thất bại vì lý do có thể lùi được.
-        /// Ném <see cref="EmbeddingRateLimitedException"/> khi bị giới hạn tần suất — trường hợp này
-        /// tuyệt đối không được lùi về nhúng từng câu.
+        /// Ném <see cref="EmbeddingRateLimitedException"/> khi bị giới hạn tần suất (từ rotation hoặc mọi key hết quota).
         /// </summary>
         private async Task<IReadOnlyList<float[]>?> TryEmbedChunkAsync(IReadOnlyList<string> chunk,
                                                                        CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                try
+                {
+                    var key = _rotator.GetCurrentKey();
+                    return await TryEmbedChunkWithKeyAsync(chunk, key, cancellationToken);
+                }
+                catch (HttpRequestException ex) when (ex.Message.Contains("Rate limit"))
+                {
+                    var key = _rotator.GetCurrentKey();
+                    _rotator.ReportRateLimited(key);
+                    // Loop lại để thử key tiếp theo.
+                }
+                catch (AllApiKeysRateLimitedException ex)
+                {
+                    throw new EmbeddingRateLimitedException(ex.Message);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+            }
+        }
+
+        private async Task<IReadOnlyList<float[]>?> TryEmbedChunkWithKeyAsync(IReadOnlyList<string> chunk,
+                                                                              string apiKey,
+                                                                              CancellationToken cancellationToken)
         {
             HttpResponseMessage response;
 
@@ -116,7 +141,15 @@ namespace RAG.Class
                     Requests = chunk.Select(BuildRequest).ToArray()
                 };
 
-                response = await CreateClient().PostAsJsonAsync(_config.BatchUrl, payload, cancellationToken);
+                var httpClient = CreateClient();
+                var httpRequest = new HttpRequestMessage(HttpMethod.Post, _config.BatchUrl)
+                {
+                    Content = JsonContent.Create(payload)
+                };
+                httpRequest.Headers.Remove(GeminiApiDefaults.ApiKeyHeader);
+                httpRequest.Headers.Add(GeminiApiDefaults.ApiKeyHeader, apiKey);
+
+                response = await httpClient.SendAsync(httpRequest, cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -131,11 +164,7 @@ namespace RAG.Class
             using (response)
             {
                 if (response.StatusCode == HttpStatusCode.TooManyRequests)
-                {
-                    var body = await response.Content.ReadAsStringAsync(cancellationToken);
-                    throw new EmbeddingRateLimitedException(
-                        $"batchEmbedContents bị giới hạn tần suất cho lô {chunk.Count} câu: {Truncate(body)}");
-                }
+                    throw new HttpRequestException("Rate limit (429)");
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -201,11 +230,45 @@ namespace RAG.Class
         /// </summary>
         private async Task<float[]> PostSingleAsync(string input, CancellationToken cancellationToken)
         {
+            while (true)
+            {
+                try
+                {
+                    var key = _rotator.GetCurrentKey();
+                    return await PostSingleWithKeyAsync(input, key, cancellationToken);
+                }
+                catch (HttpRequestException ex) when (ex.Message.Contains("Rate limit"))
+                {
+                    var key = _rotator.GetCurrentKey();
+                    _rotator.ReportRateLimited(key);
+                    // Loop lại để thử key tiếp theo.
+                }
+                catch (AllApiKeysRateLimitedException ex)
+                {
+                    throw new EmbeddingRateLimitedException(ex.Message);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+            }
+        }
+
+        private async Task<float[]> PostSingleWithKeyAsync(string input, string apiKey, CancellationToken cancellationToken)
+        {
             HttpResponseMessage response;
 
             try
             {
-                response = await CreateClient().PostAsJsonAsync(_config.Url, BuildRequest(input), cancellationToken);
+                var httpClient = CreateClient();
+                var httpRequest = new HttpRequestMessage(HttpMethod.Post, _config.Url)
+                {
+                    Content = JsonContent.Create(BuildRequest(input))
+                };
+                httpRequest.Headers.Remove(GeminiApiDefaults.ApiKeyHeader);
+                httpRequest.Headers.Add(GeminiApiDefaults.ApiKeyHeader, apiKey);
+
+                response = await httpClient.SendAsync(httpRequest, cancellationToken);
             }
             catch (OperationCanceledException)
             {
@@ -219,10 +282,7 @@ namespace RAG.Class
             using (response)
             {
                 if (response.StatusCode == HttpStatusCode.TooManyRequests)
-                {
-                    var body = await response.Content.ReadAsStringAsync(cancellationToken);
-                    throw new EmbeddingRateLimitedException($"embedContent bị giới hạn tần suất: {Truncate(body)}");
-                }
+                    throw new HttpRequestException("Rate limit (429)");
 
                 if (!response.IsSuccessStatusCode)
                 {

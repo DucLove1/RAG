@@ -2,16 +2,20 @@
 
 namespace RAG.Class.Config
 {
-    public class GeminiEmbeddingModelConfig
+    public class GeminiEmbeddingModelConfig : IValidatableObject
     {
         public const string SectionName = "Gemini";
-        [Required(AllowEmptyStrings = false)]
-        public string ApiKey { get; set; } = string.Empty;
+
+        /// <summary>Danh sách API key, sử dụng cái đầu tiên rồi xoay sang cái tiếp theo nếu bị 429.</summary>
+        public List<string> ApiKeys { get; set; } = new();
+
         [Required(AllowEmptyStrings = false)]
         [Url]
         public string Url { get; set; } = string.Empty;
+
         [Required(AllowEmptyStrings = false)]
         public string Model { get; set; } = string.Empty;
+
         [Range(1, 4096)]
         public int OutputDimensions { get; set; } = 768;
 
@@ -21,7 +25,6 @@ namespace RAG.Class.Config
         /// </summary>
         [Range(1, 600)]
         public int TimeoutSeconds { get; set; } = 30;
-
 
         /// <summary>
         /// URL tuyệt đối của endpoint batchEmbedContents (đối xứng với <see cref="Url"/>).
@@ -48,5 +51,28 @@ namespace RAG.Class.Config
         /// và log đầy một stack trace JSON thì không ai đọc nữa.
         /// </summary>
         public int ErrorBodyLogLimit { get; set; } = 500;
+
+        /// <summary>
+        /// Thời gian chờ (giây) trước khi thử lại một API key sau khi nó bị rate limit (429).
+        /// Mặc định 60s tương ứng với cửa sổ rate-limit-per-minute của Gemini Embedding.
+        /// </summary>
+        [Range(1, 3600)]
+        public int RateLimitCooldownSeconds { get; set; } = 60;
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext context)
+        {
+            if (ApiKeys == null || ApiKeys.Count == 0)
+                yield return new ValidationResult("ApiKeys không được trống.", new[] { nameof(ApiKeys) });
+            else
+            {
+                foreach (var (key, i) in ApiKeys.Select((k, i) => (k, i)))
+                {
+                    if (string.IsNullOrWhiteSpace(key))
+                        yield return new ValidationResult(
+                            $"ApiKeys[{i}] không được trống hoặc chỉ chứa khoảng trắng.",
+                            new[] { nameof(ApiKeys) });
+                }
+            }
+        }
     }
 }

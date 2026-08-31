@@ -9,7 +9,7 @@ using System.ClientModel;
 
 namespace RAG.Extension.DependencyInjection
 {
-    /// <summary>Đăng ký các nhà cung cấp LLM và bộ chọn provider mặc định.</summary>
+    /// <summary>Đăng ký các nhà cung cấp LLM, rotator key, và bộ chọn provider mặc định.</summary>
     public static class LlmServiceCollectionExtensions
     {
         /// <summary>
@@ -39,14 +39,15 @@ namespace RAG.Extension.DependencyInjection
 
         private static IServiceCollection AddGroqProvider(this IServiceCollection services)
         {
-            services.AddSingleton<ChatClient>(sp =>
+            // Rotator key cho pool Groq.
+            services.AddKeyedSingleton<IApiKeyRotator>(ApiKeyPoolKey.Groq, (sp, _) =>
             {
                 var options = sp.GetRequiredService<IOptions<GroqConfig>>().Value;
-
-                return new ChatClient(
-                    model: options.Model,
-                    credential: new ApiKeyCredential(options.ApiKey),
-                    options: new OpenAIClientOptions { Endpoint = new Uri(options.Url) });
+                return new ApiKeyRotator(
+                    options.ApiKeys,
+                    "Groq",
+                    TimeSpan.FromSeconds(options.RateLimitCooldownSeconds),
+                    sp.GetRequiredService<ILogger<ApiKeyRotator>>());
             });
 
             services.AddKeyedSingleton<ILLMProvider, GroqCloudProvider>(LlmProviderKey.Groq);
@@ -56,14 +57,24 @@ namespace RAG.Extension.DependencyInjection
 
         private static IServiceCollection AddGeminiLlmProvider(this IServiceCollection services)
         {
+            // Rotator key cho pool Gemini LLM.
+            services.AddKeyedSingleton<IApiKeyRotator>(ApiKeyPoolKey.GeminiLlm, (sp, _) =>
+            {
+                var options = sp.GetRequiredService<IOptions<GeminiLlmConfig>>().Value;
+                return new ApiKeyRotator(
+                    options.ApiKeys,
+                    "Gemini LLM",
+                    TimeSpan.FromSeconds(options.RateLimitCooldownSeconds),
+                    sp.GetRequiredService<ILogger<ApiKeyRotator>>());
+            });
+
+            // HttpClient không còn bake key vào header — provider sẽ attach per request.
             services.AddHttpClient(HttpClientNames.GeminiLlm, (sp, client) =>
             {
                 var options = sp.GetRequiredService<IOptions<GeminiLlmConfig>>().Value;
 
                 client.BaseAddress = OptionsRegistration.BuildBaseAddress(options.Url);
                 client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
-                client.DefaultRequestHeaders.Remove(GeminiApiDefaults.ApiKeyHeader);
-                client.DefaultRequestHeaders.Add(GeminiApiDefaults.ApiKeyHeader, options.ApiKey);
             });
 
             services.AddKeyedSingleton<ILLMProvider, GeminiLLMProvider>(LlmProviderKey.Gemini);

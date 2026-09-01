@@ -24,6 +24,18 @@ namespace RAG.Class.Config
         [Range(1, 3600)]
         public int RateLimitCooldownSeconds { get; set; } = 60;
 
+        /// <summary>
+        /// Nhiệt độ (temperature) cho mô hình sinh văn bản. Giá trị từ 0 đến 1, càng cao thì kết quả càng sáng tạo, 
+        /// càng thấp thì kết quả càng chính xác.
+        /// </summary>
+        [Required(AllowEmptyStrings = false)]
+        [Range(0, 1)]
+        public float Temperature { get; set; } = 0.5f;
+
+        [Required(AllowEmptyStrings = false)]
+        [Range(1, 3000)]
+        public int MaxOutputTokenCount { get; set; } = 400;
+
         public IEnumerable<ValidationResult> Validate(ValidationContext context)
         {
             if (ApiKeys == null || ApiKeys.Count == 0)

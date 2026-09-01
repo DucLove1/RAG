@@ -33,6 +33,12 @@ namespace RAG.Class
                 new UserChatMessage(user)
             };
 
+            var options = new ChatCompletionOptions
+            {
+                Temperature = _config.Temperature,
+                MaxOutputTokenCount = _config.MaxOutputTokenCount
+            };
+
             while (true)
             {
                 try
@@ -50,6 +56,7 @@ namespace RAG.Class
 
                     var response = await chatClient.CompleteChatAsync(
                         messages: messages,
+                        options: options,
                         cancellationToken: cancellationToken);
 
                     return response.Value.Content.Count > 0 ?

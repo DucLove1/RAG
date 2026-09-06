@@ -6,7 +6,14 @@ using RAG.Interface;
 namespace RAG.Class.Answering
 {
     /// <summary>
-    /// Lõi của đường trả lời: chuẩn hóa → nhúng → định tuyến → (truy hồi) → sinh câu trả lời.
+    /// Lõi của đường trả lời: chuẩn hóa → định tuyến → (điểm yếu → truy hồi) → sinh câu trả lời.
+    /// <para>
+    /// Bộ phát hiện điểm yếu CHỈ chạy trên nhánh nội dung game (không route nào khớp). Điều đó an
+    /// toàn vì câu chốt bắt bài hung thủ luôn nói về vụ án, mà mọi route hiện có đều là những thứ
+    /// KHÔNG phải nội dung game: chào hỏi, cảm ơn, tạm biệt, ngoài phạm vi. Thêm một route mang
+    /// nội dung game vào <c>SemanticRouter:Routes</c> sẽ âm thầm che mất bộ phát hiện trên nhánh
+    /// đó — kiểm bằng <c>route-debug</c> rằng câu chốt vẫn không khớp route nào.
+    /// </para>
     /// </summary>
     public sealed class AskPipeline : IAskService
     {
@@ -50,25 +57,34 @@ namespace RAG.Class.Answering
             // Không route nào khớp (null) thì mặc định đi đường truy hồi.
             var route = await _semanticRouter.RouteAsync(normalizedQuestion, cancellationToken);
 
-            // Node điểm yếu chạy KHÔNG phụ thuộc route, và trúng thì THẮNG route. Gắn nó vào nhánh
-            // "không route nào khớp" sẽ khiến nhịp quan trọng nhất của game phụ thuộc vào một bộ
-            // phân loại không liên quan: router đoán nhầm một lần là người chơi nói đúng câu chốt
-            // mà không có gì xảy ra, và triệu chứng đó không tái hiện được. Chi phí đã được chặn ở
-            // chỗ khác — NPC không có mục trong WeakPoint:Targets tốn 0 lượt gọi.
-            var weakPoint = await _weakPointDetector.DetectAsync(npcName, normalizedQuestion, cancellationToken);
-
-            // Trúng thì KHÔNG gọi LLM trả lời: câu NPC nói lúc bị bắt bài là một nhịp kịch bản, để
-            // LLM diễn đạt lại thì mỗi lần chơi ra một kiểu và mất luôn tính xác định của nhịp đó.
-            if (weakPoint is not null)
-                return new AskResult(weakPoint.Reply, WeakPointHit: true);
-
             // Ngân sách token hỏi thẳng provider đang được inject (chính là provider chọn theo
             // LLM:Provider), nên con số trong prompt luôn đúng bằng con số API sẽ cắt.
             var lengthInstruction = _promptConfig.BuildLengthInstruction(_llmProvider.MaxOutputTokens);
 
-            var answer = route is not null
-                ? await AnswerWithoutRetrievalAsync(npcName, npcSystem, normalizedQuestion, route, lengthInstruction, cancellationToken)
-                : await AnswerWithRetrievalAsync(npcName, npcSystem, normalizedQuestion, topK, lengthInstruction, cancellationToken);
+            // Khớp route nghĩa là câu này KHÔNG hỏi nội dung game (chào hỏi, cảm ơn, tạm biệt, ngoài
+            // phạm vi). Câu chốt bắt bài hung thủ thì luôn nói về vụ án, nên nó không bao giờ khớp
+            // route — và chạy node điểm yếu ở đây chỉ là đốt một lượt gọi LLM để luôn nhận về
+            // "không trúng". Vì vậy nhánh này thoát sớm, không đụng tới bộ phát hiện.
+            if (route is not null)
+            {
+                var routedAnswer = await AnswerWithoutRetrievalAsync(
+                    npcName, npcSystem, normalizedQuestion, route, lengthInstruction, cancellationToken);
+
+                return new AskResult(routedAnswer, WeakPointHit: false);
+            }
+
+            // Từ đây trở xuống là đường nội dung game. Bộ phát hiện tự thoát ở phép tra từ điển khi
+            // NPC không có mục trong WeakPoint:Targets, nên chi phí thực tế là một lượt gọi cho các
+            // câu hỏi vụ án gửi tới ĐÚNG những NPC có điểm yếu.
+            var weakPoint = await _weakPointDetector.DetectAsync(npcName, normalizedQuestion, cancellationToken);
+
+            // Trúng thì KHÔNG truy hồi và KHÔNG gọi LLM trả lời: câu NPC nói lúc bị bắt bài là một
+            // nhịp kịch bản, để LLM diễn đạt lại thì mỗi lần chơi ra một kiểu và mất tính xác định.
+            if (weakPoint is not null)
+                return new AskResult(weakPoint.Reply, WeakPointHit: true);
+
+            var answer = await AnswerWithRetrievalAsync(
+                npcName, npcSystem, normalizedQuestion, topK, lengthInstruction, cancellationToken);
 
             return new AskResult(answer, WeakPointHit: false);
         }

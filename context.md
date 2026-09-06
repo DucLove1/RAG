@@ -61,19 +61,24 @@ Người dùng có yêu cầu rõ ràng, đã áp dụng nhất quán trong toà
 ```
 1. Chuẩn hóa câu hỏi        (IQueryNormalizer, Gemini flash-lite, fail-open)
 2. Định tuyến ngữ nghĩa      (ISemanticRouter, bất đồng bộ, fail-open)
-3. Đối chiếu điểm yếu        (IWeakPointDetector, fail-open — xem mục 4c)
-   ├─ TRÚNG       → trả thẳng câu kịch bản trong config + weakPointHit = true
-   │                (KHÔNG truy hồi, KHÔNG gọi LLM trả lời lần nào)
-   └─ không trúng → theo kết quả bước 2:
-      ├─ khớp route  → AnswerWithoutRetrievalAsync  (BỎ QUA Qdrant, KHÔNG nhúng gì cả)
-      └─ null        → AnswerWithRetrievalAsync     (Embedding → Search → LLM)
+   ├─ khớp route  → AnswerWithoutRetrievalAsync  (BỎ QUA Qdrant, KHÔNG nhúng gì cả)
+   │                KHÔNG chạy bước 3 — xem bên dưới
+   └─ null        → 3. Đối chiếu điểm yếu  (IWeakPointDetector, fail-open — xem mục 4c)
+                    ├─ TRÚNG       → câu kịch bản trong config + weakPointHit = true
+                    │                (KHÔNG truy hồi, KHÔNG gọi LLM trả lời)
+                    └─ không trúng → AnswerWithRetrievalAsync (Embedding → Search → LLM)
 ```
 
-Bước 3 chạy **không phụ thuộc** kết quả bước 2, và **trúng thì thắng route**. Gắn nó vào nhánh
-"không route nào khớp" sẽ khiến nhịp quan trọng nhất của game phụ thuộc vào một bộ phân loại không
-liên quan: router đoán nhầm một lần là người chơi gõ đúng câu chốt mà không có gì xảy ra, và triệu
-chứng đó không tái hiện được. Chi phí được chặn ở chỗ khác — NPC không có mục trong
-`WeakPoint:Targets` tốn **0** lượt gọi.
+**Bước 3 chỉ chạy trên nhánh nội dung game.** Khớp route nghĩa là câu này không hỏi nội dung game —
+mọi route hiện có (`chitchat`, `farewell`, `thanks`, `out_of_scope`) đều là thứ khác. Câu chốt bắt
+bài hung thủ thì luôn nói về vụ án, nên nó rơi vào nhánh `null`; chạy bộ phát hiện ở nhánh kia chỉ
+là đốt một lượt gọi LLM để luôn nhận về "không trúng". Đã đo: 4 câu khớp route (chào hỏi, cảm ơn,
+tạm biệt, ngoài phạm vi) gửi tới đúng NPC có điểm yếu → **0** lượt gọi bộ phát hiện.
+
+**Điều kiện an toàn của tối ưu này:** câu chốt phải không khớp route nào. Đã kiểm bằng `route-debug`
+— cả bản nguyên văn lẫn bản diễn đạt lại đều trả `matchedRoute: null`. Thêm một route mang **nội
+dung game** vào `SemanticRouter:Routes` sẽ âm thầm che mất bộ phát hiện trên nhánh đó; kiểm lại
+`route-debug` với câu chốt mỗi khi sửa bảng route.
 
 Cả ba bước đều đi qua **decorator cache** (`CachingQueryNormalizer`, `CachingSemanticRouter`,
 `CachingEmbeddingProvider`), nên câu lặp lại tốn 0 lần gọi Gemini: đo được 5.30s → 0.36s. Xem mục 4b.
@@ -223,9 +228,15 @@ Ngược lại *"tấm hình đó chụp lúc mấy giờ"* → **không** trún
 mâu thuẫn, tức chưa suy luận ra. Phần so chuỗi duy nhất trong node là bước đọc lại **cái nhãn** mà
 LLM vừa xuất ra (`trung_diem_yeu` / `khong_trung`), tái dùng `RouteLabelParser`.
 
-**Mô hình chi phí:** một lượt gọi LLM cho mỗi câu hỏi gửi tới NPC **có khai** trong `Targets`. NPC
-khác thoát ở phép tra từ điển, tốn 0 lượt — đã đo: gửi đúng câu chốt cho một NPC khác sinh ra 0
-dòng log của `LlmWeakPointDetector`.
+**Mô hình chi phí — hai cổng, cả hai đều thoát trước khi tốn tiền:**
+
+1. Câu khớp route (chào hỏi, cảm ơn, tạm biệt, ngoài phạm vi) không vào tới node — chặn ở
+   `AskPipeline`, xem §3. Đo được 0 lượt gọi cho 4 câu loại này.
+2. Câu hỏi nội dung game gửi tới NPC **không có** trong `Targets` thoát ở phép tra từ điển bên trong
+   node. Đo được: gửi đúng câu chốt cho một NPC khác sinh ra 0 dòng log của `LlmWeakPointDetector`.
+
+Còn lại đúng một lượt gọi LLM cho **câu hỏi vụ án gửi tới NPC có điểm yếu** — tức chỉ phần traffic
+thực sự có thể bắt bài được.
 
 **Trúng thì không qua LLM.** Câu NPC nói lúc bị bắt bài lấy nguyên văn từ `Targets[].Reply`, vì đây
 là một nhịp kịch bản — để LLM diễn đạt lại thì mỗi lần chơi ra một kiểu và mất tính xác định.

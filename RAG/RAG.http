@@ -405,6 +405,14 @@ Content-Type: application/json
 #
 # Viec so do tuong dong la cua LLM, khong phai cua code. Case 2 la ca chung
 # minh dieu do: gan nhu khong chung chu nao voi cau chot ma van phai TRUNG.
+#
+# NODE CHI CHAY TREN NHANH NOI DUNG GAME (khong route nao khop). Cau khop
+# route — chao hoi, cam on, tam biet, ngoai pham vi — khong vao toi node,
+# ke ca khi gui cho dung NPC co diem yeu. Xem case 7.
+#
+# DIEU KIEN AN TOAN: cau chot phai KHONG khop route nao. Kiem lai bang
+# route-debug moi khi sua SemanticRouter:Routes — them mot route mang noi
+# dung game se am tham che mat bo phat hien tren nhanh do.
 # ==========================================================================
 
 ### 1. TRUNG: cau chot nguyen van
@@ -453,3 +461,19 @@ POST {{RAG_HostAddress}}/api/query/ask
 Content-Type: application/json
 
 { "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "Trong tấm hình này, thời gian chiếu trên TV đã chỉ rõ tấm hình này được chụp lúc 8h30 chứ không phải 9h" }
+
+### 7. TIET KIEM: cau khop route gui cho chinh NPC co diem yeu
+# Ky vong: weakPointHit = false VA 0 dong log cua LlmWeakPointDetector.
+# Chao hoi khong bao gio la cau chot, nen node bi chan truoc o AskPipeline.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "chào ông, ông khỏe không" }
+
+### 8. DIEU KIEN AN TOAN: cau chot phai khong khop route nao
+# Ky vong: matchedRoute = null. Neu ra khac null thi toi uu o case 7 dang
+# che mat bo phat hien — cau chot se khong bao gio duoc doi chieu nua.
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "Trong tấm hình này, thời gian chiếu trên TV đã chỉ rõ tấm hình này được chụp lúc 8h30 chứ không phải 9h" }

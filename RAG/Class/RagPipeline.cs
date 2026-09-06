@@ -29,11 +29,11 @@ namespace RAG.Class
             _routeUtteranceAdmin = routeUtteranceAdmin;
         }
 
-        public Task<string> AskAsync(string npcName,
-                                     string npcSystem,
-                                     string question,
-                                     int topK,
-                                     CancellationToken cancellationToken = default) =>
+        public Task<AskResult> AskAsync(string npcName,
+                                        string npcSystem,
+                                        string question,
+                                        int topK,
+                                        CancellationToken cancellationToken = default) =>
             _askService.AskAsync(npcName, npcSystem, question, topK, cancellationToken);
 
         public Task CreateCollectionAsync(CancellationToken cancellationToken = default) =>

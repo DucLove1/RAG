@@ -61,9 +61,19 @@ Người dùng có yêu cầu rõ ràng, đã áp dụng nhất quán trong toà
 ```
 1. Chuẩn hóa câu hỏi        (IQueryNormalizer, Gemini flash-lite, fail-open)
 2. Định tuyến ngữ nghĩa      (ISemanticRouter, bất đồng bộ, fail-open)
-   ├─ khớp route  → AnswerWithoutRetrievalAsync  (BỎ QUA Qdrant, KHÔNG nhúng gì cả)
-   └─ null        → AnswerWithRetrievalAsync     (Embedding → Search → LLM)
+3. Đối chiếu điểm yếu        (IWeakPointDetector, fail-open — xem mục 4c)
+   ├─ TRÚNG       → trả thẳng câu kịch bản trong config + weakPointHit = true
+   │                (KHÔNG truy hồi, KHÔNG gọi LLM trả lời lần nào)
+   └─ không trúng → theo kết quả bước 2:
+      ├─ khớp route  → AnswerWithoutRetrievalAsync  (BỎ QUA Qdrant, KHÔNG nhúng gì cả)
+      └─ null        → AnswerWithRetrievalAsync     (Embedding → Search → LLM)
 ```
+
+Bước 3 chạy **không phụ thuộc** kết quả bước 2, và **trúng thì thắng route**. Gắn nó vào nhánh
+"không route nào khớp" sẽ khiến nhịp quan trọng nhất của game phụ thuộc vào một bộ phân loại không
+liên quan: router đoán nhầm một lần là người chơi gõ đúng câu chốt mà không có gì xảy ra, và triệu
+chứng đó không tái hiện được. Chi phí được chặn ở chỗ khác — NPC không có mục trong
+`WeakPoint:Targets` tốn **0** lượt gọi.
 
 Cả ba bước đều đi qua **decorator cache** (`CachingQueryNormalizer`, `CachingSemanticRouter`,
 `CachingEmbeddingProvider`), nên câu lặp lại tốn 0 lần gọi Gemini: đo được 5.30s → 0.36s. Xem mục 4b.
@@ -83,7 +93,7 @@ nhánh truy hồi là cache hit, tổng vẫn đúng 1 lượt gọi API. **Đá
 
 | Method | Route | Chức năng |
 |---|---|---|
-| POST | `api/query/ask` | Hỏi NPC |
+| POST | `api/query/ask` | Hỏi NPC. Trả **object** `{ "answer": "...", "weakPointHit": false }` |
 | POST | `api/query/upload` | Nạp tài liệu |
 | POST | `api/query/create-collection` | Tạo collection Qdrant |
 | POST | `api/query/route-debug` | **Chẩn đoán định tuyến** — trả đánh giá mọi route + `strategy`. Không chạm Qdrant; CÓ gọi LLM khi `Strategy = Llm` |
@@ -195,6 +205,38 @@ write-behind: flush định kỳ `FlushIntervalSeconds` + flush lúc tắt. Đo 
 từ đĩa, câu cũ trúng cache ngay ở request đầu tiên.
 
 `GET api/query/cache-stats` để xem tỉ lệ trúng.
+
+---
+
+## 4c. Node đối chiếu điểm yếu (`IWeakPointDetector`)
+
+Khi người chơi hỏi trúng **câu chốt** của hung thủ, pipeline thoát ngay và trả về cờ `weakPointHit`
+để client chạy nhịp kịch bản của mình.
+
+**Việc so độ tương đồng là của LLM, không phải của code.** Các câu chốt trong
+`WeakPoint:Targets[].Triggers` được nhúng vào system prompt làm câu mẫu; mô hình tự phán đoán câu
+người chơi có nói đúng ý đó không. Nhờ vậy một cách diễn đạt khác hẳn về mặt chữ vẫn trúng — đã đo
+với câu chốt thật của Johny (*"Trong tấm hình này, thời gian chiếu trên TV đã chỉ rõ tấm hình này
+được chụp lúc 8h30 chứ không phải 9h"*): người chơi gõ *"trận bóng đang chiếu trong ảnh chỉ đá lúc
+tám rưỡi, vậy tấm ảnh này đâu phải chụp lúc chín giờ"* → vẫn trúng, dù gần như không chung chữ nào.
+Ngược lại *"tấm hình đó chụp lúc mấy giờ"* → **không** trúng: hỏi cùng chuyện nhưng chưa khẳng định
+mâu thuẫn, tức chưa suy luận ra. Phần so chuỗi duy nhất trong node là bước đọc lại **cái nhãn** mà
+LLM vừa xuất ra (`trung_diem_yeu` / `khong_trung`), tái dùng `RouteLabelParser`.
+
+**Mô hình chi phí:** một lượt gọi LLM cho mỗi câu hỏi gửi tới NPC **có khai** trong `Targets`. NPC
+khác thoát ở phép tra từ điển, tốn 0 lượt — đã đo: gửi đúng câu chốt cho một NPC khác sinh ra 0
+dòng log của `LlmWeakPointDetector`.
+
+**Trúng thì không qua LLM.** Câu NPC nói lúc bị bắt bài lấy nguyên văn từ `Targets[].Reply`, vì đây
+là một nhịp kịch bản — để LLM diễn đạt lại thì mỗi lần chơi ra một kiểu và mất tính xác định.
+`Reply` để trống thì `answer` là chuỗi rỗng và constructor ghi cảnh báo (không chặn khởi động).
+
+**Không chặn theo tiến độ cốt truyện.** Endpoint không có state phiên, nên người chơi gõ đúng câu
+chốt ở phút đầu vẫn trúng. Cờ được trả cho client và client quyết định nhịp đó đã được phép chưa.
+Đừng "sửa" điều này ở phía server.
+
+Tắt bằng `WeakPoint:Enabled = false`, hoặc để `Targets` rỗng — cả hai đều dẫn tới
+`PassthroughWeakPointDetector` (Null Object), pipeline không có nhánh `if` nào.
 
 ---
 
@@ -325,6 +367,40 @@ dotnet run` **không** có tác dụng nếu khóa đó có trong `.env`. Chỉ 
 mới override được từ shell (`SemanticRouter__Strategy`, `SemanticRouter__Llm__*`...). Biết điều này
 trước khi mất thời gian tự hỏi vì sao test "key hỏng" lại chạy thành công.
 
+### 5.13 `RouteLabelParser` thoái hóa nguy hiểm khi tập nhãn chỉ có MỘT phần tử
+
+`ScanWholeOutput` là bước cứu vãn cuối khi mô hình trả lời lòng vòng. Ba tính chất của nó vô hại với
+bảng 4 route nhưng thành bẫy với node điểm yếu (một nhãn duy nhất):
+
+- Nó dò nhãn bằng **chuỗi con** (`normalized.Contains(entry.Key)`) và bằng **tập từ**.
+- Lưới an toàn "thấy hai nhãn trở lên thì bỏ" **không thể kích hoạt** — với một nhãn, `found.Count`
+  chỉ có thể là 0 hoặc 1.
+- Nó **không hề tra nhãn "không khớp"**.
+
+Đặt `HitLabel = "trung_diem_yeu"`, `NoHitLabel = "khong_trung_diem_yeu"` thì một câu trả lời
+`khong_trung_diem_yeu` (tức KHÔNG trúng) rơi xuống `ScanWholeOutput`, và
+`"khong_trung_diem_yeu".Contains("trung_diem_yeu")` là **true** → đọc thành TRÚNG → game lộ thủ
+phạm cho người chơi chưa suy luận ra. Hướng sai lệch ở đây ngược với router: router đoán nhầm chỉ
+tốn một câu trả lời kém tự nhiên, còn báo trúng nhầm là hỏng nhịp quan trọng nhất của sản phẩm.
+
+Chặn bằng hai lớp, **giữ cả hai**: `LlmWeakPointDetector` truyền `allowWholeOutputScan: false` (tham
+số mới của `RouteLabelParser`, mặc định `true` nên router không đổi hành vi), và
+`WeakPointConfig.Validate` chặn khởi động nếu hai nhãn chứa nhau hoặc có tập từ lồng nhau — kiểm tra
+bằng `RouteLabelParser.Normalize`, đúng hàm khóa mà parser dùng, chứ không phải `OrdinalIgnoreCase`.
+
+### 5.14 Quyết định "trúng điểm yếu" CỐ Ý không được cache
+
+Đối xứng với `CachingSemanticRouter` là sai ở đây, và lý do nằm ngay trong cạm bẫy 5.3b:
+`IRouteDecisionCache` **bắt buộc** cache cả quyết định âm, còn node điểm yếu thì fail-open. Ghép hai
+điều đó lại: một lỗi Gemini thoáng qua đúng lúc người chơi gõ câu chốt sẽ đóng băng "không trúng"
+cho đúng chuỗi đó suốt `NoRouteExpirationMinutes` phút, và nhìn từ ngoài thì y hệt game hỏng. Với
+định tuyến, một quyết định âm bị đóng băng chỉ tốn một câu trả lời kém tự nhiên.
+
+Tiết kiệm được cũng gần bằng 0: chỉ một NPC tốn lượt gọi. Nếu sau này vẫn muốn cache: **chỉ cache
+dương, tuyệt đối không cache âm** (trúng là quyết định ổn định và lặp lại được; không trúng thì
+không phân biệt được với một lần lỗi), khóa phải gồm cả `npcName`, và **không** persist xuống đĩa —
+lý do của 5.11 áp dụng nguyên văn.
+
 ---
 
 ## 6. Bản đồ file
@@ -339,6 +415,9 @@ RAG/
   Design game.docx                  thiết kế game — đọc khi cần hiểu domain
   Interface/
     IRagPipeline.cs                 IAskService / IIngestionService / IRouteDiagnostics / IRouteAdmin
+    AskResult.cs                    Answer + WeakPointHit; trả thẳng ra controller như IngestionResult
+    IWeakPointDetector.cs           DetectAsync() — node điểm yếu, xem §4c
+    WeakPointMatch.cs               lời thoại kịch bản khi bị bắt bài (không mang lại NpcName)
     IVectorStore.cs                 + VectorRecord, VectorHit, VectorSearchFilter (KHÔNG có kiểu Qdrant)
     ISemanticRouter.cs              RouteAsync() — KHÔNG nhận float[] (xem §3)
     IRouteExplainer.cs              ExplainAsync() — tách khỏi ISemanticRouter theo ISP
@@ -369,7 +448,8 @@ RAG/
       PlainTextExtractor.cs         .txt/.md/.json; thêm PDF = thêm 1 lớp
     Routing/
       LlmSemanticRouter.cs          chiến lược MẶC ĐỊNH: LLM chọn nhãn, không dùng vector
-      RouteLabelParser.cs           đọc nhãn khỏi đầu ra LLM; chịu được model nói dài
+      RouteLabelParser.cs           đọc nhãn khỏi đầu ra LLM; chịu được model nói dài.
+                                    allowWholeOutputScan PHẢI = false với tập một nhãn — xem §5.13
       RouteTableFactory.cs          luật "route nào dùng được + prompt của nó" — DÙNG CHUNG hai chiến lược
       EmbeddingSemanticRouter.cs    chiến lược cosine; tự nhúng câu hỏi (xem §5.10)
       RouteCatalog.cs               trạng thái dùng chung + Rebuild (copy-on-write)
@@ -382,6 +462,9 @@ RAG/
       SemanticRouterWarmupService.cs
       FileRouteVectorCache.cs / NullRouteVectorCache.cs
       FileRouteUtteranceStore.cs / NullRouteUtteranceStore.cs
+    WeakPoint/
+      LlmWeakPointDetector.cs       LLM so ngữ nghĩa câu hỏi với câu chốt trong config — xem §4c
+      PassthroughWeakPointDetector.cs  Null Object khi tắt hoặc không có target
     Caching/
       MemoryQueryCache.cs           cache RAM có chặn trần / NullQueryCache.cs
       CachingQueryNormalizer.cs     decorator
@@ -496,6 +579,11 @@ Phạm vi do người dùng chốt: refactor **sâu** (tách lớp, đổi tên)
 
 **Thay đổi có thể phá client:** `POST api/query/ask` giờ trả **429/503** khi Gemini lỗi, thay vì
 200 kèm câu trả lời rác. `QDRANT__DIMENSIONS` đã bị xoá khỏi `.env` — **nhớ xoá cả trên Render**.
+
+**Thay đổi có thể phá client (đợt node điểm yếu):** `POST api/query/ask` trả **object**
+`{ "answer": "...", "weakPointHit": false }` thay cho chuỗi trần. Đây là kiểu hỏng ÂM THẦM chứ không
+báo lỗi: client không gửi `Accept: application/json` trước đây nhận `text/plain` là chính câu trả
+lời, giờ sẽ cho NPC "nói" ra nguyên cục JSON. Client cũ phải đọc trường `answer`.
 
 ### SOLID
 

@@ -26,13 +26,19 @@ namespace RAG.Controllers
             _config = config.Value;
         }
 
+        /// <summary>
+        /// THAY ĐỔI CÓ THỂ PHÁ CLIENT: trước đây endpoint này trả về câu trả lời dưới dạng chuỗi
+        /// trần (text/plain với client không gửi Accept: application/json). Nay nó trả về object
+        /// <c>{ "answer": "...", "weakPointHit": false }</c> để client đọc được cờ trúng điểm yếu.
+        /// Client cũ đọc thẳng body làm lời NPC sẽ hiển thị nguyên cục JSON chứ không báo lỗi.
+        /// </summary>
         [HttpPost("ask")]
         public async Task<IActionResult> Post([FromBody] RequestDto request, CancellationToken cancellationToken = default)
         {
-            var response = await _askService.AskAsync(
+            var result = await _askService.AskAsync(
                 request.NpcName, request.NpcSystem, request.Question, _config.TopK, cancellationToken);
 
-            return Ok(response);
+            return Ok(result);
         }
 
         [HttpGet("check-health")]

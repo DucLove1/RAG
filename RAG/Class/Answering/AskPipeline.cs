@@ -15,6 +15,7 @@ namespace RAG.Class.Answering
         private readonly IVectorStore _vectorStore;
         private readonly IQueryNormalizer _queryNormalizer;
         private readonly ISemanticRouter _semanticRouter;
+        private readonly IWeakPointDetector _weakPointDetector;
         private readonly PromptConfig _promptConfig;
 
         public AskPipeline(ILLMProvider llmProvider,
@@ -22,6 +23,7 @@ namespace RAG.Class.Answering
                            IVectorStore vectorStore,
                            IQueryNormalizer queryNormalizer,
                            ISemanticRouter semanticRouter,
+                           IWeakPointDetector weakPointDetector,
                            IOptions<PromptConfig> promptConfig)
         {
             _llmProvider = llmProvider;
@@ -29,14 +31,15 @@ namespace RAG.Class.Answering
             _vectorStore = vectorStore;
             _queryNormalizer = queryNormalizer;
             _semanticRouter = semanticRouter;
+            _weakPointDetector = weakPointDetector;
             _promptConfig = promptConfig.Value;
         }
 
-        public async Task<string> AskAsync(string npcName,
-                                           string npcSystem,
-                                           string question,
-                                           int topK,
-                                           CancellationToken cancellationToken = default)
+        public async Task<AskResult> AskAsync(string npcName,
+                                              string npcSystem,
+                                              string question,
+                                              int topK,
+                                              CancellationToken cancellationToken = default)
         {
             // Node chuẩn hóa: mở rộng từ viết tắt / sửa chính tả trước khi định tuyến và dựng prompt.
             var normalizedQuestion = await _queryNormalizer.NormalizeAsync(question, cancellationToken);
@@ -47,13 +50,27 @@ namespace RAG.Class.Answering
             // Không route nào khớp (null) thì mặc định đi đường truy hồi.
             var route = await _semanticRouter.RouteAsync(normalizedQuestion, cancellationToken);
 
+            // Node điểm yếu chạy KHÔNG phụ thuộc route, và trúng thì THẮNG route. Gắn nó vào nhánh
+            // "không route nào khớp" sẽ khiến nhịp quan trọng nhất của game phụ thuộc vào một bộ
+            // phân loại không liên quan: router đoán nhầm một lần là người chơi nói đúng câu chốt
+            // mà không có gì xảy ra, và triệu chứng đó không tái hiện được. Chi phí đã được chặn ở
+            // chỗ khác — NPC không có mục trong WeakPoint:Targets tốn 0 lượt gọi.
+            var weakPoint = await _weakPointDetector.DetectAsync(npcName, normalizedQuestion, cancellationToken);
+
+            // Trúng thì KHÔNG gọi LLM trả lời: câu NPC nói lúc bị bắt bài là một nhịp kịch bản, để
+            // LLM diễn đạt lại thì mỗi lần chơi ra một kiểu và mất luôn tính xác định của nhịp đó.
+            if (weakPoint is not null)
+                return new AskResult(weakPoint.Reply, WeakPointHit: true);
+
             // Ngân sách token hỏi thẳng provider đang được inject (chính là provider chọn theo
             // LLM:Provider), nên con số trong prompt luôn đúng bằng con số API sẽ cắt.
             var lengthInstruction = _promptConfig.BuildLengthInstruction(_llmProvider.MaxOutputTokens);
 
-            return route is not null
+            var answer = route is not null
                 ? await AnswerWithoutRetrievalAsync(npcName, npcSystem, normalizedQuestion, route, lengthInstruction, cancellationToken)
                 : await AnswerWithRetrievalAsync(npcName, npcSystem, normalizedQuestion, topK, lengthInstruction, cancellationToken);
+
+            return new AskResult(answer, WeakPointHit: false);
         }
 
         /// <summary>

@@ -41,8 +41,20 @@ namespace RAG.Class.Routing
 
         private readonly string _noMatchLabel;
 
-        public RouteLabelParser(IEnumerable<string> routeNames, string noMatchLabel)
+        private readonly bool _allowWholeOutputScan;
+
+        /// <param name="allowWholeOutputScan">
+        /// Bật bước cứu vãn <c>ScanWholeOutput</c>. Người gọi có tập nhãn chỉ gồm MỘT phần tử phải
+        /// truyền <c>false</c>: bước đó dò nhãn bằng chuỗi con và bằng tập từ, còn lưới an toàn
+        /// "thấy hai nhãn trở lên thì bỏ" của nó chỉ hoạt động khi có từ hai nhãn. Với một nhãn duy
+        /// nhất, một câu trả lời chứa nhãn kia vẫn có thể bị đọc thành khớp.
+        /// </param>
+        public RouteLabelParser(IEnumerable<string> routeNames,
+                                string noMatchLabel,
+                                bool allowWholeOutputScan = true)
         {
+            _allowWholeOutputScan = allowWholeOutputScan;
+
             _routeNames = routeNames
                 .Select(name => new { Normalized = Normalize(name), Original = name })
                 .Where(entry => entry.Normalized.Length > 0)
@@ -79,7 +91,9 @@ namespace RAG.Class.Routing
                     return new RouteLabelResolution(RouteLabelOutcome.Matched, routeName);
             }
 
-            return ScanWholeOutput(output);
+            return _allowWholeOutputScan
+                ? ScanWholeOutput(output)
+                : new RouteLabelResolution(RouteLabelOutcome.Unparseable, string.Empty);
         }
 
         /// <summary>

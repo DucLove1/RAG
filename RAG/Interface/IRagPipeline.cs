@@ -6,11 +6,15 @@ namespace RAG.Interface
     public interface IAskService
     {
         /// <param name="topK">Số đoạn ngữ cảnh lấy về khi đi đường truy hồi.</param>
-        Task<string> AskAsync(string npcName,
-                              string npcSystem,
-                              string question,
-                              int topK,
-                              CancellationToken cancellationToken = default);
+        /// <returns>
+        /// Câu trả lời kèm cờ <c>WeakPointHit</c>. Cờ bật nghĩa là câu hỏi trúng điểm yếu của NPC
+        /// và pipeline đã thoát sớm: không truy hồi, không gọi LLM trả lời lần nào.
+        /// </returns>
+        Task<AskResult> AskAsync(string npcName,
+                                 string npcSystem,
+                                 string question,
+                                 int topK,
+                                 CancellationToken cancellationToken = default);
     }
 
     /// <summary>

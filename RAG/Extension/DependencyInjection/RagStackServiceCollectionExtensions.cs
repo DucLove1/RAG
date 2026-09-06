@@ -30,6 +30,11 @@ namespace RAG.Extension.DependencyInjection
             // Node định tuyến ngữ nghĩa: nhận diện câu tán gẫu để trả lời thẳng, bỏ qua truy hồi.
             services.AddSemanticRouter(configuration);
 
+            // Node phát hiện "trúng điểm yếu": chạy SAU định tuyến, và trúng thì THẮNG route vì nó
+            // là sự kiện cốt truyện chứ không phải một tối ưu chi phí. Phải sau AddLLM (cần
+            // ILlmProviderResolver) và trước AddRagPipeline (AskPipeline nhận IWeakPointDetector).
+            services.AddWeakPoint(configuration);
+
             // Đường nạp tri thức: bộ đọc theo định dạng + chiến lược cắt đoạn.
             services.AddIngestion(configuration);
 

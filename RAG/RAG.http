@@ -1,5 +1,12 @@
 @RAG_HostAddress = http://localhost:5263
 
+# ==========================================================================
+# LUU Y HINH DANG PHAN HOI (thay doi co the pha client):
+# POST api/query/ask tra ve OBJECT chu khong con la chuoi tran:
+#   { "answer": "...", "weakPointHit": false }
+# Moi vi du "ask" ben duoi deu tra ve dang nay.
+# ==========================================================================
+
 ### Health check
 GET {{RAG_HostAddress}}/api/query/check-health
 Accept: application/json
@@ -47,6 +54,10 @@ Content-Type: application/json
 # END-TO-END. Kiem tra bang log Grpc.Net.Client:
 #   - Request thoat som  -> 0 dong "Starting gRPC call"
 #   - Request di RAG     -> it nhat 2 dong
+#
+# CANH BAO: tu khi co node diem yeu, "0 dong gRPC" KHONG con phan biet duoc
+# hai truong hop — thoat som do khop route, va thoat som do TRUNG DIEM YEU.
+# Truong "weakPointHit" trong phan hoi moi la thu phan biet chung.
 # ==========================================================================
 
 ### PHAI THOAT SOM: chao hoi
@@ -384,3 +395,61 @@ POST {{RAG_HostAddress}}/api/query/route-utterances
 Content-Type: application/json
 
 { "Route": "chitchat", "Utterances": ["chào ông lão ơi"] }
+
+###
+# ==========================================================================
+# NODE DIEM YEU (WeakPoint). Xem context.md muc 4c va cam bay 5.13 / 5.14.
+#
+# Truoc khi chay: dat WeakPoint:Targets[0].NpcName = "Johny" (mac dinh trong
+# appsettings.json) va WeakPoint:Enabled = true.
+#
+# Viec so do tuong dong la cua LLM, khong phai cua code. Case 2 la ca chung
+# minh dieu do: gan nhu khong chung chu nao voi cau chot ma van phai TRUNG.
+# ==========================================================================
+
+### 1. TRUNG: cau chot nguyen van
+# Ky vong: weakPointHit = true, answer = cau kich ban trong config,
+#          0 dong gRPC, 0 luot goi provider tra loi.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "Trong tấm hình này, thời gian chiếu trên TV đã chỉ rõ tấm hình này được chụp lúc 8h30 chứ không phải 9h" }
+
+### 2. TRUNG: dien dat lai hoan toan khac chu
+# Ky vong: weakPointHit = true. Day la ly do dung LLM thay vi so chuoi:
+# gan nhu khong chung chu nao voi cau chot ma van phai trung.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "trận bóng đang chiếu trong ảnh chỉ đá lúc tám rưỡi, vậy tấm ảnh này đâu phải chụp lúc chín giờ" }
+
+### 3. KHONG TRUNG: hoi gio nhung CHUA khang dinh mau thuan
+# Ky vong: weakPointHit = false. Day la ca gan nhat, de bat nham nhat.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "tấm hình đó chụp lúc mấy giờ" }
+
+### 4. KHONG TRUNG: chi nhac tu khoa co trong cau chot
+# Ky vong: weakPointHit = false.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "ông có xem trận bóng hôm đó không" }
+
+### 5. KHONG TRUNG: dung cau chot nhung gui cho NPC KHAC
+# Ky vong: weakPointHit = false VA 0 dong log cua LlmWeakPointDetector.
+# Do la bang chung duong tat "NPC khong co trong Targets" dang chay: NPC khac
+# thoat o phep tra tu dien, khong ton luot goi LLM nao.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Wills", "npcSystem": "cộc cằn, hay phàn nàn", "Question": "Trong tấm hình này, thời gian chiếu trên TV đã chỉ rõ tấm hình này được chụp lúc 8h30 chứ không phải 9h" }
+
+### 6. TAT NODE: WeakPoint__Enabled=false
+# Ky vong: case 1 tra weakPointHit = false va di duong tra loi binh thuong.
+# (Dat bien roi khoi dong lai; nho cam bay 5.12 — .env ghi de bien cua shell.)
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "Trong tấm hình này, thời gian chiếu trên TV đã chỉ rõ tấm hình này được chụp lúc 8h30 chứ không phải 9h" }

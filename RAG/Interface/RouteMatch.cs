@@ -22,8 +22,12 @@ namespace RAG.Interface
         string SystemPromptTemplate,
         string UserPromptTemplate)
     {
-        public string BuildSystemPrompt(string npcName, string npcPersonality) =>
-            string.Format(SystemPromptTemplate, npcName, npcPersonality);
+        /// <param name="lengthInstruction">
+        /// Chỉ thị độ dài đã render sẵn, nối vào cuối system prompt. Nhận chuỗi đã render để tầng
+        /// định tuyến không phải biết tới LLM provider hay ngân sách token của nó.
+        /// </param>
+        public string BuildSystemPrompt(string npcName, string npcPersonality, string lengthInstruction) =>
+            string.Format(SystemPromptTemplate, npcName, npcPersonality) + lengthInstruction;
 
         public string BuildUserPrompt(string question) =>
             string.Format(UserPromptTemplate, question);

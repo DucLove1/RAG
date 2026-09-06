@@ -25,6 +25,8 @@ namespace RAG.Class
             _logger = logger;
         }
 
+        public int MaxOutputTokens => _config.MaxOutputTokens;
+
         public async Task<string> AskAsync(string system, string user, string? model = null, CancellationToken cancellationToken = default)
         {
             var messages = new List<ChatMessage>
@@ -36,7 +38,7 @@ namespace RAG.Class
             var options = new ChatCompletionOptions
             {
                 Temperature = _config.Temperature,
-                MaxOutputTokenCount = _config.MaxOutputTokenCount
+                MaxOutputTokenCount = _config.MaxOutputTokens
             };
 
             while (true)

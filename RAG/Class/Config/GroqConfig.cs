@@ -34,7 +34,7 @@ namespace RAG.Class.Config
 
         [Required(AllowEmptyStrings = false)]
         [Range(1, 3000)]
-        public int MaxOutputTokenCount { get; set; } = 400;
+        public int MaxOutputTokens { get; set; } = 400;
 
         public IEnumerable<ValidationResult> Validate(ValidationContext context)
         {

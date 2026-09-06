@@ -47,9 +47,13 @@ namespace RAG.Class.Answering
             // Không route nào khớp (null) thì mặc định đi đường truy hồi.
             var route = await _semanticRouter.RouteAsync(normalizedQuestion, cancellationToken);
 
+            // Ngân sách token hỏi thẳng provider đang được inject (chính là provider chọn theo
+            // LLM:Provider), nên con số trong prompt luôn đúng bằng con số API sẽ cắt.
+            var lengthInstruction = _promptConfig.BuildLengthInstruction(_llmProvider.MaxOutputTokens);
+
             return route is not null
-                ? await AnswerWithoutRetrievalAsync(npcName, npcSystem, normalizedQuestion, route, cancellationToken)
-                : await AnswerWithRetrievalAsync(npcName, npcSystem, normalizedQuestion, topK, cancellationToken);
+                ? await AnswerWithoutRetrievalAsync(npcName, npcSystem, normalizedQuestion, route, lengthInstruction, cancellationToken)
+                : await AnswerWithRetrievalAsync(npcName, npcSystem, normalizedQuestion, topK, lengthInstruction, cancellationToken);
         }
 
         /// <summary>
@@ -60,9 +64,10 @@ namespace RAG.Class.Answering
                                                          string npcSystem,
                                                          string question,
                                                          RouteMatch route,
+                                                         string lengthInstruction,
                                                          CancellationToken cancellationToken) =>
             _llmProvider.AskAsync(
-                route.BuildSystemPrompt(npcName, npcSystem),
+                route.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
                 route.BuildUserPrompt(question),
                 cancellationToken: cancellationToken);
 
@@ -78,6 +83,7 @@ namespace RAG.Class.Answering
                                                             string npcSystem,
                                                             string question,
                                                             int topK,
+                                                            string lengthInstruction,
                                                             CancellationToken cancellationToken)
         {
             var questionEmbedding = await _embeddingProvider.GetEmbeddingsAsync(question, cancellationToken);
@@ -95,7 +101,7 @@ namespace RAG.Class.Answering
                 hits.Select(hit => hit.Payload[PayloadFields.Text]));
 
             return await _llmProvider.AskAsync(
-                _promptConfig.BuildSystemPrompt(npcName, npcSystem),
+                _promptConfig.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
                 _promptConfig.BuildUserPrompt(context, question),
                 cancellationToken: cancellationToken);
         }

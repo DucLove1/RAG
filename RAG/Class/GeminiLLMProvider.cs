@@ -31,6 +31,8 @@ namespace RAG.Class
             _logger = logger;
         }
 
+        public int MaxOutputTokens => _config.MaxOutputTokens;
+
         public async Task<string> AskAsync(string system, string user, string? model = null, CancellationToken cancellationToken = default)
         {
             while (true)

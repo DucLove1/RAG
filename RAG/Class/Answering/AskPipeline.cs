@@ -23,6 +23,7 @@ namespace RAG.Class.Answering
         private readonly IQueryNormalizer _queryNormalizer;
         private readonly ISemanticRouter _semanticRouter;
         private readonly IWeakPointDetector _weakPointDetector;
+        private readonly ISemanticAnswerCache _answerCache;
         private readonly PromptConfig _promptConfig;
 
         public AskPipeline(ILLMProvider llmProvider,
@@ -31,6 +32,7 @@ namespace RAG.Class.Answering
                            IQueryNormalizer queryNormalizer,
                            ISemanticRouter semanticRouter,
                            IWeakPointDetector weakPointDetector,
+                           ISemanticAnswerCache answerCache,
                            IOptions<PromptConfig> promptConfig)
         {
             _llmProvider = llmProvider;
@@ -39,6 +41,7 @@ namespace RAG.Class.Answering
             _queryNormalizer = queryNormalizer;
             _semanticRouter = semanticRouter;
             _weakPointDetector = weakPointDetector;
+            _answerCache = answerCache;
             _promptConfig = promptConfig.Value;
         }
 
@@ -121,6 +124,22 @@ namespace RAG.Class.Answering
         {
             var questionEmbedding = await _embeddingProvider.GetEmbeddingsAsync(question, cancellationToken);
 
+            // Cache ngữ nghĩa nằm ĐÚNG SAU bước nhúng và TRƯỚC Qdrant: vector vừa có ở dòng trên,
+            // nên một lần trúng cache cắt bỏ đúng hai thứ đắt nhất còn lại của request — truy hồi
+            // và lượt gọi LLM — mà không phát sinh thêm lời gọi API nào.
+            //
+            // Đặt ở đầu AskAsync thì tiết kiệm thêm được cả bước nhúng, nhưng lúc đó chưa có
+            // vector, và quan trọng hơn là nó sẽ nuốt luôn nhánh định tuyến lẫn nhánh điểm yếu.
+            // Nhánh điểm yếu là chỗ chết người: cache khớp GẦN ĐÚNG, nên một câu chỉ hao hao câu
+            // chốt sẽ kích hoạt nhịp bắt bài cho người chơi chưa hề suy luận ra — mà AskResult trả
+            // về từ cache lại mang WeakPointHit = false, nên game cũng không ghi nhận đó là sự
+            // kiện cốt truyện. Nó còn đóng băng cả câu tán gẫu, vốn phải đổi giọng mỗi lần gặp.
+            var cacheQuery = new SemanticAnswerQuery(npcName, npcSystem, question, questionEmbedding);
+
+            var cached = await _answerCache.TryGetAsync(cacheQuery, cancellationToken);
+            if (cached is not null)
+                return cached.Answer;
+
             // Không gọi EnsureCollectionExistsAsync ở đây: đường trả lời chỉ ĐỌC, và collection đã
             // được đảm bảo ở đường nạp dữ liệu. Bản trước gọi ở mỗi request, tốn một round-trip
             // gRPC cho 100% traffic mà không lần nào làm gì khác ngoài xác nhận điều đã biết.
@@ -133,10 +152,18 @@ namespace RAG.Class.Answering
                 _promptConfig.ContextSeparator,
                 hits.Select(hit => hit.Payload[PayloadFields.Text]));
 
-            return await _llmProvider.AskAsync(
+            var answer = await _llmProvider.AskAsync(
                 _promptConfig.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
                 _promptConfig.BuildUserPrompt(context, question),
                 cancellationToken: cancellationToken);
+
+            // Cờ hasContext để cache tự quyết định có ghi hay không: caller biết truy hồi có ra gì
+            // không, cache thì không. Cùng kiểu chia việc với tham số unchanged của
+            // INormalizationCache. Câu trả lời dựng trên ngữ cảnh rỗng gần như luôn là "tôi không
+            // biết", ghi lại là đóng băng một lần Qdrant hụt thành câu trả lời chính thức.
+            await _answerCache.SetAsync(cacheQuery, answer, hasContext: hits.Count > 0, cancellationToken);
+
+            return answer;
         }
     }
 }

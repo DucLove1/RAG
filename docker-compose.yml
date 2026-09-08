@@ -1,0 +1,49 @@
+# Redis cho cache cau tra loi theo ngu nghia (RediSearch VECTOR index).
+#
+# ANH: dung image `redis` CHINH THUC chu khong phai `redis/redis-stack-server`. Tu ban Redis 8 GA,
+# Redis Query Engine (vector search, cac lenh FT.*) da nam SAN trong ban Redis Open Source;
+# redis-stack tro thanh thua va da bi khai tu. Pin vao redis-stack-server bay gio la bat dau tren
+# mot image da het vong doi.
+#
+# LUU Y KIEN TRUC: image chinh thuc chi build kem module tren amd64 va arm64. Tren arch khac thi
+# khong co FT.* — kiem bang `redis-cli MODULE LIST` (phai thay muc "search") TRUOC khi ket luan la
+# code sai.
+services:
+  redis:
+    image: redis:8-alpine
+    container_name: rag-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command:
+      - redis-server
+      # RDB la du, khong bat AOF: mat cache khi may sap nguon chi ton mot lan sinh lai cau tra loi,
+      # con AOF thi ghi dia moi lenh de doi lay mot dam bao ma cache khong can toi.
+      - --save
+      - "3600 1"
+      - --appendonly
+      - "no"
+      # Tran CUNG phia server. TtlHours cua ung dung chi chan duoc theo THOI GIAN; con day chan
+      # theo DUNG LUONG. Khoang 4KB moi entry (3KB vector + do thi + hash) nen 256mb la khoang
+      # 60 nghin entry.
+      - --maxmemory
+      - "256mb"
+      # volatile-lru chu khong phai allkeys-lru: moi entry cua cache deu co TTL nen deu duoc xet
+      # duoi chinh sach nay, con neu sau nay co ai dung chung instance cho viec khac (khoa, session)
+      # thi du lieu do khong co TTL va se KHONG bi day ra nham.
+      #
+      # Dung noeviction (mac dinh cua Redis) thi HSET se BAO LOI khi day, ma SetAsync lai nuot loi
+      # theo dung luat fail-open — an toan ve ky thuat nhung ban se khong bao gio biet la minh da
+      # ngung cache tu luc nao.
+      - --maxmemory-policy
+      - "volatile-lru"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  redis-data:

@@ -17,6 +17,7 @@
   <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.15" />
+    <PackageReference Include="NRedisStack" Version="1.7.4" />
     <PackageReference Include="OpenAI" Version="2.10.0" />
     <PackageReference Include="Qdrant.Client" Version="1.18.1" />
   </ItemGroup>

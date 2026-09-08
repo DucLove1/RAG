@@ -24,6 +24,12 @@ namespace RAG.Extension.DependencyInjection
             // Kho vector (Qdrant qua gRPC).
             services.AddQdrant(configuration);
 
+            // Cache câu trả lời theo ngữ nghĩa (Redis + RediSearch). KHÔNG phải decorator — khác
+            // AddQueryCache ở trên vốn phải đứng trước thứ nó bọc. Ràng buộc thứ tự duy nhất ở đây
+            // là phải nằm TRƯỚC AddRagPipeline, vì AskPipeline nhận ISemanticAnswerCache qua
+            // constructor.
+            services.AddSemanticAnswerCache(configuration);
+
             // Node chuẩn hóa câu hỏi người dùng (viết tắt, sai chính tả, thiếu dấu).
             services.AddQueryNormalization(configuration);
 

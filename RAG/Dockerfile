@@ -46,6 +46,20 @@ ENV QueryCache__PersistPath=/var/data/query-cache.bin
 # nhung mat sau moi lan deploy.
 RUN mkdir -p /var/data
 
+# ---------------------------------------------------------------------------
+# CACHE CAU TRA LOI THEO NGU NGHIA (Redis) — khong dung Disk, khong dat o day.
+#
+# Tang cache nay nam NGOAI tien trinh nen khong lien quan gi toi /var/data. Chuoi ket noi phai dat
+# bang bien moi truong tuy moi truong:
+#   - Chay chung docker-compose voi service `redis`: host la TEN SERVICE, khong phai localhost
+#       SemanticAnswerCache__ConnectionString=redis:6379
+#   - Tren Render: phai la mot Redis MANAGED co module search (Redis Cloud free tier co).
+#       localhost:6379 khong ton tai o do.
+#
+# Mac dinh trong appsettings.json la Enabled=false, nen khong dat bien thi app chay binh thuong
+# voi Null Object — khong co cache, khong co loi.
+# ---------------------------------------------------------------------------
+
 EXPOSE 8080
 
 ENV ASPNETCORE_URLS=http://+:8080

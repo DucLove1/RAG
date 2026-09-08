@@ -23,9 +23,10 @@ Mọi prompt phải giữ nguyên tắc này.
 | LLM chuẩn hóa | **Gemini** (`gemini-3.1-flash-lite`) qua HttpClient |
 | Embedding | **Gemini** (`models/gemini-embedding-2`), 768 chiều |
 | Vector store | **Qdrant Cloud** qua gRPC |
+| Cache câu trả lời | **Redis 8** + RediSearch (KNN cosine, FLAT) — tùy chọn, mặc định tắt |
 | Test | **Không có** (chưa có test project) |
 
-Chỉ 4 NuGet package: `DotNetEnv`, `Microsoft.AspNetCore.OpenApi`, `OpenAI`, `Qdrant.Client`.
+Chỉ 5 NuGet package: `DotNetEnv`, `Microsoft.AspNetCore.OpenApi`, `OpenAI`, `Qdrant.Client`, `NRedisStack`.
 
 ---
 
@@ -66,8 +67,21 @@ Người dùng có yêu cầu rõ ràng, đã áp dụng nhất quán trong toà
    └─ null        → 3. Đối chiếu điểm yếu  (IWeakPointDetector, fail-open — xem mục 4c)
                     ├─ TRÚNG       → câu kịch bản trong config + weakPointHit = true
                     │                (KHÔNG truy hồi, KHÔNG gọi LLM trả lời)
-                    └─ không trúng → AnswerWithRetrievalAsync (Embedding → Search → LLM)
+                    └─ không trúng → AnswerWithRetrievalAsync
+                                     (Embedding → CACHE NGỮ NGHĨA → Search → LLM → ghi cache)
 ```
+
+**Cache ngữ nghĩa nằm ĐÚNG SAU bước nhúng và TRƯỚC Qdrant.** Vector đã có sẵn ở đó nên tra cứu
+không tốn thêm lượt gọi API nào, và một lần trúng cắt bỏ cả truy hồi lẫn lượt gọi LLM trả lời.
+
+Đặt ở đầu pipeline thì tiết kiệm thêm được bước nhúng, nhưng nó sẽ nuốt luôn nhánh định tuyến và
+nhánh điểm yếu. Nhánh điểm yếu là chỗ chết người: cache khớp GẦN ĐÚNG, nên một câu chỉ hao hao câu
+chốt sẽ kích hoạt nhịp bắt bài cho người chơi chưa hề suy luận ra — mà kết quả lấy từ cache lại
+mang `weakPointHit = false`, nên game cũng không ghi nhận đó là sự kiện cốt truyện.
+
+Hệ quả đo được: với NPC **không có** mục trong `WeakPoint:Targets`, một lần trúng cache rút thời
+gian phản hồi từ ~5,3s xuống ~1,0s. Với Johny thì chỉ còn ~2x, vì lượt LLM đối chiếu điểm yếu chạy
+TRƯỚC seam cache nên không cắt được.
 
 **Bước 3 chỉ chạy trên nhánh nội dung game.** Khớp route nghĩa là câu này không hỏi nội dung game —
 mọi route hiện có (`chitchat`, `farewell`, `thanks`, `out_of_scope`) đều là thứ khác. Câu chốt bắt
@@ -103,7 +117,8 @@ nhánh truy hồi là cache hit, tổng vẫn đúng 1 lượt gọi API. **Đá
 | POST | `api/query/create-collection` | Tạo collection Qdrant |
 | POST | `api/query/route-debug` | **Chẩn đoán định tuyến** — trả đánh giá mọi route + `strategy`. Không chạm Qdrant; CÓ gọi LLM khi `Strategy = Llm` |
 | POST | `api/query/route-utterances` | **Thêm câu mẫu lúc chạy** (text hoặc vector), hiệu lực ngay |
-| GET | `api/query/cache-stats` | **Tỉ lệ trúng cache** hỏi đáp |
+| GET | `api/query/cache-stats` | **Tỉ lệ trúng cache** hỏi đáp — gồm cả khối `semanticAnswer` (có thêm `errors`, vì tầng đó fail-open nên mọi lỗi đều bị nuốt) |
+| DELETE | `api/query/answer-cache` | **Xoá câu trả lời đã nhớ** của một NPC. Phải truyền cả `npcName` lẫn `npcSystem` — phân vùng cache tính theo cả hai |
 | GET | `api/query/check-health` | Health check |
 
 `route-debug` là công cụ chính để tinh chỉnh route. Cố tình **không** đi qua cache định tuyến:
@@ -523,6 +538,28 @@ Bốn ràng buộc của Render Disk (đã tra tài liệu):
 - Chỉ dữ liệu **dưới mount path** sống qua deploy/restart.
 - Disk **chặn deploy không gián đoạn** → có `SIGTERM` → flush lúc tắt chạy được.
 - Disk **chặn scale nhiều instance** → loại bỏ hẳn rủi ro nhiều container ghi đè cùng một file.
+
+### Redis của cache ngữ nghĩa trên Render
+
+Tầng cache câu trả lời nằm NGOÀI tiến trình nên **không liên quan gì tới Disk** — nó gỡ luôn ba
+trong bốn ràng buộc ở trên: sống qua deploy mà không cần gói trả phí, và không chặn scale nhiều
+instance vì nhiều container dùng CHUNG một cache thay vì tranh nhau một file.
+
+Đổi lại phải có một Redis managed **có module search** (Redis Cloud free tier có). `localhost:6379`
+không tồn tại trên Render. Hai biến cần đặt ở Environment:
+
+```
+SemanticAnswerCache__Enabled=true
+SemanticAnswerCache__ConnectionString=<host>:<port>,ssl=true,password=<...>
+```
+
+Không đặt thì `Enabled` mặc định `false` trong `appsettings.json` và app chạy bình thường với Null
+Object — không có cache, không có lỗi.
+
+⚠️ **`SemanticAnswerCache__IndexName` là cần gạt đổi phiên bản.** Khóa cache cố ý không mang tên
+model nhúng, nên đổi `EmbeddingModel:Model` hay nạp lại Qdrant mà quên bump hậu tố (`v1` → `v2`)
+thì cache tiếp tục trả câu trả lời dựng trên dữ liệu cũ **mà không có một dòng lỗi nào**. Dọn index
+cũ bằng `FT.DROPINDEX <tên cũ> DD`.
 
 `.env` **không** có trong image (đã thêm vào `.dockerignore`); secret đặt ở Environment của Render.
 Đã kiểm chứng app khởi động bình thường khi thiếu `.env` — `Env.Load()` bỏ qua file không tồn tại.

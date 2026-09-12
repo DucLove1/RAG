@@ -7,6 +7,9 @@ using System.Collections.Concurrent;
 using System.ClientModel;
 using Microsoft.Extensions.Options;
 
+// ReasoningEffortLevel của OpenAI SDK đang gắn nhãn thử nghiệm; chỉ tắt cảnh báo trong adapter Groq này.
+#pragma warning disable OPENAI001
+
 namespace RAG.Class
 {
     public class GroqCloudProvider : ILLMProvider
@@ -38,7 +41,8 @@ namespace RAG.Class
             var options = new ChatCompletionOptions
             {
                 Temperature = _config.Temperature,
-                MaxOutputTokenCount = _config.MaxOutputTokens
+                MaxOutputTokenCount = _config.MaxOutputTokens,
+                ReasoningEffortLevel = _config.ReasoningEffort is { } effort ? ToSdkLevel(effort) : null
             };
 
             while (true)
@@ -78,5 +82,15 @@ namespace RAG.Class
                 }
             }
         }
+
+        private static ChatReasoningEffortLevel ToSdkLevel(GroqReasoningEffort effort) => effort switch
+        {
+            GroqReasoningEffort.None => ChatReasoningEffortLevel.None,
+            GroqReasoningEffort.Default => new ChatReasoningEffortLevel(GroqApiDefaults.ReasoningEffortDefault),
+            GroqReasoningEffort.Low => ChatReasoningEffortLevel.Low,
+            GroqReasoningEffort.Medium => ChatReasoningEffortLevel.Medium,
+            GroqReasoningEffort.High => ChatReasoningEffortLevel.High,
+            _ => throw new ArgumentOutOfRangeException(nameof(effort), effort, null)
+        };
     }
 }

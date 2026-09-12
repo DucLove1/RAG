@@ -78,7 +78,8 @@ namespace RAG.Class
                 GenerationConfig = new GeminiGenerationConfig
                 {
                     Temperature = _config.Temperature,
-                    MaxOutputTokens = _config.MaxOutputTokens
+                    MaxOutputTokens = _config.MaxOutputTokens,
+                    ThinkingConfig = BuildThinkingConfig()
                 }
             };
 
@@ -108,5 +109,15 @@ namespace RAG.Class
 
             return string.Concat(parts.Select(part => part.Text)).Trim();
         }
+
+        /// <summary>Không cấu hình mức suy nghĩ nào thì bỏ hẳn thinkingConfig để model chạy theo mặc định.</summary>
+        private GeminiThinkingConfig? BuildThinkingConfig() =>
+            _config.ThinkingLevel is null && _config.ThinkingBudget is null
+                ? null
+                : new GeminiThinkingConfig
+                {
+                    ThinkingLevel = _config.ThinkingLevel,
+                    ThinkingBudget = _config.ThinkingBudget
+                };
     }
 }

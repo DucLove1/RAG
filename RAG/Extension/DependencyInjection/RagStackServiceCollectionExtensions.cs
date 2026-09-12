@@ -50,6 +50,11 @@ namespace RAG.Extension.DependencyInjection
             // ProblemDetails + ánh xạ exception nghiệp vụ sang mã HTTP đúng nghĩa.
             services.AddErrorHandling(configuration);
 
+            // Đo độ trễ từng chặng. PHẢI ĐỨNG CUỐI CÙNG: khác mọi dòng trên, dòng này không đăng ký
+            // service mới mà BỌC những service đã đăng ký ở trên. Đẩy nó lên trên thì nó bọc vào
+            // khoảng không — và sẽ ném ngay lúc khởi động chứ không âm thầm mất số liệu.
+            services.AddLatencyTracking(configuration);
+
             return services;
         }
     }

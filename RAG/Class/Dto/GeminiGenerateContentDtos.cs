@@ -1,3 +1,4 @@
+using RAG.Class.Constants;
 using System.Text.Json.Serialization;
 
 namespace RAG.Class.Dto
@@ -39,6 +40,21 @@ namespace RAG.Class.Dto
 
         [JsonPropertyName("maxOutputTokens")]
         public int MaxOutputTokens { get; init; }
+
+        [JsonPropertyName("thinkingConfig")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public GeminiThinkingConfig? ThinkingConfig { get; init; }
+    }
+
+    public record GeminiThinkingConfig
+    {
+        [JsonPropertyName("thinkingLevel")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public GeminiThinkingLevel? ThinkingLevel { get; init; }
+
+        [JsonPropertyName("thinkingBudget")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int? ThinkingBudget { get; init; }
     }
 
     public record GeminiGenerateContentResponse

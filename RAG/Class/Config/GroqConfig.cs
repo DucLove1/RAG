@@ -1,3 +1,4 @@
+using RAG.Class.Constants;
 using System.ComponentModel.DataAnnotations;
 
 namespace RAG.Class.Config
@@ -35,6 +36,12 @@ namespace RAG.Class.Config
         [Required(AllowEmptyStrings = false)]
         [Range(1, 3000)]
         public int MaxOutputTokens { get; set; } = 400;
+
+        /// <summary>
+        /// Mức suy nghĩ gửi lên dưới dạng reasoning_effort. Để trống thì không gửi, model chạy theo mặc định.
+        /// Token suy nghĩ vẫn tính vào <see cref="MaxOutputTokens"/>, nên mức thấp giúp câu trả lời không bị cắt cụt.
+        /// </summary>
+        public GroqReasoningEffort? ReasoningEffort { get; set; }
 
         public IEnumerable<ValidationResult> Validate(ValidationContext context)
         {

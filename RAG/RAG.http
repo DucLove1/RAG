@@ -477,3 +477,111 @@ POST {{RAG_HostAddress}}/api/query/route-debug
 Content-Type: application/json
 
 { "Question": "Trong tấm hình này, thời gian chiếu trên TV đã chỉ rõ tấm hình này được chụp lúc 8h30 chứ không phải 9h" }
+
+########################################################################################
+# CACHE CAU TRA LOI THEO NGU NGHIA — bo kiem chung CO DINH
+#
+# Dung bo nay theo DUNG thu tu, KHONG doi cau chu, moi khi:
+#   - doi SemanticAnswerCache:SimilarityThreshold
+#   - doi SemanticAnswerCache:Provider (Faiss <-> Redis)
+#   - nang version package Faiss.NET
+#
+# Vi sao phai co dinh: gia tri cua bo nay nam o cho DOI CHIEU duoc hai lan chay voi nhau. Go lai
+# mot danh sach cau khac moi lan thi khong con ket luan duoc gi ngoai "co ve chay duoc".
+#
+# Chuan bi: .env dat SEMANTICANSWERCACHE__ENABLED=true. De thay dong "Truot cache ngu nghia" (muc
+# Debug) thi chay o moi truong Development — appsettings.Development.json da dat "RAG": "Debug".
+########################################################################################
+
+### C1. LAN DAU: phai TRUOT va di het duong Qdrant + LLM
+# Ky vong: co dong `Starting gRPC call` cua Qdrant, va mot luot goi LLM.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "lúc 9 giờ tối hôm đó ông đang ở đâu" }
+
+### C2. TRUNG TUYET DOI: gui lai DUNG cau C1
+# Ky vong: 0 dong gRPC, 0 luot LLM, va mot dong muc Information:
+#   Trúng cache ngữ nghĩa cho NPC Johny (độ tương đồng 1.000): "..." ≈ "...".
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "lúc 9 giờ tối hôm đó ông đang ở đâu" }
+
+### C3. TRUNG NGU NGHIA: cung y, khac cach dien dat
+# Ky vong: TRUNG, do tuong dong trong khoang (nguong, 1.0).
+# PHAI doc dong log va tu kiem bang mat rang hai cau that su cung nghia — do la toan bo muc dich
+# cua viec in CA HAI cau ra log.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "9 giờ tối hôm ấy thì ông ở chỗ nào" }
+
+### C4. TRUOT: cau khac nghia han
+# Ky vong: TRUOT. O muc Debug phai thay dong:
+#   Trượt cache ngữ nghĩa cho NPC Johny: gần nhất là "..." ở 0.xxx, dưới ngưỡng 0.900.
+# Dong nay la can cu DUY NHAT de HA nguong; khong co no thi chi chinh duoc mot chieu.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "ông quen nạn nhân bao lâu rồi" }
+
+### C5. BAI TEST BAO MAT (1/2): DUNG cau C1 nhung gui cho NPC KHAC
+# PHAI TRUOT. Trung o day nghia la phan vung theo NPC hong — DUNG moi thu lai va sua truoc.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Wills", "npcSystem": "cộc cằn, hay phàn nàn", "Question": "lúc 9 giờ tối hôm đó ông đang ở đâu" }
+
+### C6. BAI TEST BAO MAT (2/2): cung NPC, cung cau, DOI npcSystem
+# PHAI TRUOT. Mo ta tinh cach do CLIENT gui len theo tung request va di thang vao system prompt,
+# nen cung ten NPC voi hai persona khac nhau la hai cau tra loi khac nhau. Phan vung phai mang ca
+# hai, khong thi cache tra cau sinh theo persona nay cho mot request khai persona kia.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Johny", "npcSystem": "xởi lởi, thích kể chuyện", "Question": "lúc 9 giờ tối hôm đó ông đang ở đâu" }
+
+### C7. SO LIEU
+# Ky vong sau C1..C6: hits = 2 (C2, C3), misses = 4 (C1, C4, C5, C6), writes = 4.
+# `errors` PHAI BANG 0 — khac 0 nghia la co exception dang bi fail-open nuot (lech so chieu,
+# native khong nap duoc, cham tran MaxPartitions).
+GET {{RAG_HostAddress}}/api/query/cache-stats
+
+### C8. XOA CACHE cua mot phan vung
+# Ky vong: removed > 0, log Information "Đã xoá N entry cache ngữ nghĩa của NPC Johny."
+# Chay lai C2 sau lenh nay thi phai TRUOT.
+#
+# LUU Y voi provider Faiss: cache ghi xuong dia theo kieu write-behind. Xoa xong ma tien trinh bi
+# SIGKILL truoc nhip flush ke tiep thi cau vua xoa SONG LAI o lan khoi dong sau. Tat em (Ctrl+C /
+# docker stop) thi co flush nen khong sao.
+DELETE {{RAG_HostAddress}}/api/query/answer-cache?npcName=Johny&npcSystem=dè dặt, hay né tránh
+
+### C9. BEN VUNG (chi voi Provider=Faiss)
+# Cach chay:
+#   1. Chay C1..C3, roi Ctrl+C de StopAsync flush (hoac doi mot nhip FlushIntervalSeconds).
+#   2. Kiem RAG/App_Data/answer-cache.bin ton tai. Kich thuoc xap xi
+#      so_entry x (3 KB + do dai phan chu) — lech qua xa nghia la dang ghi vector dang text.
+#   3. Khoi dong lai, phai thay log: "Cache câu trả lời đã sẵn sàng với N entry nạp từ đĩa."
+#   4. Goi request duoi day. PHAI TRUNG, 0 luot LLM.
+# Day la bai test quan trong nhat cua ca tinh nang.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "lúc 9 giờ tối hôm đó ông đang ở đâu" }
+
+### C10. DOI CHIEU FAISS vs REDIS — bai test dung dan quan trong nhat
+# Cach chay:
+#   1. docker compose up -d redis
+#   2. SEMANTICANSWERCACHE__PROVIDER=Redis, chay C1..C7, ghi lai MOI dong "Trúng cache ngữ nghĩa"
+#      kem do tuong dong, va ket qua C7.
+#   3. Xoa App_Data/answer-cache.bin; redis-cli FT.DROPINDEX idx:npc-answers-v1 DD
+#   4. SEMANTICANSWERCACHE__PROVIDER=Faiss, chay LAI dung C1..C7.
+#   5. So sanh:
+#      - Tap cap TRUNG phai GIONG NHAU.
+#      - Do tuong dong phai khop toi ~1e-3 (ca hai deu la cosine day du: Redis quy doi
+#        1 - distance cua RediSearch, FAISS cham lai bang VectorMath.CosineSimilarity).
+#        Lech HE THONG  => quen chuan hoa L2, hoac lat dau.
+#        Lech NGAU NHIEN lon => doc nham truong trong ket qua search.
+#      - hits/misses o C7 phai trung.
+GET {{RAG_HostAddress}}/api/query/cache-stats

@@ -1,7 +1,5 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
 using Microsoft.Extensions.Options;
 using NRedisStack.RedisStackCommands;
 using NRedisStack.Search;
@@ -32,7 +30,8 @@ namespace RAG.Class.Caching.Redis
                                                    IDisposable
     {
         private readonly IRedisConnection _connection;
-        private readonly SemanticAnswerCacheConfig _config;
+        private readonly SemanticAnswerCacheConfig _shared;
+        private readonly SemanticAnswerCacheRedisConfig _config;
         private readonly ILogger<RedisSemanticAnswerCache> _logger;
 
         /// <summary>Nối tiếp các lần kiểm tra index để hai request đồng thời không cùng gọi FT.CREATE.</summary>
@@ -56,11 +55,13 @@ namespace RAG.Class.Caching.Redis
         private long _errors;
 
         public RedisSemanticAnswerCache(IRedisConnection connection,
-                                        IOptions<SemanticAnswerCacheConfig> options,
+                                        IOptions<SemanticAnswerCacheConfig> sharedOptions,
+                                        IOptions<SemanticAnswerCacheRedisConfig> redisOptions,
                                         ILogger<RedisSemanticAnswerCache> logger)
         {
             _connection = connection;
-            _config = options.Value;
+            _shared = sharedOptions.Value;
+            _config = redisOptions.Value;
             _logger = logger;
         }
 
@@ -144,7 +145,7 @@ namespace RAG.Class.Caching.Redis
                 return null;
             }
 
-            if (similarity < _config.SimilarityThreshold)
+            if (similarity < _shared.SimilarityThreshold)
             {
                 Interlocked.Increment(ref _misses);
 
@@ -158,7 +159,7 @@ namespace RAG.Class.Caching.Redis
                     query.NpcName,
                     ReadField(document, AnswerCacheFields.Question),
                     similarity,
-                    _config.SimilarityThreshold);
+                    _shared.SimilarityThreshold);
 
                 return null;
             }
@@ -173,7 +174,7 @@ namespace RAG.Class.Caching.Redis
 
             var cachedQuestion = ReadField(document, AnswerCacheFields.Question);
 
-            if (_config.SlidingTtl)
+            if (_shared.SlidingTtl)
                 RefreshTtl(database, document.Id);
 
             Interlocked.Increment(ref _hits);
@@ -247,7 +248,7 @@ namespace RAG.Class.Caching.Redis
             var batch = database.CreateBatch();
 
             var write = batch.HashSetAsync(key, entries);
-            var expire = batch.KeyExpireAsync(key, TimeSpan.FromHours(_config.TtlHours));
+            var expire = batch.KeyExpireAsync(key, TimeSpan.FromHours(_shared.TtlHours));
 
             batch.Execute();
 
@@ -267,12 +268,12 @@ namespace RAG.Class.Caching.Redis
                 return false;
 
             // Câu cực ngắn ("ừ", "thế à") nhúng ra vector nhiễu, gần như thứ gì cũng vượt ngưỡng.
-            if (query.Question.Trim().Length < _config.MinCacheableQuestionLength)
+            if (query.Question.Trim().Length < _shared.MinCacheableQuestionLength)
                 return false;
 
             // Truy hồi rỗng thì LLM gần như chắc chắn trả "tôi không biết". Ghi lại là đóng băng
             // một lần Qdrant hụt thành câu trả lời chính thức cho cả một chùm câu hỏi.
-            return hasContext || _config.CacheAnswersWithoutContext;
+            return hasContext || _shared.CacheAnswersWithoutContext;
         }
 
         /// <summary>
@@ -282,7 +283,7 @@ namespace RAG.Class.Caching.Redis
         /// </summary>
         private void RefreshTtl(IDatabase database, string documentKey) =>
             database.KeyExpire(documentKey,
-                               TimeSpan.FromHours(_config.TtlHours),
+                               TimeSpan.FromHours(_shared.TtlHours),
                                flags: CommandFlags.FireAndForget);
 
         // ---------------------------------------------------------------------------------------
@@ -297,7 +298,7 @@ namespace RAG.Class.Caching.Redis
                 if (database is null || !_indexEnsured)
                     return 0;
 
-                var search = new Query(BuildTagFilter(Tag(npcName + ' ' + npcPersona)))
+                var search = new Query(BuildTagFilter(AnswerCachePartition.Tag(npcName, npcPersona)))
                     .Limit(0, PurgeBatchSize)
                     .Dialect(AnswerCacheFields.Dialect);
 
@@ -416,34 +417,12 @@ namespace RAG.Class.Caching.Redis
         // ---------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Giá trị tag phân vùng: băm của (tên NPC + mô tả tính cách).
-        /// <para>
-        /// Persona phải nằm trong phân vùng vì nó do CLIENT gửi lên theo từng request và đi thẳng
-        /// vào system prompt — cùng tên NPC với hai persona khác nhau là hai câu trả lời khác nhau.
-        /// Gộp vào giá trị băm thay vì thêm một field TAG thứ hai: một field ít hơn để đồng bộ,
-        /// và bộ lọc truy vấn cũng ngắn hơn.
-        /// </para>
+        /// Giá trị tag phân vùng. Việc băm nằm ở <see cref="AnswerCachePartition"/> chứ không ở
+        /// đây: provider FAISS phải phân vùng GIỐNG HỆT, và hai bản sao của cùng một quy tắc băm
+        /// sẽ lệch nhau vào đúng ngày ai đó sửa một bên.
         /// </summary>
-        private static string BuildTag(SemanticAnswerQuery query) => Tag(query.NpcName + ' ' + query.NpcPersona);
-
-        /// <summary>
-        /// Băm một giá trị phân vùng thành hex để dùng làm TAG.
-        /// <para>
-        /// Cú pháp TAG của RediSearch coi khoảng trắng và gần như toàn bộ dấu câu là ký tự đặc
-        /// biệt phải escape, còn DẤU PHẨY thì bị hiểu là dấu ngăn giữa hai tag. Tên NPC trong game
-        /// có cả khoảng trắng lẫn dấu tiếng Việt, nên đi đường escape nghĩa là phải chép đúng một
-        /// bảng escape của RediSearch và giữ nó đồng bộ qua các phiên bản. Băm ra [0-9A-F] thì
-        /// không còn ký tự nào cần escape, độ dài cố định, và bảng escape đó biến mất khỏi codebase.
-        /// </para>
-        /// <para>
-        /// Chuẩn hóa Trim + ToLowerInvariant TRƯỚC khi băm: "Johny" và "johny " phải là cùng một
-        /// NPC, và quyết định đó nên nằm ở đây một cách cố ý thay vì phụ thuộc vào việc client gửi
-        /// lên thế nào.
-        /// </para>
-        /// </summary>
-        private static string Tag(string value) =>
-            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value.Trim().ToLowerInvariant())))
-                   [..AnswerCacheFields.TagLength];
+        private static string BuildTag(SemanticAnswerQuery query) =>
+            AnswerCachePartition.Tag(query.NpcName, query.NpcPersona);
 
         /// <summary>
         /// Khóa document, tất định theo (phân vùng, câu hỏi): hỏi lại ĐÚNG câu cũ thì HSET ghi đè
@@ -460,7 +439,7 @@ namespace RAG.Class.Caching.Redis
         /// </para>
         /// </summary>
         private string BuildDocumentKey(SemanticAnswerQuery query) =>
-            $"{_config.KeyPrefix}{BuildTag(query)}:{Tag(query.Question)}";
+            $"{_config.KeyPrefix}{BuildTag(query)}:{AnswerCachePartition.QuestionHash(query.Question)}";
 
         /// <summary>
         /// Truy vấn KNN kèm bộ lọc TRƯỚC. Phần trong ngoặc chạy trước mũi tên, nên RediSearch thu

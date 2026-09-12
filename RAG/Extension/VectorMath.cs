@@ -32,6 +32,46 @@
         }
 
         /// <summary>
+        /// Trả về BẢN SAO đã chuẩn hóa L2 (độ dài 1). KHÔNG sửa mảng nguồn — vector câu hỏi còn
+        /// được <c>AskPipeline</c> dùng lại để truy hồi Qdrant ngay sau lượt tra cache, nên sửa
+        /// tại chỗ là làm hỏng truy hồi một cách hoàn toàn im lặng.
+        /// <para>
+        /// Tồn tại vì chỉ mục <c>IndexFlatIP</c> của FAISS chấm bằng tích vô hướng THUẦN. Nó CHỈ
+        /// bằng cosine khi cả hai vector có độ dài 1, mà Gemini không chuẩn hóa khi
+        /// <c>output_dimensionality</c> bị cắt bớt so với số chiều gốc (xem
+        /// <see cref="CosineSimilarity"/>). Bỏ bước này thì điểm trả về là |a||b|cos, tức là ĐỘ
+        /// DÀI vector chen vào xếp hạng — câu dài hay nhiều từ hiếm luôn thắng — và mọi điểm rời
+        /// khỏi thang [0,1] nên ngưỡng cấu hình mất hết ý nghĩa. Không exception, không log.
+        /// </para>
+        /// <para>
+        /// Chuẩn hóa BẢO TOÀN cosine (cosine bất biến với phép nhân vô hướng), nên lưu bản đã
+        /// chuẩn hóa là an toàn: chấm điểm trên nó cho đúng con số như chấm trên vector gốc.
+        /// </para>
+        /// <para>
+        /// Vector rỗng hoặc không có độ dài thì trả bản sao nguyên trạng — fail-open, vì điểm sẽ
+        /// là 0 và không bao giờ vượt ngưỡng.
+        /// </para>
+        /// </summary>
+        public static float[] L2Normalize(ReadOnlySpan<float> vector)
+        {
+            var result = vector.ToArray();
+
+            double norm = 0d;
+            foreach (var value in vector)
+                norm += (double)value * value;
+
+            if (norm <= 0d)
+                return result;
+
+            norm = Math.Sqrt(norm);
+
+            for (var i = 0; i < result.Length; i++)
+                result[i] = (float)(result[i] / norm);
+
+            return result;
+        }
+
+        /// <summary>
         /// Vector có độ dài khác 0 hay không. Dùng để loại vector rác khi nạp cache:
         /// GeminiEmbeddingProvider trả mảng rỗng/giá trị 0 khi API lỗi thay vì ném exception.
         /// </summary>

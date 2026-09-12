@@ -12,7 +12,7 @@ namespace RAG.Class.Caching.Redis
     /// </summary>
     public sealed class RedisConnectionProvider : IRedisConnection, IDisposable
     {
-        private readonly SemanticAnswerCacheConfig _config;
+        private readonly SemanticAnswerCacheRedisConfig _config;
         private readonly ILogger<RedisConnectionProvider> _logger;
 
         /// <summary>Nối tiếp các lần dựng kết nối để hai request đồng thời không cùng mở hai multiplexer.</summary>
@@ -29,7 +29,7 @@ namespace RAG.Class.Caching.Redis
         /// <summary>Mạch đang mở hay không, để chỉ ghi log MỘT lần lúc chuyển trạng thái.</summary>
         private bool _circuitOpen;
 
-        public RedisConnectionProvider(IOptions<SemanticAnswerCacheConfig> options,
+        public RedisConnectionProvider(IOptions<SemanticAnswerCacheRedisConfig> options,
                                        ILogger<RedisConnectionProvider> logger)
         {
             _config = options.Value;

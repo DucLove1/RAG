@@ -20,6 +20,11 @@ namespace RAG.Extension.DependencyInjection
             services.AddValidatedOptions<PromptConfig>(configuration, PromptConfig.SectionName);
 
             services.AddSingleton<IAskService, AskPipeline>();
+
+            // Lớp RIÊNG chứ không phải cùng một lớp cài hai interface: hai đường có hình dạng trả
+            // về khác hẳn nhau. Lý do đầy đủ nằm ở XML doc của AskStreamPipeline.
+            services.AddSingleton<IAskStreamService, AskStreamPipeline>();
+
             services.AddSingleton<IRouteDiagnostics, RouteDiagnosticsService>();
 
             // IIngestionService đã được đăng ký ở AddIngestion; IRouteAdmin do façade đảm nhiệm

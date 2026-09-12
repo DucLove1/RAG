@@ -68,6 +68,11 @@ namespace RAG.Extension.DependencyInjection
                 sp.GetRequiredService<ILatencyTracker>(),
                 sp.GetRequiredService<ILatencySessionFactory>()));
 
+            services.Decorate<IAskStreamService>((inner, sp) => new TimedAskStreamService(
+                inner,
+                sp.GetRequiredService<ILatencyTracker>(),
+                sp.GetRequiredService<ILatencySessionFactory>()));
+
             services.Decorate<IIngestionService>((inner, sp) => new TimedIngestionService(
                 inner, sp.GetRequiredService<ILatencySessionFactory>()));
 
@@ -93,6 +98,9 @@ namespace RAG.Extension.DependencyInjection
             // CHỈ đăng ký ILLMProvider không khóa. Lý do không bọc các provider keyed nằm ở
             // TimedLlmProvider — bọc cả hai là tính hai lần cùng một lượt gọi.
             services.Decorate<ILLMProvider>((inner, sp) => new TimedLlmProvider(
+                inner, sp.GetRequiredService<ILatencyTracker>()));
+
+            services.Decorate<ILLMStreamProvider>((inner, sp) => new TimedLlmStreamProvider(
                 inner, sp.GetRequiredService<ILatencyTracker>()));
 
             return services;

@@ -113,6 +113,7 @@ nhánh truy hồi là cache hit, tổng vẫn đúng 1 lượt gọi API. **Đá
 | Method | Route | Chức năng |
 |---|---|---|
 | POST | `api/query/ask` | Hỏi NPC. Trả **object** `{ "answer": "...", "weakPointHit": false }` |
+| POST | `api/query/ask-stream` | Hỏi NPC, trả lời **từng mảnh** qua SSE. Xem mục 4d |
 | POST | `api/query/upload` | Nạp tài liệu |
 | POST | `api/query/create-collection` | Tạo collection Qdrant |
 | POST | `api/query/route-debug` | **Chẩn đoán định tuyến** — trả đánh giá mọi route + `strategy`. Không chạm Qdrant; CÓ gọi LLM khi `Strategy = Llm` |
@@ -263,6 +264,92 @@ chốt ở phút đầu vẫn trúng. Cờ được trả cho client và client 
 
 Tắt bằng `WeakPoint:Enabled = false`, hoặc để `Targets` rỗng — cả hai đều dẫn tới
 `PassthroughWeakPointDetector` (Null Object), pipeline không có nhánh `if` nào.
+
+---
+
+## 4d. Trả lời theo luồng (`POST api/query/ask-stream`)
+
+Endpoint **riêng**, `ask` không đổi một dòng nào. Trả Server-Sent Events để người chơi thấy
+chữ chạy dần thay vì chờ cả câu.
+
+```
+event: meta    data: {"weakPointHit":false}         <- LUÔN là sự kiện đầu tiên
+event: token   data: {"text":"..."}                 <- nối vào cuối; 0 hoặc nhiều
+event: done    data: {}
+event: error   data: {"status":429,"title":"..."}   <- chỉ khi lỗi xảy ra SAU khi luồng đã bắt đầu
+```
+
+Ba nhánh của `AskStreamPipeline` song song từng bước với `AskPipeline`:
+
+| Nhánh | Hành vi |
+|---|---|
+| Route (tán gẫu) | `meta(false)` rồi stream thật từ LLM |
+| Điểm yếu | `meta(true)` rồi **một token nguyên cục** (lời thoại lấy nguyên văn từ config, không qua LLM). `Reply` được phép rỗng → **0 token** |
+| RAG trúng cache | `meta(false)` rồi **một token nguyên cục** |
+| RAG trượt cache | `meta(false)` rồi stream thật, tích lũy vào `StringBuilder` để ghi cache khi xong |
+
+**Ràng buộc**: đổi thứ tự nhánh ở một lớp thì phải đổi cả lớp kia. Bộ kiểm chứng `S1..S5`
+trong `RAG.http` tồn tại để bắt lúc hai bên lệch nhau.
+
+### Bốn chỗ dễ sai, đều im lặng
+
+1. **`meta` phát MUỘN nhất có thể**, ngay trước token đầu — không phải ngay sau bước định
+   tuyến. Tầng ghi ra dây không gửi byte nào (kể cả header) trước khi sự kiện đầu về tay, nên
+   mọi thứ phía trước (nhúng, tra cache, tìm vector) vẫn còn biến được thành 429/503/500 kèm
+   ProblemDetails. Phát sớm là đẩy `EmbeddingUnavailableException` xuống thành một sự kiện lỗi
+   trong thân một response 200 — đúng thứ đợt refactor §9 vừa sửa.
+
+2. **Phiên đo độ trễ sẽ mất stage nếu quên `session.Activate()`.** Phiên sống trong
+   `AsyncLocal`, mà MỖI lần `MoveNextAsync` là một lần vào mới từ ExecutionContext của
+   *consumer* — giá trị gán bên trong thân iterator chỉ sống hết lần đó rồi biến mất. Hậu quả:
+   mọi stage sau `yield return` đầu tiên (`llmFirstToken`, `llmAnswer`, `answerCacheSet`) và cả
+   nhãn `branch` gắn trong `finally` đều rơi khỏi báo cáo. Triệu chứng cực dễ hiểu nhầm: dòng
+   log VẪN xuất hiện với tổng thời gian ĐÚNG, chỉ thiếu vài stage cuối — trông hệt như chúng
+   chạy nhanh tới mức không đáng kể. Đây là bug thật đã gặp và đã sửa; xem
+   `ILatencySession.Activate`.
+
+3. **`yield return` không được nằm trong `try` có `catch`** (trong `try/finally` thì được). Mà
+   `CompleteChatStreamingAsync` của Groq trả về *đồng bộ, chưa gửi request nào* — request chỉ
+   bay đi ở `MoveNextAsync` đầu tiên, nên 429 nổ ra bên trong vòng duyệt. Cả hai provider vì
+   vậy chia làm hai giai đoạn: mở kết nối (có `try/catch`, ở method riêng, là giai đoạn **duy
+   nhất** còn xoay được API key) rồi mới bơm token (có `yield`, không `catch` nào). 429 xảy ra
+   *sau* mảnh đầu thì không retry — gửi lại prompt nghĩa là người chơi thấy chữ lặp lại.
+
+4. **Không `Trim()` từng mảnh.** Đường không streaming trim cả chuỗi một lần; trim từng mảnh
+   sẽ ăn mất khoảng trắng giữa hai token và câu trả lời dính chữ vào nhau.
+
+### Ngắt giữa chừng thì KHÔNG ghi cache
+
+Người chơi ngắt kết nối → consumer dispose enumerator ngay tại một `yield return` → thân
+iterator không bao giờ chạy tới dòng `SetAsync`. Đó là hành vi mong muốn chứ không phải thiếu
+sót: một câu trả lời **cụt** đóng băng vào cache sẽ được phục vụ nguyên văn cho mọi câu hỏi gần
+nghĩa cho tới khi hết hạn. Ngữ nghĩa dispose của iterator cho ta điều đó mà không cần một dòng
+`if` nào.
+
+### Đo được gì
+
+Stage mới `llmFirstToken` là **con số duy nhất chứng minh streaming có tác dụng** — tổng thời
+gian sinh chữ không đổi, thứ đổi là khoảng người chơi ngồi nhìn màn hình trống. `llmAnswer` cố
+ý dùng lại đúng tên của đường không streaming để hai dòng log so được thẳng cột. Phiên mang tên
+`askStream` chứ không phải `ask`: hai phiên có tập stage khác nhau, gộp tên thì mọi phép lọc
+"ask chậm" sẽ trộn hai phân bố khác hẳn nhau.
+
+Đo thực tế (Groq, câu trả lời 369 token):
+```
+Độ trễ [askStream] 3682.5ms | branch=retrieval | normalize=893.6 | route=820.3 | embedding=619.1
+                             | vectorSearch=213.5 | llmFirstToken=731.2 | llmAnswer=1131.3
+```
+Đáng chú ý: **phần lớn thời gian chờ nằm TRƯỚC lượt gọi LLM** (~2,5s cho chuẩn hóa + định tuyến
++ nhúng + tìm vector). Streaming cắt được 400ms cuối; muốn cắt sâu hơn thì phải nhắm vào ba
+node LLM phụ trợ ở đầu pipeline chứ không phải vào tầng này.
+
+### Chống đệm
+
+`text/event-stream` + `Cache-Control: no-cache` + `X-Accel-Buffering: no` +
+`DisableBuffering()` + `FlushAsync` sau **mỗi** sự kiện. Cái đệm của nginx **vô hình khi chạy
+localhost**: stream chạy đẹp ở máy dev rồi lên Render thì cả câu trả lời rơi xuống một lần.
+Chứng minh bằng `curl -N` kèm mốc thời gian, không bằng REST Client của VS Code (nó gom cả
+luồng rồi mới hiện).
 
 ---
 

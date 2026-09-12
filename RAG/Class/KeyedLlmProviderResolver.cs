@@ -18,5 +18,8 @@ namespace RAG.Class
 
         public ILLMProvider Resolve(LlmProviderKey key) =>
             _serviceProvider.GetRequiredKeyedService<ILLMProvider>(key);
+
+        public ILLMStreamProvider ResolveStream(LlmProviderKey key) =>
+            _serviceProvider.GetRequiredKeyedService<ILLMStreamProvider>(key);
     }
 }

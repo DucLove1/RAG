@@ -44,6 +44,20 @@ namespace RAG.Interface
         Task TrackAsync(string stage, Func<Task> operation);
 
         /// <summary>
+        /// Ghi thẳng một khoảng thời gian đã đo sẵn.
+        /// <para>
+        /// Cần thiết vì <see cref="TrackAsync"/> được nặn cho một thao tác có điểm đầu và điểm cuối
+        /// nằm gọn trong MỘT lời gọi. Còn "tới token đầu tiên" và "tới token cuối cùng" là hai mốc
+        /// nằm bên trong MỘT lần duyệt luồng — không có <c>Func&lt;Task&gt;</c> nào phủ đúng khoảng
+        /// đó, và bọc từng mảnh lại thì mỗi mảnh thành một lần gọi stage riêng.
+        /// </para>
+        /// <para>
+        /// No-op ngoài phiên và khi stage bị tắt qua cấu hình, y hệt <see cref="TrackAsync"/>.
+        /// </para>
+        /// </summary>
+        void Record(string stage, double milliseconds);
+
+        /// <summary>
         /// Gắn nhãn cho phiên hiện hành (nhánh nào chạy, cache trúng hay trượt...). No-op ngoài phiên.
         /// <para>
         /// Nhãn trùng tên thì ghi đè: một request chỉ có một nhánh, một kết quả cache. Cộng dồn như
@@ -64,9 +78,33 @@ namespace RAG.Interface
     }
 
     /// <summary>
-    /// Mở một phiên đo. Tách khỏi <see cref="ILatencyTracker"/> theo ISP: bảy decorator chỉ ghi số
-    /// liệu và không được phép mở hay đóng phiên — chỉ hai decorator đứng ở đầu luồng
-    /// (<c>IAskService</c>, <c>IIngestionService</c>) mới nhìn thấy interface này.
+    /// Một phiên đo đang mở. Dispose là lúc chốt sổ và đẩy báo cáo đi.
+    /// </summary>
+    public interface ILatencySession : IDisposable
+    {
+        /// <summary>
+        /// Đặt LẠI phiên này làm phiên hiện hành.
+        /// <para>
+        /// Chỉ cần thiết cho decorator bọc một <c>IAsyncEnumerable</c>, và lý do rất dễ bỏ sót:
+        /// phiên hiện hành sống trong <see cref="AsyncLocal{T}"/>, mà MỖI lần
+        /// <c>MoveNextAsync</c> là một lần vào mới, bắt đầu từ ExecutionContext của CONSUMER. Giá
+        /// trị gán bên trong thân iterator vì vậy chỉ sống hết lần <c>MoveNextAsync</c> đó rồi
+        /// biến mất — nghĩa là mọi stage nằm sau <c>yield return</c> đầu tiên, và cả nhãn gắn
+        /// trong <c>finally</c>, đều rơi khỏi báo cáo.
+        /// </para>
+        /// <para>
+        /// Triệu chứng rất dễ hiểu nhầm: dòng log VẪN xuất hiện với tổng thời gian ĐÚNG, chỉ thiếu
+        /// vài stage cuối — trông hệt như những stage đó chạy nhanh tới mức không đáng kể.
+        /// </para>
+        /// </summary>
+        void Activate();
+    }
+
+    /// <summary>
+    /// Mở một phiên đo. Tách khỏi <see cref="ILatencyTracker"/> theo ISP: các decorator chỉ ghi số
+    /// liệu và không được phép mở hay đóng phiên — chỉ những decorator đứng ở đầu luồng
+    /// (<c>IAskService</c>, <c>IAskStreamService</c>, <c>IIngestionService</c>) mới nhìn thấy
+    /// interface này.
     /// </summary>
     public interface ILatencySessionFactory
     {
@@ -74,7 +112,7 @@ namespace RAG.Interface
         /// Dispose là lúc chốt sổ và đẩy báo cáo sang <see cref="ILatencyReporter"/>.
         /// Phiên lồng nhau thì phiên trong được khôi phục về phiên ngoài khi đóng.
         /// </summary>
-        IDisposable Begin(string operation);
+        ILatencySession Begin(string operation);
     }
 
     /// <summary>

@@ -5,6 +5,9 @@
 # POST api/query/ask tra ve OBJECT chu khong con la chuoi tran:
 #   { "answer": "...", "weakPointHit": false }
 # Moi vi du "ask" ben duoi deu tra ve dang nay.
+#
+# POST api/query/ask-stream la endpoint RIENG tra ve Server-Sent Events tung manh.
+# `ask` KHONG doi gi — xem khoi ASK-STREAM o cuoi file.
 # ==========================================================================
 
 ### Health check
@@ -585,3 +588,137 @@ Content-Type: application/json
 #        Lech NGAU NHIEN lon => doc nham truong trong ket qua search.
 #      - hits/misses o C7 phai trung.
 GET {{RAG_HostAddress}}/api/query/cache-stats
+
+########################################################################################
+# ASK-STREAM (SSE) — tra loi tung manh
+#
+# CANH BAO: REST Client cua VS Code GOM ca luong roi moi hien, nen BAM RUN O DAY KHONG
+#    CHUNG MINH DUOC STREAMING. No chi dung de kiem hinh dang phan hoi. Muon chung minh
+#    tung manh that su toi noi thi phai dung `curl -N` (xem khoi CHUNG MINH ben duoi).
+#
+# Chuoi su kien:  meta -> token* -> done | error
+#   event: meta    data: {"weakPointHit":false}         <- LUON la su kien dau tien
+#   event: token   data: {"text":"..."}                 <- noi vao cuoi; co the 0 hoac nhieu
+#   event: done    data: {}                             <- ket thuc binh thuong
+#   event: error   data: {"status":429,"title":"..."}   <- loi SAU khi luong da bat dau
+#
+# Ba truong hop client PHAI chiu duoc:
+#   - 0 token             (loi thoai diem yeu de trong trong config)
+#   - 1 token nguyen cuc  (trung cache ngu nghia, hoac nhanh diem yeu)
+#   - error den SAU vai token
+#
+# Loi TRUOC khi luong bat dau van la ProblemDetails voi ma dung (400/429/503/500), y het
+# `ask` — endpoint nay khong lam yeu di ngu nghia ma loi.
+########################################################################################
+
+### S1. NHANH RAG: stream that, nhieu token
+POST {{RAG_HostAddress}}/api/query/ask-stream
+Content-Type: application/json
+Accept: text/event-stream
+
+{ "npcName": "Wills", "npcSystem": "cộc cằn, hay phàn nàn", "Question": "ông mô tả kỹ giúp tôi hiện trường vụ án trông như thế nào" }
+
+### S2. NHANH ROUTE (tan gau): stream that
+POST {{RAG_HostAddress}}/api/query/ask-stream
+Content-Type: application/json
+Accept: text/event-stream
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "xin chào bạn khỏe không" }
+
+### S3. NHANH DIEM YEU: weakPointHit=true va DUNG MOT token nguyen cuc
+# Loi thoai lay nguyen van tu config, khong qua LLM nen khong co gi de stream. Hieu ung go
+# may chu la viec cua client — no da co san ca chuoi de tu animate.
+POST {{RAG_HostAddress}}/api/query/ask-stream
+Content-Type: application/json
+Accept: text/event-stream
+
+{ "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "Trong tấm hình này, thời gian chiếu trên TV đã chỉ rõ tấm hình này được chụp lúc 8h30 chứ không phải 9h" }
+
+### S4. TRUNG CACHE NGU NGHIA: cung MOT token nguyen cuc
+# Chay S1 truoc, doi ghi cache, roi chay lai chinh S1 — lan hai ve duoi dang mot token.
+POST {{RAG_HostAddress}}/api/query/ask-stream
+Content-Type: application/json
+Accept: text/event-stream
+
+{ "npcName": "Wills", "npcSystem": "cộc cằn, hay phàn nàn", "Question": "ông mô tả kỹ giúp tôi hiện trường vụ án trông như thế nào" }
+
+### S5. RANH GIOI LOI TRUOC-FLUSH: body rong phai ra 400 ProblemDetails, KHONG phai 200 SSE
+POST {{RAG_HostAddress}}/api/query/ask-stream
+Content-Type: application/json
+
+{}
+
+########################################################################################
+# CHUNG MINH STREAM TOI TUNG MANH (khong lam duoc bang REST Client)
+#
+#   curl -N -s -X POST http://localhost:5263/api/query/ask-stream \
+#     -H "Content-Type: application/json" --data-binary @cauhoi.json \
+#   | while IFS= read -r line; do printf "%s  %s\n" "$(date +%H:%M:%S.%3N)" "$line"; done
+#
+# `-N` (--no-buffer) la BAT BUOC — thieu no thi chinh curl dem lai va ban se ket luan nham
+# la server hong.
+#
+# TIEU CHI DAT: moc thoi gian cua cac dong `event: token` LIEN TIEP phai cach nhau hang
+# chuc den hang tram ms. Neu tat ca cung mot moc mili-giay thi dang co cho dem — kiem theo
+# dung thu tu nay:
+#   1. FlushAsync sau MOI su kien                  (AskStreamSseResult.WriteEventAsync)
+#   2. DisableBuffering()                          (AskStreamSseResult.StartStream)
+#   3. HttpCompletionOption.ResponseHeadersRead    (GeminiLLMProvider.TryOpenStreamAsync)
+#
+# KIEM ENCODING (cau tra loi la tieng Viet co dau):
+#   curl -N -s ... | grep "^data:" | head -5   -> phai thay chu Viet THO, khong phai \uXXXX
+#   curl -N -s ... | head -c 3 | xxd           -> KHONG duoc la  ef bb bf  (BOM)
+#
+# KIEM DONG DO TRE (log muc Information):
+#   Độ trễ [askStream] ... branch=retrieval | ... | llmFirstToken=731.2ms | llmAnswer=1131.3ms | answerCacheSet=0.1ms
+#   - thieu llmFirstToken             -> luong khong sinh token nao (nhanh diem yeu / trung
+#                                        cache thi binh thuong, vi khong qua LLM)
+#   - total ~ 0ms, khong stage nao    -> phien do chet truoc luong: TimedAskStreamService
+#                                        khong phai iterator, hoac thieu
+#                                        [EnumeratorCancellation], hoac thieu
+#                                        session.Activate() sau yield return
+#   - branch=retrieval cho cau chao hoi -> AskBranchResolver bi goi ngoai finally
+#
+# NGAT GIUA CHUNG KHONG DUOC GHI CACHE:
+#   Chay curl -N roi Ctrl-C sau ~3 token. Log phai co "Client ngắt kết nối giữa luồng SSE."
+#   VA mot dong Độ trễ [askStream] co llmAnswer ngan NHUNG KHONG CO answerCacheSet.
+#   Hoi lai dung cau do qua `ask` -> phai la answerCache=miss. Neu hit thi cache da nuot
+#   mot cau cut, va cau cut do se duoc phuc vu cho moi cau gan nghia toi khi het han.
+########################################################################################
+
+########################################################################################
+# CLIENT UNITY (C#) — doc SSE
+#
+# CANH BAO: UnityWebRequest KHONG doc stream tung manh duoc — no gom ca body roi moi goi
+#    callback. Phai dung System.Net.Http.HttpClient.
+#
+#   using var client  = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
+#   using var request = new HttpRequestMessage(HttpMethod.Post, url) { Content = ... };
+#
+#   using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+#   response.EnsureSuccessStatusCode();     // 400/429/503 -> ProblemDetails, xu ly nhu `ask`
+#
+#   await using var body = await response.Content.ReadAsStreamAsync(ct);
+#   using var reader = new StreamReader(body, Encoding.UTF8);
+#
+#   string eventName = null;
+#   while (await reader.ReadLineAsync() is { } line)
+#   {
+#       if (line.Length == 0) continue;                 // ranh gioi giua hai khung
+#       if (line[0] == ':') continue;                   // dong chu thich, bo qua
+#       if (line.StartsWith("event: ")) { eventName = line[7..]; continue; }
+#       if (!line.StartsWith("data: ")) continue;
+#
+#       var json = line[6..];
+#       switch (eventName)
+#       {
+#           case "meta":  /* doc weakPointHit; bat nhip kich ban neu true */ break;
+#           case "token": /* noi text vao TextMeshPro */                     break;
+#           case "error": /* hien thong bao loi, dung */                     break;
+#           case "done":  return;
+#       }
+#   }
+#
+# ResponseHeadersRead o phia client cung BAT BUOC, cung ly do voi phia server: thieu no thi
+# HttpClient dem het body roi moi tra ve, va ban co mot stream nhin giong mot cuc.
+########################################################################################

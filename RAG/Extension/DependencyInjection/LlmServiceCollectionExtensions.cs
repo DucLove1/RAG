@@ -34,6 +34,15 @@ namespace RAG.Extension.DependencyInjection
                 return sp.GetRequiredService<ILlmProviderResolver>().Resolve(selection.Provider);
             });
 
+            // Cùng một cấu hình LLM:Provider chọn cho cả hai đường: đổi provider mà chỉ đổi được
+            // một nửa thì api/query/ask và api/query/ask-stream sẽ trả lời bằng hai model khác
+            // nhau cho cùng một câu hỏi — và không có gì báo.
+            services.AddSingleton<ILLMStreamProvider>(sp =>
+            {
+                var selection = sp.GetRequiredService<IOptions<LlmSelectionConfig>>().Value;
+                return sp.GetRequiredService<ILlmProviderResolver>().ResolveStream(selection.Provider);
+            });
+
             return services;
         }
 
@@ -50,7 +59,16 @@ namespace RAG.Extension.DependencyInjection
                     sp.GetRequiredService<ILogger<ApiKeyRotator>>());
             });
 
-            services.AddKeyedSingleton<ILLMProvider, GroqCloudProvider>(LlmProviderKey.Groq);
+            // Đăng ký lớp cụ thể MỘT lần rồi trỏ cả hai vai trò về đúng instance đó. Đăng ký rời
+            // (AddKeyedSingleton<ILLMProvider, GroqCloudProvider> và
+            // AddKeyedSingleton<ILLMStreamProvider, GroqCloudProvider>) sẽ dựng HAI instance: hai
+            // cache ChatClient rời nhau, và quan trọng hơn là hai đường hỏi đáp không còn dùng
+            // chung trạng thái nào ngoài rotator.
+            services.AddKeyedSingleton<GroqCloudProvider>(LlmProviderKey.Groq);
+            services.AddKeyedSingleton<ILLMProvider>(LlmProviderKey.Groq,
+                (sp, key) => sp.GetRequiredKeyedService<GroqCloudProvider>(key));
+            services.AddKeyedSingleton<ILLMStreamProvider>(LlmProviderKey.Groq,
+                (sp, key) => sp.GetRequiredKeyedService<GroqCloudProvider>(key));
 
             return services;
         }
@@ -77,7 +95,23 @@ namespace RAG.Extension.DependencyInjection
                 client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
             });
 
-            services.AddKeyedSingleton<ILLMProvider, GeminiLLMProvider>(LlmProviderKey.Gemini);
+            // Client RIÊNG cho đường streaming: hạn thời gian VÔ HẠN ở tầng HttpClient, hạn thật
+            // do CancellationTokenSource trong provider đặt. Lý do đầy đủ ở HttpClientNames.GeminiLlmStream.
+            services.AddHttpClient(HttpClientNames.GeminiLlmStream, (sp, client) =>
+            {
+                var options = sp.GetRequiredService<IOptions<GeminiLlmConfig>>().Value;
+
+                client.BaseAddress = OptionsRegistration.BuildBaseAddress(options.Url);
+                client.Timeout = Timeout.InfiniteTimeSpan;
+            });
+
+            // Đăng ký lớp cụ thể MỘT lần rồi trỏ cả hai vai trò về đúng instance đó — cùng lý do
+            // đã ghi ở nhánh Groq.
+            services.AddKeyedSingleton<GeminiLLMProvider>(LlmProviderKey.Gemini);
+            services.AddKeyedSingleton<ILLMProvider>(LlmProviderKey.Gemini,
+                (sp, key) => sp.GetRequiredKeyedService<GeminiLLMProvider>(key));
+            services.AddKeyedSingleton<ILLMStreamProvider>(LlmProviderKey.Gemini,
+                (sp, key) => sp.GetRequiredKeyedService<GeminiLLMProvider>(key));
 
             return services;
         }

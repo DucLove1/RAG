@@ -18,6 +18,38 @@ namespace RAG.Interface
     }
 
     /// <summary>
+    /// Sinh câu trả lời theo LUỒNG, từng mảnh một.
+    /// <para>
+    /// Tách khỏi <see cref="IAskService"/> chứ không thêm method vào đó (ISP): mọi consumer hiện có
+    /// đều cần câu trả lời NGUYÊN KHỐI, nên nhét method streaming vào đó là bắt mọi cài đặt tương
+    /// lai phải viết một thứ không ai ở đó gọi tới.
+    /// </para>
+    /// <para>
+    /// BẤT BIẾN của chuỗi sự kiện: đúng MỘT <see cref="AskStreamMetaEvent"/> luôn đi TRƯỚC mọi
+    /// <see cref="AskStreamTokenEvent"/>. Điều này khả thi ở cả ba nhánh vì thứ quyết định
+    /// <c>WeakPointHit</c> (bộ phát hiện điểm yếu, hoặc việc route đã khớp) luôn chạy xong trước
+    /// khi tồn tại token nào. ĐỪNG "tối ưu" bằng cách chạy bộ phát hiện song song với LLM: làm thế
+    /// là phá đúng bất biến này, và triệu chứng sẽ là client đôi khi vẽ xong câu thoại rồi mới biết
+    /// đó là nhịp bắt bài.
+    /// </para>
+    /// <para>
+    /// Số token có thể bằng 0 — lời thoại điểm yếu được phép để trống trong cấu hình.
+    /// </para>
+    /// <para>
+    /// KHÔNG sinh sự kiện <see cref="AskStreamDoneEvent"/> hay <see cref="AskStreamErrorEvent"/>:
+    /// hai cái đó là khung TRUYỀN, do tầng ghi ra dây sinh. "Hết" ở đây đơn giản là luồng cạn.
+    /// </para>
+    /// </summary>
+    public interface IAskStreamService
+    {
+        IAsyncEnumerable<AskStreamEvent> AskStreamAsync(string npcName,
+                                                        string npcSystem,
+                                                        string question,
+                                                        int topK,
+                                                        CancellationToken cancellationToken = default);
+    }
+
+    /// <summary>
     /// Nạp tri thức vào kho vector.
     /// </summary>
     public interface IIngestionService
@@ -63,7 +95,7 @@ namespace RAG.Interface
     }
 
     /// <summary>
-    /// Façade của toàn bộ stack RAG, gộp bốn vai trò trên.
+    /// Façade của toàn bộ stack RAG, gộp năm vai trò trên.
     /// <para>
     /// Consumer nên phụ thuộc vào ĐÚNG vai trò mình cần chứ không phải interface gộp này (ISP):
     /// controller trả lời chỉ nhận <see cref="IAskService"/>, nhờ vậy nó không có cách nào gọi nhầm
@@ -71,7 +103,7 @@ namespace RAG.Interface
     /// việc nhìn tổng thể luồng nằm ở một chỗ.
     /// </para>
     /// </summary>
-    public interface IRagPipeline : IAskService, IIngestionService, IRouteDiagnostics, IRouteAdmin
+    public interface IRagPipeline : IAskService, IAskStreamService, IIngestionService, IRouteDiagnostics, IRouteAdmin
     {
     }
 }

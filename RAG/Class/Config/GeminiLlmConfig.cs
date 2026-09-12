@@ -26,6 +26,16 @@ namespace RAG.Class.Config
         [Required(AllowEmptyStrings = false)]
         public string GenerateContentPathTemplate { get; set; } = "models/{0}:generateContent";
 
+        /// <summary>
+        /// Đường dẫn tương đối tới endpoint sinh nội dung theo LUỒNG; {0} là tên model.
+        /// <para>
+        /// <c>alt=sse</c> là phần chịu tải của chuỗi này, và <c>Validate</c> bên dưới bắt buộc nó
+        /// phải có mặt — xem <see cref="GeminiApiDefaults.SseAltQuery"/> cho hậu quả khi thiếu.
+        /// </para>
+        /// </summary>
+        [Required(AllowEmptyStrings = false)]
+        public string StreamGenerateContentPathTemplate { get; set; } = "models/{0}:streamGenerateContent?alt=sse";
+
         public double Temperature { get; set; }
 
         public int MaxOutputTokens { get; set; }
@@ -52,6 +62,19 @@ namespace RAG.Class.Config
         public int TimeoutSeconds { get; set; } = 30;
 
         /// <summary>
+        /// Hạn thời gian cho CẢ một luồng, tính từ lúc gửi request tới mảnh cuối cùng.
+        /// <para>
+        /// Tách khỏi <see cref="TimeoutSeconds"/> vì hai con số đo hai thứ khác nhau: 30 giây ở
+        /// trên nghĩa là "một lời gọi không được treo", còn đây là "tổng thời gian sinh chữ" — dài
+        /// hơn một cách chính đáng. Đặt bằng một <c>CancellationTokenSource</c> nối với token của
+        /// caller chứ không đặt vào <c>HttpClient.Timeout</c>; lý do ở
+        /// <see cref="HttpClientNames.GeminiLlmStream"/>.
+        /// </para>
+        /// </summary>
+        [Range(1, 600)]
+        public int StreamTimeoutSeconds { get; set; } = 120;
+
+        /// <summary>
         /// Thời gian chờ (giây) trước khi thử lại một API key sau khi nó bị rate limit (429).
         /// Mặc định 60s tương ứng với cửa sổ rate-limit-per-minute của Gemini.
         /// </summary>
@@ -61,6 +84,11 @@ namespace RAG.Class.Config
         /// <summary><paramref name="model"/> để trống thì dùng <see cref="Model"/> mặc định.</summary>
         public string BuildGenerateContentPath(string? model = null) =>
             string.Format(GenerateContentPathTemplate,
+                string.IsNullOrWhiteSpace(model) ? Model : model);
+
+        /// <summary><paramref name="model"/> để trống thì dùng <see cref="Model"/> mặc định.</summary>
+        public string BuildStreamGenerateContentPath(string? model = null) =>
+            string.Format(StreamGenerateContentPathTemplate,
                 string.IsNullOrWhiteSpace(model) ? Model : model);
 
         public IEnumerable<ValidationResult> Validate(ValidationContext context)
@@ -77,6 +105,14 @@ namespace RAG.Class.Config
                             new[] { nameof(ApiKeys) });
                 }
             }
+
+            // Thiếu alt=sse thì Google trả một mảng JSON thay vì SSE, bộ đọc theo dòng không khớp
+            // dòng nào, và triệu chứng là câu trả lời RỖNG chứ không phải lỗi. Chặn ngay lúc khởi
+            // động rẻ hơn nhiều so với đi tìm nguyên nhân của một luồng im lặng.
+            if (!StreamGenerateContentPathTemplate.Contains(GeminiApiDefaults.SseAltQuery, StringComparison.Ordinal))
+                yield return new ValidationResult(
+                    $"{nameof(StreamGenerateContentPathTemplate)} phải chứa \"{GeminiApiDefaults.SseAltQuery}\".",
+                    new[] { nameof(StreamGenerateContentPathTemplate) });
 
             // Gemini trả 400 nếu request có cả thinkingLevel lẫn thinkingBudget, nên chặn ngay lúc khởi động.
             if (ThinkingLevel.HasValue && ThinkingBudget.HasValue)

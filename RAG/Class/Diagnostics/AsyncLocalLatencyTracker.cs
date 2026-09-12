@@ -32,7 +32,7 @@ namespace RAG.Class.Diagnostics
             _disabledStages = new HashSet<string>(config.Value.DisabledStages, StringComparer.OrdinalIgnoreCase);
         }
 
-        public IDisposable Begin(string operation)
+        public ILatencySession Begin(string operation)
         {
             var previous = Current.Value;
             var session = new LatencySession(operation);
@@ -85,6 +85,9 @@ namespace RAG.Class.Diagnostics
             }
         }
 
+        public void Record(string stage, double milliseconds) =>
+            ActiveSessionFor(stage)?.Record(stage, milliseconds);
+
         public void Tag(string name, string value) => Current.Value?.Tag(name, value);
 
         public string? GetTag(string name) => Current.Value?.GetTag(name);
@@ -108,7 +111,7 @@ namespace RAG.Class.Diagnostics
         /// nếu về sau có một phiên lồng trong phiên (nạp dữ liệu gọi lại đường trả lời chẳng hạn),
         /// gán <c>null</c> sẽ giết luôn phiên ngoài và mọi stage sau đó biến mất khỏi log.
         /// </summary>
-        private sealed class SessionHandle : IDisposable
+        private sealed class SessionHandle : ILatencySession
         {
             private readonly AsyncLocalLatencyTracker _owner;
             private readonly LatencySession _session;
@@ -121,6 +124,8 @@ namespace RAG.Class.Diagnostics
                 _session = session;
                 _previous = previous;
             }
+
+            public void Activate() => Current.Value = _session;
 
             public void Dispose()
             {

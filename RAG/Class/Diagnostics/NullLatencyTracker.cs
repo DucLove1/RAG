@@ -14,13 +14,17 @@ namespace RAG.Class.Diagnostics
     /// </summary>
     public sealed class NullLatencyTracker : ILatencyTracker, ILatencySessionFactory
     {
-        private static readonly IDisposable NoSession = new NoOpSession();
+        private static readonly ILatencySession NoSession = new NoOpSession();
 
-        public IDisposable Begin(string operation) => NoSession;
+        public ILatencySession Begin(string operation) => NoSession;
 
         public Task<T> TrackAsync<T>(string stage, Func<Task<T>> operation) => operation();
 
         public Task TrackAsync(string stage, Func<Task> operation) => operation();
+
+        public void Record(string stage, double milliseconds)
+        {
+        }
 
         public void Tag(string name, string value)
         {
@@ -28,8 +32,12 @@ namespace RAG.Class.Diagnostics
 
         public string? GetTag(string name) => null;
 
-        private sealed class NoOpSession : IDisposable
+        private sealed class NoOpSession : ILatencySession
         {
+            public void Activate()
+            {
+            }
+
             public void Dispose()
             {
             }

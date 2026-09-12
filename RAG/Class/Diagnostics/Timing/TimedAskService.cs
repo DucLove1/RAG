@@ -7,8 +7,8 @@ namespace RAG.Class.Diagnostics.Timing
     /// Gốc của phiên đo cho đường trả lời: mở phiên, và chốt sổ bằng việc suy ra nhánh nào đã chạy.
     /// <para>
     /// Nhánh KHÔNG được <c>AskPipeline</c> khai báo — nó được suy ra từ chính các nhãn mà những
-    /// decorator ở dưới đã gắn dọc đường. Đó là cách duy nhất biết được nhánh mà vẫn giữ lớp lõi
-    /// hoàn toàn không biết gì về việc đo giờ.
+    /// decorator ở dưới đã gắn dọc đường (xem <see cref="AskBranchResolver"/>). Đó là cách duy nhất
+    /// biết được nhánh mà vẫn giữ lớp lõi hoàn toàn không biết gì về việc đo giờ.
     /// </para>
     /// </summary>
     public sealed class TimedAskService : IAskService
@@ -45,26 +45,8 @@ namespace RAG.Class.Diagnostics.Timing
             }
             finally
             {
-                _latency.Tag(LatencyTags.Branch, ResolveBranch());
+                _latency.Tag(LatencyTags.Branch, AskBranchResolver.Resolve(_latency));
             }
-        }
-
-        /// <summary>
-        /// Thứ tự kiểm PHẢI khớp thứ tự thoát sớm của <c>AskPipeline</c>: khớp route thì thoát ngay
-        /// và bộ phát hiện điểm yếu KHÔNG chạy, nên nhãn điểm yếu lúc đó vắng mặt chứ không phải
-        /// bằng false. Đảo hai nhánh này thì một câu tán gẫu sẽ bị gán nhầm là truy hồi.
-        /// </summary>
-        private string ResolveBranch()
-        {
-            if (_latency.GetTag(LatencyTags.WeakPointHit) == LatencyTagValues.True)
-                return LatencyTagValues.BranchWeakPoint;
-
-            var route = _latency.GetTag(LatencyTags.Route);
-
-            if (route is not null && route != LatencyTagValues.None)
-                return LatencyTagValues.BranchRouted;
-
-            return LatencyTagValues.BranchRetrieval;
         }
     }
 }

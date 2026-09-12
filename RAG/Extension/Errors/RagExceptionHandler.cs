@@ -1,32 +1,30 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using RAG.Class.Config;
 using RAG.Interface;
 
 namespace RAG.Extension.Errors
 {
     /// <summary>
-    /// Ánh xạ exception của tầng nghiệp vụ sang mã HTTP đúng nghĩa.
+    /// Biến exception chưa được xử lý thành một response ProblemDetails.
     /// <para>
-    /// Cần thiết vì <see cref="EmbeddingUnavailableException"/> và
-    /// <see cref="EmbeddingRateLimitedException"/> nói lên hai điều rất khác nhau với người gọi:
-    /// một cái là "hãy thử lại sau vài giây", một cái là "hãy chậm lại". Gộp cả hai thành 500
-    /// thì client không có cách nào phân biệt.
+    /// CHỈ chạy được khi response CHƯA bắt đầu — đó là ràng buộc của chính
+    /// <c>UseExceptionHandler</c>, không phải của lớp này. Đường SSE vì vậy phải tự lo lấy phần
+    /// lỗi xảy ra sau khi header đã bay đi; xem <c>AskStreamSseResult</c>. Phép ánh xạ thì dùng
+    /// CHUNG qua <see cref="IRagErrorMapper"/> để hai đường không lệch câu chữ.
     /// </para>
     /// </summary>
     public sealed class RagExceptionHandler : IExceptionHandler
     {
         private readonly IProblemDetailsService _problemDetailsService;
-        private readonly ErrorResponseConfig _config;
+        private readonly IRagErrorMapper _errorMapper;
         private readonly ILogger<RagExceptionHandler> _logger;
 
         public RagExceptionHandler(IProblemDetailsService problemDetailsService,
-                                   IOptions<ErrorResponseConfig> options,
+                                   IRagErrorMapper errorMapper,
                                    ILogger<RagExceptionHandler> logger)
         {
             _problemDetailsService = problemDetailsService;
-            _config = options.Value;
+            _errorMapper = errorMapper;
             _logger = logger;
         }
 
@@ -42,7 +40,7 @@ namespace RAG.Extension.Errors
                 return true;
             }
 
-            var (status, title) = Map(exception);
+            var (status, title) = _errorMapper.Map(exception);
 
             _logger.LogError(exception, "Request thất bại với mã {Status}.", status);
 
@@ -60,13 +58,5 @@ namespace RAG.Extension.Errors
                 }
             });
         }
-
-        private (int Status, string Title) Map(Exception exception) => exception switch
-        {
-            EmbeddingRateLimitedException => (StatusCodes.Status429TooManyRequests, _config.RateLimitedTitle),
-            AllApiKeysRateLimitedException => (StatusCodes.Status429TooManyRequests, _config.RateLimitedTitle),
-            EmbeddingUnavailableException => (StatusCodes.Status503ServiceUnavailable, _config.EmbeddingUnavailableTitle),
-            _ => (StatusCodes.Status500InternalServerError, _config.UnexpectedTitle)
-        };
     }
 }

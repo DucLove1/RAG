@@ -1,5 +1,9 @@
 # Redis cho cache cau tra loi theo ngu nghia (RediSearch VECTOR index).
 #
+# CHI CAN service nay khi SemanticAnswerCache__Provider=Redis. Voi provider mac dinh `Faiss` thi
+# cache chay trong chinh tien trinh app va khong dung toi Redis - luc do `docker compose up` khong
+# can service nay, va `SemanticAnswerCache__Redis__*` khong duoc doc toi.
+#
 # ANH: dung image `redis` CHINH THUC chu khong phai `redis/redis-stack-server`. Tu ban Redis 8 GA,
 # Redis Query Engine (vector search, cac lenh FT.*) da nam SAN trong ban Redis Open Source;
 # redis-stack tro thanh thua va da bi khai tu. Pin vao redis-stack-server bay gio la bat dau tren

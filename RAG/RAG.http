@@ -722,3 +722,139 @@ Content-Type: application/json
 # ResponseHeadersRead o phia client cung BAT BUOC, cung ly do voi phia server: thieu no thi
 # HttpClient dem het body roi moi tra ve, va ban co mot stream nhin giong mot cuc.
 ########################################################################################
+
+###
+########################################################################################
+# KHOI N - NAP CORPUS VAO QDRANT.
+#
+# Payload npcNames mang TEN RIENG ("Edward"), doi tu vai tro trong corpus ("Phap y") qua
+# bi_danh cua graphrag/entities.json. Id diem = SHA256(chunkCode), nen nap lai la GHI DE
+# dung 45 diem cu, khong can xoa collection.
+########################################################################################
+
+### N-0. Xem truoc bang phan quyen, KHONG ghi gi. Cot NPC phai la ten rieng.
+GET {{RAG_HostAddress}}/api/query/corpus-access
+Accept: application/json
+
+### N-1. Tao collection + payload index. CHI can khi collection chua ton tai.
+POST {{RAG_HostAddress}}/api/query/create-collection
+Accept: application/json
+
+### N-2. Nap ca thu muc corpus. Phai ra 11 file / 45 chunk / 13 NPC.
+POST {{RAG_HostAddress}}/api/query/ingest-corpus
+Accept: application/json
+
+###
+########################################################################################
+# KHOI G - DO THI TRI THUC (GraphRAG).
+#
+# G-0/G-1/G-2 (indexes, load, verify) chi song khi CA HAI co bat VA o Development:
+#   Graph:Enabled        = true
+#   Graph:Loader:Enabled = true
+# Thieu mot trong hai thi ba request do tra 404 - co y nhu vay: nap do thi la thao tac ghi
+# de du lieu. TAT Loader:Enabled lai ngay sau khi nap xong.
+#
+# G-3 tro xuong chi can Graph:Enabled = true - chay duoc ca khi Loader da tat.
+#
+# npcName la TEN RIENG cua NPC ("Edward", "James"...), giong moi endpoint khac. Vai tro
+# trong corpus ("Phap y") duoc doi sang ten rieng qua bi_danh cua entities.json luc nap.
+########################################################################################
+
+### G-0. Tao constraint + index. Chay MOT LAN truoc lan nap dau tien.
+# MERGE khong co constraint co the de ra ban trung, va Neo4j TU CHOI them constraint sau
+# khi da co trung - nen thu tu nay khong doi duoc.
+POST {{RAG_HostAddress}}/api/graph/indexes
+Accept: application/json
+
+### G-1. Nap do thi tu graphrag/*.json. MERGE-only, chay lai bao nhieu lan cung mot ket qua.
+# Toan bo 118 node + 185 canh + 13 ACL nam trong MOT giao dich: hoac vao het, hoac khong
+# gi ca. Hong giua chung thi khong de lai trang thai nua voi.
+POST {{RAG_HostAddress}}/api/graph/load
+Accept: application/json
+
+### G-2. Doi chieu DB voi file nguon.
+# Phai ra: entities 118, npcs 13, relationships 185, expectedRelationships 185, matches true.
+# matches=false KHONG phai loi: MERGE khong xoa, nen mot canh da go khoi file van con trong
+# DB cho toi khi co nguoi xoa tay.
+GET {{RAG_HostAddress}}/api/graph/verify
+Accept: application/json
+
+### G-3. So lieu tang do thi (chay duoc ca khi do thi dang tat - luc do toan so 0).
+GET {{RAG_HostAddress}}/api/graph/stats
+Accept: application/json
+
+### G-4. Local search. Ton MOT luot LLM trich thuc the, khong ton luot sinh cau tra loi.
+# Hat giong la thuc the LLM chon trong danh muc NPC duoc biet (xem G-11), khong con nhap ma chunk.
+# Phai ra: extraction.entities co "Chris", extraction.relationTypes co CO_DAU_VET_CAM, va canh
+# Chris ... Khau sung nam trong nhung dong dau.
+# Endpoint nay di vong qua cache cau tra loi va Gemini chay temperature 0.5: hai lan goi co the
+# chon hat giong khac nhau.
+POST {{RAG_HostAddress}}/api/graph/local-search-debug
+Content-Type: application/json
+
+{
+  "npcName": "Edward",
+  "question": "tay của Chris có dấu vết gì không",
+  "limit": 16
+}
+
+### G-5. RO QUYEN - bai test khong duoc bo.
+# Cung cau hoi, hoi bang Jack. Jack KHONG doc duoc ho so phap y. Ket qua phai KHONG chua mot
+# ma chunk nao bat dau bang "25_phap-y", ke ca tren node lan can. Trung mot cai la ACL hong ->
+# dung moi thu lai.
+POST {{RAG_HostAddress}}/api/graph/local-search-debug
+Content-Type: application/json
+
+{
+  "npcName": "Jack",
+  "question": "tay của Chris có dấu vết gì không",
+  "limit": 16
+}
+
+### G-6. Ten la: "con meo" khong co trong do thi.
+# Phai ra: ten la bi bo khoi extraction.entities, KHONG loi, degraded = false.
+POST {{RAG_HostAddress}}/api/graph/local-search-debug
+Content-Type: application/json
+
+{
+  "npcName": "Edward",
+  "question": "con mèo của Chris tên là gì",
+  "limit": 16
+}
+
+### G-7. Doc nguyen van mot chunk, co loc quyen NPC.
+GET {{RAG_HostAddress}}/api/query/chunk?code=25_phap-y%23L8&npcName=Edward
+Accept: application/json
+
+### G-8. Cung chunk do nhung hoi bang Jack -> phai 404.
+GET {{RAG_HostAddress}}/api/query/chunk?code=25_phap-y%23L8&npcName=Jack
+Accept: application/json
+
+### G-9. Xem DUNG user prompt se gui cho LLM (dung truoc buoc sinh cau tra loi).
+# Ton 1 luot nhung, va khi do thi bat thi them 1 luot LLM trich thuc the.
+# Chay voi Graph:Enabled = true roi false: ban false phai ra relationCount 0, extraTextCount 0,
+# va userPrompt giong het RAG thuan tung byte.
+# Khong ghi dong log latency: endpoint debug khong mo phien do. Muon thay vectorSearch /
+# graphSearch / contextBuild thi hoi qua /api/query/ask voi mot cau chua co trong cache.
+POST {{RAG_HostAddress}}/api/graph/context-debug
+Content-Type: application/json
+
+{
+  "npcName": "Edward",
+  "question": "tay của Chris có dấu vết gì không"
+}
+
+### G-10. Hoi gian tiep: Johny, khong neu ten do vat.
+POST {{RAG_HostAddress}}/api/graph/context-debug
+Content-Type: application/json
+
+{
+  "npcName": "Johny",
+  "question": "cậu quen những người nào"
+}
+
+### G-11. Danh muc thuc the ma mot NPC duoc biet - dung "thuc don" dua cho LLM trich thuc the.
+# Khong goi LLM. Danh muc cua Jack KHONG duoc co thuc the nao chi xuat than tu "25_phap-y";
+# so voi ban cua Edward de kiem ACL bang mat. selfName phai la ten chuan cua NPC.
+GET {{RAG_HostAddress}}/api/graph/catalog-debug?npcName=Jack
+Accept: application/json

@@ -15,7 +15,7 @@ namespace RAG.Class.Retrieval
     /// với lớp này, không đụng tới pipeline.
     /// </para>
     /// </summary>
-    public sealed class QdrantVectorStore : IVectorStore, IDisposable
+    public sealed class QdrantVectorStore : IVectorStore, IChunkTextLookup, IDisposable
     {
         private readonly QdrantClient _client;
         private readonly QDrantConfig _config;
@@ -150,6 +150,21 @@ namespace RAG.Class.Retrieval
                 Distance = Parse(_config.Distance, Distance.Cosine)
             }, cancellationToken: cancellationToken);
 
+            // Index KEYWORD cho mã chunk và mã tài liệu, KHÔNG phải Text: index toàn văn tách
+            // "25_phap-y#L8" thành token, nên "#L8" và "#L80" có thể chung token và tra theo mã sẽ
+            // trả về nhầm dòng. Keyword khớp nguyên chuỗi, đúng thứ khóa ghép cần.
+            await _client.CreatePayloadIndexAsync(
+                collectionName: _config.Collection,
+                fieldName: PayloadFields.ChunkCode,
+                schemaType: PayloadSchemaType.Keyword,
+                cancellationToken: cancellationToken);
+
+            await _client.CreatePayloadIndexAsync(
+                collectionName: _config.Collection,
+                fieldName: PayloadFields.DocId,
+                schemaType: PayloadSchemaType.Keyword,
+                cancellationToken: cancellationToken);
+
             await _client.CreatePayloadIndexAsync(
                 collectionName: _config.Collection,
                 fieldName: PayloadFields.NpcNames,
@@ -170,6 +185,67 @@ namespace RAG.Class.Retrieval
         }
 
         /// <summary>
+        /// Tra nguyên văn theo mã chunk, kèm bộ lọc NPC.
+        /// <para>
+        /// Lọc NPC ở đây là lọc LẦN HAI — đồ thị đã lọc bằng <c>duoc_biet</c> rồi. Có chủ đích: mã
+        /// chunk quay về đây là dữ liệu do đồ thị chọn, và tin nó mà không lọc lại là mở một đường
+        /// vòng qua bộ lọc NPC. Một mệnh đề AND rẻ hơn nhiều so với việc phải chứng minh đường vòng
+        /// đó không tồn tại sau mỗi lần sửa Cypher.
+        /// </para>
+        /// <para>
+        /// Dùng <c>ScrollAsync</c> chứ không <c>RetrieveAsync</c>: id của điểm dẫn xuất từ mã chunk
+        /// nhưng đó là chi tiết của đường NẠP, và bắt đường đọc phải biết công thức băm đó là buộc
+        /// hai nơi cùng giữ một bí mật. Lọc theo payload thì đường đọc chỉ cần biết mã chunk.
+        /// </para>
+        /// </summary>
+        public async Task<IReadOnlyDictionary<string, ChunkText>> GetByCodesAsync(
+            string npcName,
+            IReadOnlyCollection<string> codes,
+            CancellationToken cancellationToken = default)
+        {
+            var found = new Dictionary<string, ChunkText>(StringComparer.Ordinal);
+
+            if (codes.Count == 0)
+                return found;
+
+            var filter = new Filter();
+            filter.Must.Add(Conditions.Match(PayloadFields.ChunkCode, codes.ToList()));
+            filter.Must.Add(Translate(PayloadFields.NpcNames, npcName));
+
+            var points = await _client.ScrollAsync(
+                collectionName: _config.Collection,
+                filter: filter,
+                limit: (uint)codes.Count,
+                vectorsSelector: false,
+                cancellationToken: cancellationToken);
+
+            foreach (var point in points.Result)
+            {
+                if (!point.Payload.TryGetValue(PayloadFields.ChunkCode, out var code))
+                    continue;
+
+                point.Payload.TryGetValue(PayloadFields.Text, out var text);
+                point.Payload.TryGetValue(PayloadFields.Source, out var source);
+
+                found[code.StringValue] = new ChunkText(
+                    code.StringValue,
+                    text?.StringValue ?? string.Empty,
+                    source?.StringValue ?? string.Empty);
+            }
+
+            // Mã có trong đồ thị mà không có trong kho vector nghĩa là hai nhánh đã lệch nhau — hoặc
+            // corpus đổi mà chưa nạp lại, hoặc luật cắt dòng đã chệch. Dòng log này là dấu hiệu duy
+            // nhất của chuyện đó, nên nó phải tồn tại kể cả khi câu trả lời vẫn ra bình thường.
+            if (found.Count < codes.Count)
+            {
+                _logger.LogDebug("Có {Missing}/{Total} mã chunk từ đồ thị không tra được văn bản cho {Npc}.",
+                    codes.Count - found.Count, codes.Count, npcName);
+            }
+
+            return found;
+        }
+
+        /// <summary>
         /// Dịch bộ lọc trung lập của ứng dụng sang <see cref="Filter"/> của Qdrant.
         /// Kiểu khớp lấy từ cấu hình, nên đổi từ phrase sang keyword không phải sửa code.
         /// </summary>
@@ -181,17 +257,18 @@ namespace RAG.Class.Retrieval
             var translated = new Filter();
 
             foreach (var condition in filter.Must)
-            {
-                translated.Must.Add(_config.FilterMode switch
-                {
-                    PayloadFilterMode.Keyword => Conditions.MatchKeyword(condition.Field, condition.Value),
-                    PayloadFilterMode.Text => Conditions.MatchText(condition.Field, condition.Value),
-                    _ => Conditions.MatchPhrase(condition.Field, condition.Value)
-                });
-            }
+                translated.Must.Add(Translate(condition.Field, condition.Value));
 
             return translated;
         }
+
+        /// <summary>Một điều kiện khớp, theo kiểu khớp đang chọn trong cấu hình.</summary>
+        private Condition Translate(string field, string value) => _config.FilterMode switch
+        {
+            PayloadFilterMode.Keyword => Conditions.MatchKeyword(field, value),
+            PayloadFilterMode.Text => Conditions.MatchText(field, value),
+            _ => Conditions.MatchPhrase(field, value)
+        };
 
         private static TEnum Parse<TEnum>(string value, TEnum fallback) where TEnum : struct, Enum =>
             Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed) ? parsed : fallback;

@@ -14,6 +14,29 @@ namespace RAG.Class.Constants
         public const string Embedding = "embedding";
         public const string AnswerCacheGet = "answerCacheGet";
         public const string VectorSearch = "vectorSearch";
+
+        /// <summary>
+        /// Toàn bộ bước dựng ngữ cảnh: nhánh vector và nhánh đồ thị chạy SONG SONG bên trong nó.
+        /// <para>
+        /// Đây là con số chứng minh hai nhánh có chạy song song thật: báo cáo chỉ ghi tổng thời gian
+        /// của từng stage chứ không ghi mốc bắt đầu, nên không nhìn trực tiếp được hai stage chồng
+        /// nhau. Song song thì stage này xấp xỉ <c>max(vectorSearch, graphSearch + chunkResolve)</c>;
+        /// tuần tự thì nó xấp xỉ TỔNG của chúng.
+        /// </para>
+        /// </summary>
+        public const string ContextBuild = "contextBuild";
+
+        /// <summary>
+        /// Nhánh đồ thị trừ phần tra nguyên văn: danh mục + LLM trích thực thể + Neo4j mở rộng. LỒNG
+        /// NHAU với <see cref="GraphExtract"/> — cộng hai con số là đếm phần trích hai lần.
+        /// </summary>
+        public const string GraphSearch = "graphSearch";
+
+        /// <summary>Lượt LLM trích thực thể (gồm cả đọc danh mục). Nằm TRONG <see cref="GraphSearch"/>.</summary>
+        public const string GraphExtract = "graphExtract";
+
+        /// <summary>Tra nguyên văn các dòng mà cạnh đồ thị trỏ tới.</summary>
+        public const string ChunkResolve = "chunkResolve";
         public const string LlmAnswer = "llmAnswer";
         /// <summary>
         /// Thời gian tới TOKEN ĐẦU TIÊN, chỉ tồn tại ở đường streaming.

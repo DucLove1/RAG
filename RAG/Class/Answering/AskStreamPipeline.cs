@@ -28,7 +28,7 @@ namespace RAG.Class.Answering
         private readonly ILLMProvider _llmProvider;
         private readonly ILLMStreamProvider _llmStreamProvider;
         private readonly IEmbeddingProvider _embeddingProvider;
-        private readonly IVectorStore _vectorStore;
+        private readonly IAskContextBuilder _contextBuilder;
         private readonly IQueryNormalizer _queryNormalizer;
         private readonly ISemanticRouter _semanticRouter;
         private readonly IWeakPointDetector _weakPointDetector;
@@ -43,7 +43,7 @@ namespace RAG.Class.Answering
         public AskStreamPipeline(ILLMProvider llmProvider,
                                  ILLMStreamProvider llmStreamProvider,
                                  IEmbeddingProvider embeddingProvider,
-                                 IVectorStore vectorStore,
+                                 IAskContextBuilder contextBuilder,
                                  IQueryNormalizer queryNormalizer,
                                  ISemanticRouter semanticRouter,
                                  IWeakPointDetector weakPointDetector,
@@ -53,7 +53,7 @@ namespace RAG.Class.Answering
             _llmProvider = llmProvider;
             _llmStreamProvider = llmStreamProvider;
             _embeddingProvider = embeddingProvider;
-            _vectorStore = vectorStore;
+            _contextBuilder = contextBuilder;
             _queryNormalizer = queryNormalizer;
             _semanticRouter = semanticRouter;
             _weakPointDetector = weakPointDetector;
@@ -125,13 +125,8 @@ namespace RAG.Class.Answering
                 yield break;
             }
 
-            var filter = VectorSearchFilter.Match(PayloadFields.NpcNames, npcName);
-
-            var hits = await _vectorStore.SearchAsync(questionEmbedding, filter, topK, cancellationToken);
-
-            var context = string.Join(
-                _promptConfig.ContextSeparator,
-                hits.Select(hit => hit.Payload[PayloadFields.Text]));
+            var context = await _contextBuilder.BuildAsync(
+                npcName, normalizedQuestion, questionEmbedding, topK, cancellationToken);
 
             // Sự kiện ĐẦU TIÊN của nhánh này phát ở ĐÂY chứ không sớm hơn, và đó là quyết định có
             // chủ đích. Tầng ghi ra dây không gửi một byte nào — kể cả header — trước khi sự kiện
@@ -148,7 +143,7 @@ namespace RAG.Class.Answering
 
             var answerStream = _llmStreamProvider.AskStreamAsync(
                 _promptConfig.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
-                _promptConfig.BuildUserPrompt(context, normalizedQuestion),
+                _promptConfig.BuildUserPrompt(context.Text, context.Graph, normalizedQuestion),
                 cancellationToken: cancellationToken);
 
             await foreach (var chunk in answerStream.WithCancellation(cancellationToken))
@@ -164,7 +159,7 @@ namespace RAG.Class.Answering
             // văn cho mọi câu hỏi gần nghĩa cho tới khi hết hạn, đúng loại lỗi mà cờ
             // CacheAnswersWithoutContext sinh ra để tránh. Ngữ nghĩa dispose của iterator cho ta
             // điều đó mà không cần một dòng if nào.
-            await _answerCache.SetAsync(cacheQuery, builder.ToString(), hasContext: hits.Count > 0, cancellationToken);
+            await _answerCache.SetAsync(cacheQuery, builder.ToString(), hasContext: context.Cacheable, cancellationToken);
         }
     }
 }

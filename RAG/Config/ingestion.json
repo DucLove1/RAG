@@ -1,0 +1,25 @@
+{
+  "RAG": {
+    "ChunkSize": 500,
+    "ChunkOverlap": 50,
+    "TopK": 5
+  },
+  "Chunking": {
+    "Strategy": "Line",
+    "SentenceEndings": ".!?\n",
+    "MinLookback": 50,
+    "LookbackRatio": 0.2,
+    "MinChunkRatio": 0.5
+  },
+  "Ingestion": {
+    "PlainTextExtensions": [
+      ".txt",
+      ".json"
+    ],
+    "FrontMatterExtensions": [
+      ".md"
+    ],
+    "CorpusPath": "corpus",
+    "DeterministicChunkIds": true
+  }
+}

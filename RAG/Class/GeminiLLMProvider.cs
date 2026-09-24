@@ -38,6 +38,8 @@ namespace RAG.Class
 
         public async Task<string> AskAsync(string system, string user, string? model = null, CancellationToken cancellationToken = default)
         {
+            var unavailableRetriesLeft = _config.ServiceUnavailableRetries;
+
             while (true)
             {
                 var key = _rotator.GetCurrentKey();
@@ -49,18 +51,38 @@ namespace RAG.Class
                 // Gemini không bao giờ được xoay, và một 429 nổi lên tận RagExceptionHandler rồi
                 // rơi vào nhánh mặc định, tức là người chơi nhận 500 thay vì 429. Giờ nó là một
                 // nhánh điều khiển bình thường, không còn chuỗi nào để gõ sai.
-                var answer = await TryAskAsync(system, user, model, key, cancellationToken);
+                var (answer, unavailable) = await TryAskAsync(
+                    system, user, model, key, allowUnavailableRetry: unavailableRetriesLeft > 0, cancellationToken);
 
                 if (answer is not null)
                     return answer;
+
+                // 503: máy chủ quá tải, không phải lỗi của key — chờ một chút rồi thử lại CÙNG key,
+                // KHÔNG đánh dấu key bị giới hạn. Hết lượt thử thì TryAskAsync tự ném như lỗi HTTP khác.
+                if (unavailable)
+                {
+                    unavailableRetriesLeft--;
+                    _logger.LogWarning("Gemini trả 503, thử lại sau {Delay}ms (còn {Left} lượt).",
+                        _config.ServiceUnavailableRetryDelayMs, unavailableRetriesLeft);
+                    await Task.Delay(_config.ServiceUnavailableRetryDelayMs, cancellationToken);
+                    continue;
+                }
 
                 // Hết key thì GetCurrentKey() ở vòng sau ném AllApiKeysRateLimitedException.
                 _rotator.ReportRateLimited(key);
             }
         }
 
-        /// <returns>Câu trả lời, hoặc <c>null</c> khi gặp 429 và caller nên xoay sang key khác.</returns>
-        private async Task<string?> TryAskAsync(string system, string user, string? model, string apiKey, CancellationToken cancellationToken)
+        /// <returns>
+        /// Câu trả lời; hoặc <c>Answer = null</c> khi gặp 429 (caller xoay sang key khác) hay khi gặp
+        /// 503 và còn được thử lại (<c>Unavailable = true</c>).
+        /// </returns>
+        private async Task<(string? Answer, bool Unavailable)> TryAskAsync(string system,
+                                                                            string user,
+                                                                            string? model,
+                                                                            string apiKey,
+                                                                            bool allowUnavailableRetry,
+                                                                            CancellationToken cancellationToken)
         {
             var httpClient = _httpClientFactory.CreateClient(HttpClientNames.GeminiLlm);
 
@@ -69,7 +91,10 @@ namespace RAG.Class
             using var response = await httpClient.SendAsync(httpRequest, cancellationToken);
 
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
-                return null;
+                return (null, false);
+
+            if (response.StatusCode == HttpStatusCode.ServiceUnavailable && allowUnavailableRetry)
+                return (null, true);
 
             response.EnsureSuccessStatusCode();
 
@@ -78,7 +103,7 @@ namespace RAG.Class
 
             // Trim CẢ chuỗi một lần ở đây là đúng; đường streaming bên dưới thì tuyệt đối không
             // được trim từng mảnh.
-            return ExtractText(payload).Trim();
+            return (ExtractText(payload).Trim(), false);
         }
 
         /// <summary>

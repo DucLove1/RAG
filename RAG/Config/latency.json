@@ -1,0 +1,14 @@
+{
+  "Latency": {
+    "Enabled": true,
+    "SlowThresholdMs": 5000,
+    "MillisecondFormat": "F1",
+    "StageFormat": "{0}={1}ms",
+    "StageWithCallsFormat": "{0}={1}ms x{2}",
+    "StageSeparator": " | ",
+    "TagFormat": "{0}={1}",
+    "TagSeparator": " ",
+    "MessageTemplate": "Độ trễ [{Operation}] {TotalMs}ms | {Tags} | {Stages}",
+    "DisabledStages": []
+  }
+}

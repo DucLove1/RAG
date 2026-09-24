@@ -1,0 +1,58 @@
+{
+  "Graph": {
+    "Enabled": false,
+    "Mode": "Local",
+    "DataVersion": "1.0.0",
+    "DataPath": "graphrag",
+    "Search": {
+      "MaxRelations": 16,
+      "ReasoningRelationsOnly": false,
+      "AdjacentLineRadius": 1,
+      "ContextBudgetChars": 6000,
+      "GraphShareRatio": 0.3,
+      "AllowShareSpillover": false
+    },
+    "Loader": {
+      "Enabled": false,
+      "EnsureIndexesOnStartup": true,
+      "VerifyOnStartup": true,
+      "LoadOnStartup": false
+    },
+    "Schema": {
+      "EntityNameConstraint": "thucthe_ten_unique",
+      "NpcNameIndex": "nhanvat_ten",
+      "FulltextNameIndex": "thucthe_fulltext",
+      "FulltextAliasIndex": "thucthe_bidanh"
+    },
+    "Extraction": {
+      "Provider": "Gemini",
+      "Model": "gemini-3.1-flash-lite",
+      "MaxInputLength": 500,
+      "MaxEntities": 5,
+      "MaxRelationTypes": 4,
+      "TimeoutMs": 8000,
+      "CatalogCacheMinutes": 30,
+      "SystemPromptTemplate": "Bạn là bộ trích thực thể cho một game trinh thám tiếng Việt. Người chơi đang hỏi nhân vật {0}.\n\nDANH MỤC THỰC THỂ mà {0} biết (tên chính, trong ngoặc là loại và bí danh):\n{1}\n\nDANH MỤC LOẠI QUAN HỆ (tên loại: ý nghĩa):\n{2}\n\nNhiệm vụ: đọc câu của người chơi rồi chọn\n- tối đa {3} thực thể mà câu đó nhắc tới hoặc hỏi về, thực thể trọng tâm nhất đứng đầu;\n- tối đa {4} loại quan hệ mà câu đó muốn biết, loại liên quan nhất đứng đầu.\n\nQUY TẮC BẮT BUỘC:\n- Chỉ dùng thực thể và loại quan hệ CÓ TRONG hai danh mục trên. Không tự đặt tên mới.\n- Luôn trả về TÊN CHÍNH của thực thể, kể cả khi câu hỏi gọi nó bằng bí danh hay một cách gọi khác.\n- Người chơi gọi nhân vật đang bị hỏi là \"anh\", \"cậu\", \"ông\", \"bà\", \"cô\", \"chị\", \"em\", \"bạn\" hoặc \"ngài\" thì đó là {0}: thêm {0} vào danh sách thực thể.\n- Không có thực thể hay loại quan hệ nào phù hợp thì để danh sách tương ứng rỗng.\n- Chỉ xuất đúng một đối tượng JSON dạng {{\"{5}\": [\"tên thực thể\"], \"{6}\": [\"TEN_LOAI_QUAN_HE\"]}}. KHÔNG giải thích, KHÔNG markdown.",
+      "UserPromptTemplate": "Câu của người chơi: {0}\nJSON:",
+      "EntityLineTemplate": "- {0} ({1}{2})",
+      "EntityAliasTemplate": "; bí danh: {0}",
+      "LabelSeparator": ", ",
+      "AliasSeparator": ", ",
+      "RelationLineTemplate": "- {0}: {1}",
+      "CatalogSeparator": "\n"
+    }
+  },
+  "NEO4J": {
+    "WarmupEnabled": true,
+    "WarmupMaxAttempts": 3,
+    "WarmupRetryDelaySeconds": 5,
+    "Database": "neo4j",
+    "ConnectTimeoutMs": 5000,
+    "OperationTimeoutMs": 1500,
+    "TransactionTimeoutMs": 1000,
+    "MaxTransactionRetryTimeMs": 2000,
+    "MaxConnectionPoolSize": 20,
+    "MaxConsecutiveFailures": 3,
+    "FailureCooldownSeconds": 30
+  }
+}

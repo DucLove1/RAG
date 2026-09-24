@@ -19,6 +19,9 @@ namespace RAG.Extension.DependencyInjection
             services.AddValidatedOptions<RagConfig>(configuration, RagConfig.SectionName);
             services.AddValidatedOptions<PromptConfig>(configuration, PromptConfig.SectionName);
 
+            // Một instance cho cả hai pipeline: khối truy hồi từng bị chép nguyên văn ở hai nơi.
+            services.AddSingleton<IAskContextBuilder, AskContextBuilder>();
+
             services.AddSingleton<IAskService, AskPipeline>();
 
             // Lớp RIÊNG chứ không phải cùng một lớp cài hai interface: hai đường có hình dạng trả

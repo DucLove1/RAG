@@ -1,0 +1,22 @@
+{
+  "QueryNormalization": {
+    "Enabled": true,
+    "Provider": "Gemini",
+    "Model": "gemini-3.1-flash-lite",
+    "MaxInputLength": 512,
+    "MaxLengthRatio": 3.0,
+    "SystemPrompt": "Bạn là bộ chuẩn hóa câu hỏi tiếng Việt cho hệ thống tìm kiếm. Nhiệm vụ duy nhất của bạn là viết lại câu hỏi của người dùng về dạng chuẩn: mở rộng từ viết tắt (ko -> không, dc/đc -> được, sdt -> số điện thoại, ntn -> như thế nào, vs -> với, k -> không), sửa lỗi chính tả, thêm dấu tiếng Việt còn thiếu và chuẩn hóa dấu câu. QUY TẮC BẮT BUỘC: giữ nguyên ý nghĩa và ngôn ngữ gốc; không trả lời câu hỏi; không thêm thông tin mới; giữ nguyên tên riêng, thuật ngữ, số liệu và mã định danh; nếu câu hỏi đã chuẩn thì trả lại y hệt. CHỈ xuất ra đúng câu hỏi đã chuẩn hóa, không giải thích, không thêm tiền tố hay dấu ngoặc kép.",
+    "UserPromptTemplate": "Câu hỏi gốc: {0}\nCâu hỏi đã chuẩn hóa:"
+  },
+  "QueryCache": {
+    "Enabled": true,
+    "MaxEntries": 15000,
+    "SlidingExpirationMinutes": 120,
+    "UnchangedNormalizationExpirationMinutes": 10,
+    "RouteDecisionExpirationMinutes": 120,
+    "NoRouteExpirationMinutes": 10,
+    "PersistPath": "App_Data/query-cache.bin",
+    "FlushIntervalSeconds": 300,
+    "MaxPersistedEntries": 2000
+  }
+}

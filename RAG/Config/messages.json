@@ -1,0 +1,21 @@
+{
+  "ErrorResponses": {
+    "RateLimitedTitle": "Hệ thống đang quá tải, vui lòng thử lại sau ít phút.",
+    "EmbeddingUnavailableTitle": "Dịch vụ nhúng văn bản tạm thời không dùng được, vui lòng thử lại.",
+    "GraphDataInvalidTitle": "Dữ liệu đồ thị tri thức không hợp lệ.",
+    "GraphAdminDisabledTitle": "Không tìm thấy.",
+    "GraphUnavailableTitle": "Không kết nối được tới đồ thị tri thức, vui lòng thử lại.",
+    "GraphStatementRejectedTitle": "Neo4j từ chối câu lệnh quản trị đồ thị.",
+    "UnexpectedTitle": "Đã có lỗi ngoài dự kiến."
+  },
+  "RouteMessages": {
+    "Added": "Đã thêm {0} câu mẫu vào route \"{1}\". Tổng câu mẫu của route: {2}.",
+    "AddedNotPersisted": "Đã thêm {0} câu mẫu vào route \"{1}\" (tổng: {2}), nhưng KHÔNG lưu được xuống đĩa nên sẽ mất khi khởi động lại.",
+    "UnknownRoute": "Không có route tên \"{0}\". Các route hiện có: {1}.",
+    "NotReady": "Router chưa nạp xong vector, thử lại sau.",
+    "NothingAdded": "Không có câu mẫu nào được thêm (trùng lặp hoặc vector không hợp lệ).",
+    "RouterDisabled": "Node định tuyến đang tắt (SemanticRouter:Strategy = Off) nên không thể thêm câu mẫu.",
+    "NotSupported": "Chiến lược định tuyến đang chạy (SemanticRouter:Strategy = Llm) không nhận diện route bằng vector, nên không dùng được câu mẫu thêm lúc chạy. Muốn dạy router nhận diện tốt hơn thì sửa Description và Utterances của route trong cấu hình rồi khởi động lại.",
+    "RouteNameSeparator": ", "
+  }
+}

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using RAG.Class.Constants;
 
 namespace RAG.Class.Config
 {
@@ -10,6 +11,15 @@ namespace RAG.Class.Config
     public class ChunkingConfig
     {
         public const string SectionName = "Chunking";
+
+        /// <summary>
+        /// Chiến lược cắt đoạn. Xem <see cref="ChunkingStrategyKind"/>.
+        /// <para>
+        /// Chỉ <c>Line</c> sinh ra mã chunk, nên nó là điều kiện bắt buộc để bật đồ thị tri thức.
+        /// Các núm còn lại trong lớp này chỉ phục vụ <c>Sentence</c>.
+        /// </para>
+        /// </summary>
+        public ChunkingStrategyKind Strategy { get; set; } = ChunkingStrategyKind.Sentence;
 
         /// <summary>Các ký tự được coi là kết thúc câu, dùng để cắt cho gọn ý.</summary>
         [Required]

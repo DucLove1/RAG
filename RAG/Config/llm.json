@@ -1,0 +1,33 @@
+{
+  "LLM": {
+    "Provider": "Groq"
+  },
+  "GEMINILLM": {
+    "Url": "https://generativelanguage.googleapis.com/v1beta",
+    "Model": "gemini-3.1-flash-lite",
+    "GenerateContentPathTemplate": "models/{0}:generateContent",
+    "StreamGenerateContentPathTemplate": "models/{0}:streamGenerateContent?alt=sse",
+    "StreamTimeoutSeconds": 120,
+    "Temperature": 0.5,
+    "MaxOutputTokens": 400,
+    "ThinkingLevel": "Minimal",
+    "ServiceUnavailableRetries": 1,
+    "ServiceUnavailableRetryDelayMs": 300
+  },
+  "GROQ": {
+    "Model": "openai/gpt-oss-20b",
+    "StreamTimeoutSeconds": 120,
+    "Temperature": 0.5,
+    "MaxOutputTokens": 400,
+    "ReasoningEffort": "Low"
+  },
+  "EmbeddingModel": {
+    "Url": "https://generativelanguage.googleapis.com/v1beta",
+    "Model": "models/gemini-embedding-2",
+    "EmbedContentPathTemplate": "{0}:embedContent",
+    "BatchEmbedContentPathTemplate": "{0}:batchEmbedContents",
+    "OutputDimensions": 768,
+    "BatchSize": 50,
+    "BatchDelaySeconds": 60
+  }
+}

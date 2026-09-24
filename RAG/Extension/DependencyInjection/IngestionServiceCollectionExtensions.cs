@@ -30,8 +30,31 @@ namespace RAG.Extension.DependencyInjection
             services.AddValidatedOptions<ChunkingConfig>(configuration, ChunkingConfig.SectionName);
 
             services.AddSingleton<IDocumentTextExtractor, PlainTextExtractor>();
-            services.AddSingleton<IChunkingStrategy, SentenceAwareChunker>();
+            services.AddSingleton<IDocumentTextExtractor, MarkdownFrontMatterExtractor>();
+
+            // Phân quyền tri thức. Đăng ký ở đây vì nó suy ra từ front matter của corpus, tức là
+            // thuộc về đường nạp — nhưng nó là NGUỒN SỰ THẬT DUY NHẤT và bộ nạp đồ thị ở Phase 3
+            // sẽ dùng lại đúng instance này để sinh duoc_biet.
+            services.AddSingleton<INpcNameResolver, EntityAliasNpcNameResolver>();
+            services.AddSingleton<IAccessPolicy, FrontMatterAccessPolicy>();
+
+            // switch chứ không phải Keyed Services: chỉ đúng MỘT chiến lược tồn tại tại một thời
+            // điểm, cùng lý do với AddSemanticAnswerCache. Xem ChunkingStrategyKind.
+            var chunking = configuration.GetSection(ChunkingConfig.SectionName)
+                                        .Get<ChunkingConfig>() ?? new ChunkingConfig();
+
+            switch (chunking.Strategy)
+            {
+                case ChunkingStrategyKind.Line:
+                    services.AddSingleton<IChunkingStrategy, LineChunker>();
+                    break;
+                default:
+                    services.AddSingleton<IChunkingStrategy, SentenceAwareChunker>();
+                    break;
+            }
+
             services.AddSingleton<IIngestionService, DocumentIngestionService>();
+            services.AddSingleton<ICorpusIngestionService, CorpusIngestionService>();
 
             return services;
         }

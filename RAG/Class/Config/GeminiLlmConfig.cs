@@ -81,6 +81,17 @@ namespace RAG.Class.Config
         [Range(1, 3600)]
         public int RateLimitCooldownSeconds { get; set; } = 60;
 
+        /// <summary>
+        /// Số lần thử lại khi Gemini trả 503 (máy chủ quá tải). Khác 429: 503 không phải lỗi của
+        /// key nên thử lại bằng CHÍNH key đó chứ không đánh dấu key bị giới hạn. 0 = không thử lại.
+        /// </summary>
+        [Range(0, 5)]
+        public int ServiceUnavailableRetries { get; set; } = 1;
+
+        /// <summary>Thời gian chờ trước mỗi lần thử lại sau 503, để máy chủ kịp nhả tải.</summary>
+        [Range(0, 10000)]
+        public int ServiceUnavailableRetryDelayMs { get; set; } = 300;
+
         /// <summary><paramref name="model"/> để trống thì dùng <see cref="Model"/> mặc định.</summary>
         public string BuildGenerateContentPath(string? model = null) =>
             string.Format(GenerateContentPathTemplate,

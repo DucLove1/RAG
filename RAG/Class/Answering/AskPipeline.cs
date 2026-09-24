@@ -19,7 +19,7 @@ namespace RAG.Class.Answering
     {
         private readonly ILLMProvider _llmProvider;
         private readonly IEmbeddingProvider _embeddingProvider;
-        private readonly IVectorStore _vectorStore;
+        private readonly IAskContextBuilder _contextBuilder;
         private readonly IQueryNormalizer _queryNormalizer;
         private readonly ISemanticRouter _semanticRouter;
         private readonly IWeakPointDetector _weakPointDetector;
@@ -28,7 +28,7 @@ namespace RAG.Class.Answering
 
         public AskPipeline(ILLMProvider llmProvider,
                            IEmbeddingProvider embeddingProvider,
-                           IVectorStore vectorStore,
+                           IAskContextBuilder contextBuilder,
                            IQueryNormalizer queryNormalizer,
                            ISemanticRouter semanticRouter,
                            IWeakPointDetector weakPointDetector,
@@ -37,7 +37,7 @@ namespace RAG.Class.Answering
         {
             _llmProvider = llmProvider;
             _embeddingProvider = embeddingProvider;
-            _vectorStore = vectorStore;
+            _contextBuilder = contextBuilder;
             _queryNormalizer = queryNormalizer;
             _semanticRouter = semanticRouter;
             _weakPointDetector = weakPointDetector;
@@ -140,28 +140,20 @@ namespace RAG.Class.Answering
             if (cached is not null)
                 return cached.Answer;
 
-            // Không gọi EnsureCollectionExistsAsync ở đây: đường trả lời chỉ ĐỌC, và collection đã
-            // được đảm bảo ở đường nạp dữ liệu. Bản trước gọi ở mỗi request, tốn một round-trip
-            // gRPC cho 100% traffic mà không lần nào làm gì khác ngoài xác nhận điều đã biết.
-            var filter = VectorSearchFilter.Match(PayloadFields.NpcNames, npcName);
-
-            var hits = await _vectorStore.SearchAsync(questionEmbedding, filter, topK, cancellationToken);
-
-            // Ngữ cảnh là phần text của các kết quả, nối lại với nhau để đưa vào prompt.
-            var context = string.Join(
-                _promptConfig.ContextSeparator,
-                hits.Select(hit => hit.Payload[PayloadFields.Text]));
+            var context = await _contextBuilder.BuildAsync(npcName, question, questionEmbedding, topK, cancellationToken);
 
             var answer = await _llmProvider.AskAsync(
                 _promptConfig.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
-                _promptConfig.BuildUserPrompt(context, question),
+                _promptConfig.BuildUserPrompt(context.Text, context.Graph, question),
                 cancellationToken: cancellationToken);
 
             // Cờ hasContext để cache tự quyết định có ghi hay không: caller biết truy hồi có ra gì
             // không, cache thì không. Cùng kiểu chia việc với tham số unchanged của
             // INormalizationCache. Câu trả lời dựng trên ngữ cảnh rỗng gần như luôn là "tôi không
-            // biết", ghi lại là đóng băng một lần Qdrant hụt thành câu trả lời chính thức.
-            await _answerCache.SetAsync(cacheQuery, answer, hasContext: hits.Count > 0, cancellationToken);
+            // biết", ghi lại là đóng băng một lần Qdrant hụt thành câu trả lời chính thức. Cacheable
+            // còn loại cả câu trả lời dựng lúc đồ thị hỏng: nó sẽ được phục vụ tiếp sau khi đồ thị
+            // đã sống lại.
+            await _answerCache.SetAsync(cacheQuery, answer, hasContext: context.Cacheable, cancellationToken);
 
             return answer;
         }

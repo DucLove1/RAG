@@ -6,8 +6,13 @@ using System.Text;
 namespace RAG.Class.Ingestion
 {
     /// <summary>
-    /// Đọc các định dạng vốn đã là văn bản thuần (.txt, .md, .json).
+    /// Đọc các định dạng vốn đã là văn bản thuần (.txt, .json).
     /// Danh sách phần mở rộng nằm trong cấu hình chứ không trong code.
+    /// <para>
+    /// Không mang siêu dữ liệu nào: những định dạng này không có chỗ để đặt. <c>.md</c> thuộc về
+    /// <see cref="MarkdownFrontMatterExtractor"/> và hai danh sách phần mở rộng phải rời nhau, vì
+    /// bộ nạp chọn cài đặt ĐẦU TIÊN nhận.
+    /// </para>
     /// </summary>
     public sealed class PlainTextExtractor : IDocumentTextExtractor
     {
@@ -23,13 +28,13 @@ namespace RAG.Class.Ingestion
 
         public bool Supports(string extension) => _extensions.Contains(extension);
 
-        public async Task<string> ExtractAsync(Stream content, CancellationToken cancellationToken = default)
+        public async Task<ExtractedDocument> ExtractAsync(Stream content, CancellationToken cancellationToken = default)
         {
             // detectEncodingFromByteOrderMarks để đọc được cả file có BOM; Program.cs đã đăng ký
             // CodePagesEncodingProvider cho các file mã hóa ANSI/Windows cũ.
             using var reader = new StreamReader(content, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
 
-            return await reader.ReadToEndAsync(cancellationToken);
+            return ExtractedDocument.PlainBody(await reader.ReadToEndAsync(cancellationToken));
         }
     }
 }

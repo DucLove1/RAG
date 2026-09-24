@@ -92,7 +92,22 @@ namespace RAG.Extension.DependencyInjection
             services.Decorate<ISemanticAnswerCache>((inner, sp) => new TimedSemanticAnswerCache(
                 inner, sp.GetRequiredService<ILatencyTracker>()));
 
+            // Dựng ngữ cảnh: nhánh vector ở trên và ba dòng đồ thị dưới đây chạy SONG SONG bên trong
+            // contextBuild. Bọc vô điều kiện — khi đồ thị tắt, Null Object vẫn được đăng ký nên
+            // Decorate luôn có gì để bọc, và stage tương ứng gần như bằng 0.
+            services.Decorate<IAskContextBuilder>((inner, sp) => new TimedAskContextBuilder(
+                inner, sp.GetRequiredService<ILatencyTracker>()));
+
             services.Decorate<IVectorStore>((inner, sp) => new TimedVectorStore(
+                inner, sp.GetRequiredService<ILatencyTracker>()));
+
+            services.Decorate<IGraphSearch>((inner, sp) => new TimedGraphSearch(
+                inner, sp.GetRequiredService<ILatencyTracker>()));
+
+            services.Decorate<IGraphEntityExtractor>((inner, sp) => new TimedGraphEntityExtractor(
+                inner, sp.GetRequiredService<ILatencyTracker>()));
+
+            services.Decorate<IChunkTextLookup>((inner, sp) => new TimedChunkTextLookup(
                 inner, sp.GetRequiredService<ILatencyTracker>()));
 
             // CHỈ đăng ký ILLMProvider không khóa. Lý do không bọc các provider keyed nằm ở

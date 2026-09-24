@@ -1,0 +1,30 @@
+{
+  "SemanticAnswerCache": {
+    "Enabled": false,
+    "Provider": "Faiss",
+    "SimilarityThreshold": 0.9,
+    "MinCacheableQuestionLength": 8,
+    "CacheAnswersWithoutContext": false,
+    "TtlHours": 24,
+    "SlidingTtl": true,
+    "Redis": {
+      "IndexName": "idx:npc-answers-v1",
+      "UseFlatIndex": true,
+      "HnswM": 16,
+      "HnswEfConstruction": 200,
+      "ConnectTimeoutMs": 2000,
+      "ConnectRetry": 3,
+      "OperationTimeoutMs": 250,
+      "ServerQueryTimeoutMs": 100,
+      "MaxConsecutiveFailures": 3,
+      "FailureCooldownSeconds": 30
+    },
+    "Faiss": {
+      "PersistPath": "App_Data/answer-cache.bin",
+      "FlushIntervalSeconds": 300,
+      "MaxEntries": 5000,
+      "MaxPartitions": 128,
+      "NeighborCount": 3
+    }
+  }
+}

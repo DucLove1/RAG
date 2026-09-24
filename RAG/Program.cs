@@ -1,12 +1,15 @@
 using DotNetEnv;
 using Microsoft.Extensions.Options;
 using RAG.Class.Config;
+using RAG.Extension.Configuration;
 using RAG.Extension.DependencyInjection;
 
 // load environment variables from .env file
 Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
+// Config/*.json: mỗi file một nhóm section, chèn ngay sau appsettings.json nên env var vẫn đè được.
+builder.Configuration.AddSplitJsonFiles(builder.Environment);
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddControllers();
@@ -15,7 +18,7 @@ builder.Services.AddControllers();
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
 // Toàn bộ stack RAG. Thứ tự đăng ký được khóa bên trong AddRagStack, không phải ở đây.
-builder.Services.AddRagStack(builder.Configuration);
+builder.Services.AddRagStack(builder.Configuration, builder.Environment);
 
 builder.Services.Configure<OpenApiConfig>(builder.Configuration.GetSection(OpenApiConfig.SectionName));
 builder.Services.AddOpenApi();

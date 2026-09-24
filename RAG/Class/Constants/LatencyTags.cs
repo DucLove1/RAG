@@ -21,6 +21,15 @@ namespace RAG.Class.Constants
 
         /// <summary>Số kết quả Qdrant trả về. Truy hồi 0 kết quả là nguyên nhân số một của câu trả lời "tôi không biết".</summary>
         public const string Hits = "hits";
+
+        /// <summary>Số thực thể hạt giống mà bước trích chọn được. 0 nghĩa là đồ thị không chạm Neo4j.</summary>
+        public const string Entities = "entities";
+
+        /// <summary>Số loại quan hệ mà bước trích đoán người hỏi quan tâm.</summary>
+        public const string Intents = "intents";
+
+        /// <summary>Số cạnh đồ thị trả về (trước khi cắt theo ngân sách ký tự của prompt).</summary>
+        public const string Edges = "edges";
     }
 
     /// <summary>

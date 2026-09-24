@@ -22,7 +22,7 @@ namespace RAG.Class.Ingestion
             _sentenceEndings = _chunking.SentenceEndings.ToCharArray();
         }
 
-        public IEnumerable<string> Chunk(string text)
+        public IEnumerable<TextSegment> Chunk(string text)
         {
             if (string.IsNullOrEmpty(text))
                 yield break;
@@ -42,8 +42,11 @@ namespace RAG.Class.Ingestion
 
                 var chunk = text[start..end].Trim();
 
+                // Ordinal null: đoạn cắt theo kích thước không ánh xạ được về một dòng nào, nên nó
+                // KHÔNG có mã chunk và đồ thị tri thức không bao giờ nối tới được. Đó là hành vi đúng
+                // của chiến lược này, không phải thiếu sót — xem LineChunker cho đường có mã.
                 if (!string.IsNullOrEmpty(chunk))
-                    yield return chunk;
+                    yield return new TextSegment(chunk, null);
 
                 // Overlap lớn hơn đoạn vừa cắt sẽ khiến con trỏ đứng yên hoặc lùi lại — tức là
                 // vòng lặp vô tận. Ép tiến tới cuối đoạn hiện tại trong trường hợp đó.

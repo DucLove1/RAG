@@ -12,6 +12,22 @@
          nen khong loai tru thi 1.45 MB cache bi nhet vao output va vao Docker image. -->
     <Content Remove="App_Data\**" />
     <None Include="App_Data\**" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+
+    <!-- Cac file cau hinh tach tu appsettings.json (xem SplitJsonConfigurationExtensions).
+         Web SDK von da publish moi *.json, dong nay ghi tuong minh de khong phu thuoc mac dinh. -->
+    <Content Update="Config\**\*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- corpus/ nam o GOC repo (ngoai thu muc project) vi no la kho tri thuc dung chung cho ca hai
+         nhanh, khong phai tai san cua rieng app. Link vao output de endpoint ingest-corpus chay
+         duoc ca trong container, noi khong co cay thu muc cua repo.
+         Khac App_Data o tren: day la NGUON phai di theo build, khong phai du lieu sinh luc chay. -->
+    <Content Include="..\corpus\*.md" Link="corpus\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+
+    <!-- Ontology va du lieu do thi: cung ly do nhu corpus, va cung nam o goc repo de hai nhanh
+         (RAG thuan va GraphRAG) doc chung mot kho tri thuc dung nhu README mo ta. -->
+    <Content Include="..\graphrag\*.json" Link="graphrag\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,6 +53,10 @@
     <PackageReference Include="Faiss.NET.Native.Linux" Version="[1.0.0-preview.4]" />
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.15" />
+    <!-- Driver chinh thuc cua Neo4j, dung cho tang do thi tri thuc (Graph:Enabled).
+         Bolt chu khong phai HTTP Query API: Bolt co connection pool san, va Aura dam phan
+         phien ban giao thuc ngay o buoc bat tay nen nang version la mot viec CO CHU DICH. -->
+    <PackageReference Include="Neo4j.Driver" Version="6.3.0" />
     <PackageReference Include="NRedisStack" Version="1.7.4" />
     <PackageReference Include="OpenAI" Version="2.10.0" />
     <PackageReference Include="Qdrant.Client" Version="1.18.1" />

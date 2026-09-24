@@ -37,11 +37,19 @@ namespace RAG.Extension.DependencyInjection
             // Đó cũng là lý do đây là switch chứ không phải Keyed Services: khác ILLMProvider (nơi
             // hai provider SỐNG CÙNG LÚC — router dùng Gemini trong khi đường trả lời dùng Groq),
             // ở đây chỉ đúng MỘT provider tồn tại. Xem AnswerCacheProvider.
-            return config.Provider switch
+            _ = config.Provider switch
             {
                 AnswerCacheProvider.Faiss => services.AddFaissAnswerCache(configuration),
                 _ => services.AddRedisAnswerCache(configuration)
             };
+
+            // Ghi cache chạy nền để câu trả lời không phải chờ nó. Chỉ bọc provider thật: Null Object
+            // không ghi gì nên không có gì để đưa ra nền. Tầng đo độ trễ bọc NGOÀI lớp này, nên stage
+            // answerCacheSet giờ chỉ còn đo thời gian giao việc.
+            services.Decorate<ISemanticAnswerCache>((inner, sp) => new BackgroundSemanticAnswerCache(
+                inner, sp.GetRequiredService<ILogger<BackgroundSemanticAnswerCache>>()));
+
+            return services;
         }
 
         /// <summary>

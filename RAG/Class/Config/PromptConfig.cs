@@ -32,6 +32,33 @@ namespace RAG.Class.Config
     }
 
     /// <summary>
+    /// Khung trình bày khối đồ thị trong prompt.
+    /// <para>
+    /// CHỈ chứa khung — tiêu đề, template một dòng, ký tự nối. Nhãn của quan hệ và của
+    /// <c>trang_thai</c> lấy từ <c>ontology.json</c>; đưa chúng vào đây là tạo nguồn sự thật thứ
+    /// hai cho từ vựng của đồ thị.
+    /// </para>
+    /// </summary>
+    public class GraphPromptConfig
+    {
+        /// <summary>Nối khối nguyên văn với khối đồ thị.</summary>
+        public string BlockSeparator { get; set; } = "\n\n";
+
+        /// <summary>
+        /// Dòng mở đầu khối đồ thị. Nên dặn mô hình rằng nhãn trong ngoặc là mức độ tin cậy — đó là
+        /// thứ ngăn nó thuật lại tin đồn như một kết luận.
+        /// </summary>
+        public string BlockHeader { get; set; } = string.Empty;
+
+        /// <summary>{0} = nguồn, {1} = quan hệ (đã tính phủ định), {2} = đích, {3} = độ tin cậy.</summary>
+        [Required(AllowEmptyStrings = false)]
+        public string RelationLineTemplate { get; set; } = "- {0} {1} {2} ({3})";
+
+        /// <summary>Nối tiêu đề với dòng đầu và giữa các dòng.</summary>
+        public string RelationSeparator { get; set; } = "\n";
+    }
+
+    /// <summary>
     /// Template prompt của bước sinh câu trả lời. Đưa ra ngoài configuration để
     /// <c>AskPipeline</c> không phải sửa code mỗi khi tinh chỉnh prompt (OCP).
     /// </summary>
@@ -49,6 +76,9 @@ namespace RAG.Class.Config
 
         /// <summary>Ký tự nối giữa các đoạn ngữ cảnh.</summary>
         public string ContextSeparator { get; set; } = "\n";
+
+        /// <summary>Khung trình bày khối đồ thị. Xem <see cref="GraphPromptConfig"/>.</summary>
+        public GraphPromptConfig Graph { get; set; } = new();
 
         /// <summary>Ràng buộc độ dài, dùng chung cho cả nhánh truy hồi lẫn nhánh trả lời thẳng.</summary>
         public AnswerLengthConfig AnswerLength { get; set; } = new();
@@ -78,5 +108,23 @@ namespace RAG.Class.Config
 
         public string BuildUserPrompt(string context, string question) =>
             string.Format(AnswerUserTemplate, context, question);
+
+        /// <summary>
+        /// Bản có khối đồ thị. Khối rỗng thì trả ĐÚNG chuỗi của bản hai tham số, từng byte — bật hay
+        /// tắt <c>Graph:Enabled</c> không đổi prompt của câu hỏi không có cạnh nào.
+        /// <para>
+        /// Khối đồ thị đặt SAU nguyên văn: template để câu hỏi ở cuối, nên phần cuối của ngữ cảnh là
+        /// phần nằm gần câu hỏi nhất.
+        /// </para>
+        /// </summary>
+        public string BuildUserPrompt(string context, string graphBlock, string question)
+        {
+            if (string.IsNullOrEmpty(graphBlock))
+                return BuildUserPrompt(context, question);
+
+            var combined = string.IsNullOrEmpty(context) ? graphBlock : context + Graph.BlockSeparator + graphBlock;
+
+            return BuildUserPrompt(combined, question);
+        }
     }
 }

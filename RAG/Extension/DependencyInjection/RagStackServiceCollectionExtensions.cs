@@ -11,7 +11,9 @@ namespace RAG.Extension.DependencyInjection
     /// </summary>
     public static class RagStackServiceCollectionExtensions
     {
-        public static IServiceCollection AddRagStack(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddRagStack(this IServiceCollection services,
+                                                     IConfiguration configuration,
+                                                     IHostEnvironment environment)
         {
             // Các provider LLM dạng Keyed Services (Groq / Gemini).
             services.AddLLM(configuration);
@@ -23,6 +25,18 @@ namespace RAG.Extension.DependencyInjection
 
             // Kho vector (Qdrant qua gRPC).
             services.AddQdrant(configuration);
+
+            // Đồ thị tri thức (GraphRAG). Ràng buộc thứ tự DUY NHẤT là phải đứng TRƯỚC
+            // AddLatencyTracking, vì dòng đó BỌC IGraphSearch và IGraphEntityExtractor, và Decorate<>
+            // ném ngay lúc khởi động nếu chưa có gì để bọc.
+            //
+            // Vị trí ngay sau AddQdrant là để ĐỌC, không phải một ràng buộc: tầng này đi cặp với kho
+            // vector (hai nhánh chạy song song trong AskContextBuilder, và IChunkTextLookup của Qdrant
+            // tra ngược nguyên văn các dòng mà cạnh đồ thị trỏ tới), nên để cạnh nhau thì người đọc
+            // thấy ngay quan hệ đó. Container giải phụ thuộc theo nhu
+            // cầu chứ không theo thứ tự đăng ký, nên nó phụ thuộc được vào ICorpusIngestionService
+            // đăng ký mãi dưới AddIngestion mà không sao.
+            services.AddGraph(configuration, environment);
 
             // Cache câu trả lời theo ngữ nghĩa (FAISS trong tiến trình, hoặc Redis + RediSearch —
             // chọn bằng SemanticAnswerCache:Provider). KHÔNG phải decorator — khác AddQueryCache ở

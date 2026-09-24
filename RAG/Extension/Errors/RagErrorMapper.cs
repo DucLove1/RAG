@@ -24,6 +24,10 @@ namespace RAG.Extension.Errors
             EmbeddingRateLimitedException => (StatusCodes.Status429TooManyRequests, _config.RateLimitedTitle),
             AllApiKeysRateLimitedException => (StatusCodes.Status429TooManyRequests, _config.RateLimitedTitle),
             EmbeddingUnavailableException => (StatusCodes.Status503ServiceUnavailable, _config.EmbeddingUnavailableTitle),
+            GraphDataInvalidException => (StatusCodes.Status400BadRequest, _config.GraphDataInvalidTitle),
+            GraphAdminDisabledException => (StatusCodes.Status404NotFound, _config.GraphAdminDisabledTitle),
+            GraphUnavailableException => (StatusCodes.Status503ServiceUnavailable, _config.GraphUnavailableTitle),
+            GraphStatementRejectedException => (StatusCodes.Status400BadRequest, _config.GraphStatementRejectedTitle),
             _ => (StatusCodes.Status500InternalServerError, _config.UnexpectedTitle)
         };
     }

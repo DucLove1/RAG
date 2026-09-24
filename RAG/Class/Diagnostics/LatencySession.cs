@@ -30,8 +30,8 @@ namespace RAG.Class.Diagnostics
         /// <summary>
         /// Khóa vì một phiên có thể bị ghi từ nhiều luồng: <c>AsyncLocal</c> chảy sang mọi nhánh
         /// <c>Task</c> con, nên hai lời gọi chạy song song trong cùng request sẽ cùng ghi vào đây.
-        /// Hiện AskPipeline chạy tuần tự, nhưng khóa này là thứ giữ cho việc song song hóa về sau
-        /// không âm thầm làm hỏng số liệu.
+        /// Đây là chuyện có thật chứ không phòng xa: bước dựng ngữ cảnh chạy nhánh vector và nhánh
+        /// đồ thị song song, và cả hai cùng ghi stage lẫn nhãn vào cùng một phiên.
         /// </summary>
         private readonly object _gate = new();
 

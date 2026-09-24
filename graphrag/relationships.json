@@ -1,0 +1,1674 @@
+[
+  {
+    "tu": "Chris",
+    "loai": "CO_QUAN_HE_TINH_CAM",
+    "den": "Danie",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L1"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "THANH_VIEN_CUA",
+    "den": "Cặp đôi Chris–Danie",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L1"
+    ]
+  },
+  {
+    "tu": "Danie",
+    "loai": "THANH_VIEN_CUA",
+    "den": "Cặp đôi Chris–Danie",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L1"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "LA_NAN_NHAN_TRONG",
+    "den": "Vụ án Chris–Danie",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L1"
+    ]
+  },
+  {
+    "tu": "Danie",
+    "loai": "LA_NAN_NHAN_TRONG",
+    "den": "Vụ án Chris–Danie",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L1"
+    ]
+  },
+  {
+    "tu": "Cặp đôi Chris–Danie",
+    "loai": "LA_NAN_NHAN_TRONG",
+    "den": "Vụ án Chris–Danie",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L1"
+    ]
+  },
+  {
+    "tu": "Cặp đôi Chris–Danie",
+    "loai": "SONG_TAI",
+    "den": "Ngôi nhà nạn nhân",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L2"
+    ]
+  },
+  {
+    "tu": "Thi thể Chris",
+    "loai": "DUOC_TIM_THAY_TAI",
+    "den": "Ngôi nhà nạn nhân",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L2"
+    ]
+  },
+  {
+    "tu": "Thi thể Danie",
+    "loai": "DUOC_TIM_THAY_TAI",
+    "den": "Ngôi nhà nạn nhân",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L2"
+    ]
+  },
+  {
+    "tu": "Vũng máu tại hiện trường",
+    "loai": "DUOC_TIM_THAY_TAI",
+    "den": "Phòng ăn",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L2"
+    ]
+  },
+  {
+    "tu": "Vũng máu tại hiện trường",
+    "loai": "DUOC_TIM_THAY_TAI",
+    "den": "Phòng khách",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L2"
+    ]
+  },
+  {
+    "tu": "Phòng ăn",
+    "loai": "NAM_TRONG",
+    "den": "Ngôi nhà nạn nhân",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L2"
+    ]
+  },
+  {
+    "tu": "Phòng khách",
+    "loai": "NAM_TRONG",
+    "den": "Ngôi nhà nạn nhân",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L2"
+    ]
+  },
+  {
+    "tu": "Nhà bếp",
+    "loai": "NAM_TRONG",
+    "den": "Ngôi nhà nạn nhân",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L2"
+    ]
+  },
+  {
+    "tu": "Vụ án Chris–Danie",
+    "loai": "XAY_RA_TAI",
+    "den": "Ngôi nhà nạn nhân",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L2"
+    ]
+  },
+  {
+    "tu": "Vụ án Chris–Danie",
+    "loai": "XAY_RA_VAO",
+    "den": "Đêm xảy ra án mạng",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L3"
+    ]
+  },
+  {
+    "tu": "Thời điểm xảy ra vụ án",
+    "loai": "DANH_DAU",
+    "den": "Vụ án Chris–Danie",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L3"
+    ]
+  },
+  {
+    "tu": "Ngôi nhà nạn nhân",
+    "loai": "CO_DAU_HIEU",
+    "den": "Giả thuyết giết người rồi tự sát",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L4"
+    ],
+    "thuoc_tinh": {
+      "mo_ta": "Hiện trường mang dấu hiệu của một vụ giết người rồi tự sát."
+    }
+  },
+  {
+    "tu": "Giả thuyết giết người rồi tự sát",
+    "loai": "GAY_RA_BOI",
+    "den": "Cặp đôi Chris–Danie",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "00_boi-canh-chung#L4"
+    ]
+  },
+  {
+    "tu": "James",
+    "loai": "THANH_VIEN_CUA",
+    "den": "Cảnh sát",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "10_chung_canh-sat#L1"
+    ]
+  },
+  {
+    "tu": "Michael",
+    "loai": "THANH_VIEN_CUA",
+    "den": "Cảnh sát",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "10_chung_canh-sat#L1"
+    ]
+  },
+  {
+    "tu": "Cảnh sát",
+    "loai": "KHAI_RANG",
+    "den": "Chris giết Danie rồi sau đó Chris tự sát",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "10_chung_canh-sat#L1"
+    ]
+  },
+  {
+    "tu": "Chris giết Danie rồi sau đó Chris tự sát",
+    "loai": "UNG_HO",
+    "den": "Giả thuyết giết người rồi tự sát",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "10_chung_canh-sat#L1"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "GAY_RA",
+    "den": "Vụ án Chris–Danie",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "10_chung_canh-sat#L1"
+    ],
+    "thuoc_tinh": {
+      "theo_loi_khai_cua": "Cảnh sát"
+    }
+  },
+  {
+    "tu": "Cảnh sát",
+    "loai": "KHAI_RANG",
+    "den": "Cảnh sát không có thêm thông tin nào khác về vụ án",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "10_chung_canh-sat#L2"
+    ]
+  },
+  {
+    "tu": "Wills",
+    "loai": "THANH_VIEN_CUA",
+    "den": "Người dân khu phố",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L1"
+    ]
+  },
+  {
+    "tu": "Daniel",
+    "loai": "THANH_VIEN_CUA",
+    "den": "Người dân khu phố",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L1"
+    ]
+  },
+  {
+    "tu": "Thomas",
+    "loai": "THANH_VIEN_CUA",
+    "den": "Người dân khu phố",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L1"
+    ]
+  },
+  {
+    "tu": "Người dân khu phố",
+    "loai": "CHUNG_KIEN",
+    "den": "Tiếng la hét",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L1"
+    ],
+    "thuoc_tinh": {
+      "giac_quan": "thính giác"
+    }
+  },
+  {
+    "tu": "Người dân khu phố",
+    "loai": "CHUNG_KIEN",
+    "den": "Tiếng đập phá",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L1"
+    ],
+    "thuoc_tinh": {
+      "giac_quan": "thính giác"
+    }
+  },
+  {
+    "tu": "Tiếng la hét",
+    "loai": "XAY_RA_TAI",
+    "den": "Ngôi nhà nạn nhân",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L1"
+    ]
+  },
+  {
+    "tu": "Tiếng đập phá",
+    "loai": "XAY_RA_TAI",
+    "den": "Ngôi nhà nạn nhân",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L1"
+    ]
+  },
+  {
+    "tu": "Người dân khu phố",
+    "loai": "KHAI_RANG",
+    "den": "Thường xuyên có tiếng la hét và đập phá từ ngôi nhà nạn nhân",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L2"
+    ],
+    "thuoc_tinh": {
+      "tan_suat": "thường xuyên, không chỉ riêng đêm án mạng"
+    }
+  },
+  {
+    "tu": "Thường xuyên có tiếng la hét và đập phá từ ngôi nhà nạn nhân",
+    "loai": "UNG_HO",
+    "den": "Giả thuyết cặp đôi Chris–Danie bất hòa",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L2"
+    ]
+  },
+  {
+    "tu": "Arthur",
+    "loai": "THANH_VIEN_CUA",
+    "den": "Người dân khu phố",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "12_chung_tin-don-khoa-minh-trong-nha#L1"
+    ]
+  },
+  {
+    "tu": "Clara",
+    "loai": "THANH_VIEN_CUA",
+    "den": "Người dân khu phố",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "12_chung_tin-don-khoa-minh-trong-nha#L1"
+    ]
+  },
+  {
+    "tu": "Người dân khu phố",
+    "loai": "KHAI_RANG",
+    "den": "Chris và Danie là những người kỳ dị hay khóa mình trong nhà",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "12_chung_tin-don-khoa-minh-trong-nha#L1"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "CO_DAC_DIEM",
+    "den": "Kỳ dị",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "12_chung_tin-don-khoa-minh-trong-nha#L1"
+    ]
+  },
+  {
+    "tu": "Danie",
+    "loai": "CO_DAC_DIEM",
+    "den": "Kỳ dị",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "12_chung_tin-don-khoa-minh-trong-nha#L1"
+    ]
+  },
+  {
+    "tu": "Người dân khu phố",
+    "loai": "CO_THAI_DO_VOI",
+    "den": "Cặp đôi Chris–Danie",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "12_chung_tin-don-khoa-minh-trong-nha#L1"
+    ],
+    "thuoc_tinh": {
+      "thai_do": "chủ động tránh xa"
+    }
+  },
+  {
+    "tu": "Người dân khu phố",
+    "loai": "KHAI_RANG",
+    "den": "Chris và Danie khóa mình trong nhà vì cãi nhau",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "12_chung_tin-don-khoa-minh-trong-nha#L2"
+    ]
+  },
+  {
+    "tu": "Người dân khu phố",
+    "loai": "KHAI_RANG",
+    "den": "Chris từng đánh Danie",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "12_chung_tin-don-khoa-minh-trong-nha#L2"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "GAY_RA",
+    "den": "Cãi nhau giữa Chris và Danie",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "12_chung_tin-don-khoa-minh-trong-nha#L2"
+    ]
+  },
+  {
+    "tu": "Danie",
+    "loai": "GAY_RA",
+    "den": "Cãi nhau giữa Chris và Danie",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "12_chung_tin-don-khoa-minh-trong-nha#L2"
+    ]
+  },
+  {
+    "tu": "Cãi nhau giữa Chris và Danie",
+    "loai": "XAY_RA_TAI",
+    "den": "Ngôi nhà nạn nhân",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "12_chung_tin-don-khoa-minh-trong-nha#L2"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "BAO_LUC_VOI",
+    "den": "Danie",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "12_chung_tin-don-khoa-minh-trong-nha#L2"
+    ]
+  },
+  {
+    "tu": "Chris và Danie khóa mình trong nhà vì cãi nhau",
+    "loai": "UNG_HO",
+    "den": "Giả thuyết cặp đôi Chris–Danie bất hòa",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "12_chung_tin-don-khoa-minh-trong-nha#L2"
+    ]
+  },
+  {
+    "tu": "Chris từng đánh Danie",
+    "loai": "UNG_HO",
+    "den": "Giả thuyết Chris mất kiểm soát",
+    "trang_thai": "tin_don",
+    "nguon_chunk": [
+      "12_chung_tin-don-khoa-minh-trong-nha#L2"
+    ]
+  },
+  {
+    "tu": "Wills",
+    "loai": "CHUNG_KIEN",
+    "den": "Tiếng súng thứ nhất",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "20_wills#L1"
+    ],
+    "thuoc_tinh": {
+      "giac_quan": "thính giác"
+    }
+  },
+  {
+    "tu": "Wills",
+    "loai": "CHUNG_KIEN",
+    "den": "Tiếng súng thứ hai",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "20_wills#L1"
+    ],
+    "thuoc_tinh": {
+      "giac_quan": "thính giác"
+    }
+  },
+  {
+    "tu": "Tiếng súng thứ nhất",
+    "loai": "XAY_RA_VAO",
+    "den": "Đêm xảy ra án mạng",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "20_wills#L1"
+    ]
+  },
+  {
+    "tu": "Tiếng súng thứ hai",
+    "loai": "XAY_RA_VAO",
+    "den": "Đêm xảy ra án mạng",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "20_wills#L1"
+    ]
+  },
+  {
+    "tu": "Mốc 15 phút sau tiếng súng thứ nhất",
+    "loai": "DANH_DAU",
+    "den": "Tiếng súng thứ hai",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "20_wills#L1"
+    ]
+  },
+  {
+    "tu": "Mốc 15 phút sau tiếng súng thứ nhất",
+    "loai": "NAM_TRONG",
+    "den": "Đêm xảy ra án mạng",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "20_wills#L1"
+    ]
+  },
+  {
+    "tu": "Wills",
+    "loai": "KHAI_RANG",
+    "den": "Có hai tiếng súng cách nhau 15 phút trong đêm án mạng",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "20_wills#L1"
+    ]
+  },
+  {
+    "tu": "Có hai tiếng súng cách nhau 15 phút trong đêm án mạng",
+    "loai": "MAU_THUAN",
+    "den": "Giả thuyết giết người rồi tự sát",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "20_wills#L1"
+    ],
+    "thuoc_tinh": {
+      "mo_ta": "Một người tự sát sau khi bắn người kia thì khó có khoảng cách 15 phút giữa hai phát."
+    }
+  },
+  {
+    "tu": "Wills",
+    "loai": "KHAI_RANG",
+    "den": "Chris là một gã bạn trai tồi tệ và bạo lực",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "20_wills#L2"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "CO_DAC_DIEM",
+    "den": "Bạn trai tồi tệ",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "20_wills#L2"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "CO_DAC_DIEM",
+    "den": "Bạo lực",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "20_wills#L2"
+    ]
+  },
+  {
+    "tu": "Chris là một gã bạn trai tồi tệ và bạo lực",
+    "loai": "UNG_HO",
+    "den": "Giả thuyết Chris mất kiểm soát",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "20_wills#L2"
+    ]
+  },
+  {
+    "tu": "Brad",
+    "loai": "QUEN_BIET",
+    "den": "Chris",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "21_brad#L1"
+    ],
+    "thuoc_tinh": {
+      "muc_do": "bạn từ năm cấp 3"
+    }
+  },
+  {
+    "tu": "Brad",
+    "loai": "CO_MAT_TAI",
+    "den": "Trường cấp 3",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "21_brad#L1"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "CO_MAT_TAI",
+    "den": "Trường cấp 3",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "21_brad#L1"
+    ]
+  },
+  {
+    "tu": "Brad",
+    "loai": "CO_MAT_TAI",
+    "den": "Trường đại học",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "21_brad#L1"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "CO_MAT_TAI",
+    "den": "Trường đại học",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "21_brad#L1"
+    ]
+  },
+  {
+    "tu": "Brad",
+    "loai": "QUEN_BIET",
+    "den": "Danie",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "21_brad#L2"
+    ],
+    "thuoc_tinh": {
+      "muc_do": "gián tiếp, chỉ qua Chris và lời kể của Chris"
+    }
+  },
+  {
+    "tu": "Brad",
+    "loai": "KHAI_RANG",
+    "den": "Chris là người có tham vọng và lạc quan",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "21_brad#L3"
+    ]
+  },
+  {
+    "tu": "Brad",
+    "loai": "KHAI_RANG",
+    "den": "Chris không dễ bị mất kiểm soát",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "21_brad#L3"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "CO_DAC_DIEM",
+    "den": "Tham vọng",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "21_brad#L3"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "CO_DAC_DIEM",
+    "den": "Lạc quan",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "21_brad#L3"
+    ]
+  },
+  {
+    "tu": "Chris không dễ bị mất kiểm soát",
+    "loai": "MAU_THUAN",
+    "den": "Giả thuyết Chris mất kiểm soát",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "21_brad#L3"
+    ]
+  },
+  {
+    "tu": "Brad",
+    "loai": "KHAI_RANG",
+    "den": "Chris và Danie đang yêu nhau sâu đậm",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "21_brad#L4"
+    ]
+  },
+  {
+    "tu": "Chris và Danie đang yêu nhau sâu đậm",
+    "loai": "MAU_THUAN",
+    "den": "Giả thuyết cặp đôi Chris–Danie bất hòa",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "21_brad#L4"
+    ]
+  },
+  {
+    "tu": "Bread",
+    "loai": "SONG_TAI",
+    "den": "Nhà của Bread",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L1"
+    ],
+    "thuoc_tinh": {
+      "thoi_diem": "qua nhiều thế hệ"
+    }
+  },
+  {
+    "tu": "Nhà của Bread",
+    "loai": "NAM_TRONG",
+    "den": "Khu phố",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L1"
+    ]
+  },
+  {
+    "tu": "Bread",
+    "loai": "CO_CHUNG_CU_NGOAI_PHAM",
+    "den": "Đêm xảy ra án mạng",
+    "trang_thai": "loi_khai",
+    "phu_dinh": true,
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L2"
+    ],
+    "thuoc_tinh": {
+      "mo_ta": "Vào thời gian xảy ra án mạng thì Bread đã đi ngủ, không ai xác nhận được."
+    }
+  },
+  {
+    "tu": "Bread",
+    "loai": "LAM_CHU",
+    "den": "Tiệm bánh mì của Bread",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L3"
+    ]
+  },
+  {
+    "tu": "Tiệm bánh mì của Bread",
+    "loai": "NAM_TRONG",
+    "den": "Khu phố",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L3"
+    ]
+  },
+  {
+    "tu": "Ngôi nhà nạn nhân",
+    "loai": "NAM_TRONG",
+    "den": "Khu phố",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L3"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "SONG_TAI",
+    "den": "Khu phố",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L3"
+    ]
+  },
+  {
+    "tu": "Chris chuyển tới khu phố",
+    "loai": "XAY_RA_TAI",
+    "den": "Khu phố",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L3"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "LA_KHACH_CUA",
+    "den": "Tiệm bánh mì của Bread",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L3"
+    ],
+    "thuoc_tinh": {
+      "tan_suat": "mỗi ngày"
+    }
+  },
+  {
+    "tu": "Chris ngừng đến tiệm bánh mì",
+    "loai": "XAY_RA_TAI",
+    "den": "Tiệm bánh mì của Bread",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L3"
+    ]
+  },
+  {
+    "tu": "Chris ngừng đến tiệm bánh mì",
+    "loai": "XAY_RA_VAO",
+    "den": "Dạo gần đây",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L3"
+    ]
+  },
+  {
+    "tu": "Chris ngừng đến tiệm bánh mì",
+    "loai": "CO_DAU_HIEU",
+    "den": "Giả thuyết cặp đôi Chris–Danie bất hòa",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L3"
+    ]
+  },
+  {
+    "tu": "Bread",
+    "loai": "KHAI_RANG",
+    "den": "Chris có điều bất thường trong những lần cuối đến tiệm bánh mì",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L4"
+    ]
+  },
+  {
+    "tu": "Bread",
+    "loai": "KHAI_RANG",
+    "den": "Có thể Chris đang có vấn đề với Danie",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L4"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "CO_DAC_DIEM",
+    "den": "Có biểu hiện bất thường",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L4"
+    ]
+  },
+  {
+    "tu": "Có thể Chris đang có vấn đề với Danie",
+    "loai": "UNG_HO",
+    "den": "Giả thuyết cặp đôi Chris–Danie bất hòa",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L4"
+    ]
+  },
+  {
+    "tu": "Bread",
+    "loai": "KHAI_RANG",
+    "den": "4–5 tháng trước Chris khá bình tĩnh còn Danie đầy năng lượng và tích cực",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L5"
+    ]
+  },
+  {
+    "tu": "Mốc 4–5 tháng trước",
+    "loai": "DANH_DAU",
+    "den": "4–5 tháng trước Chris khá bình tĩnh còn Danie đầy năng lượng và tích cực",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L5"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "CO_DAC_DIEM",
+    "den": "Bình tĩnh",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L5"
+    ]
+  },
+  {
+    "tu": "Danie",
+    "loai": "CO_DAC_DIEM",
+    "den": "Đầy năng lượng",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L5"
+    ]
+  },
+  {
+    "tu": "Danie",
+    "loai": "CO_DAC_DIEM",
+    "den": "Tích cực",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L5"
+    ]
+  },
+  {
+    "tu": "4–5 tháng trước Chris khá bình tĩnh còn Danie đầy năng lượng và tích cực",
+    "loai": "MAU_THUAN",
+    "den": "Giả thuyết Chris mất kiểm soát",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "22_ong-lao-tiem-banh-mi#L5"
+    ]
+  },
+  {
+    "tu": "Johny",
+    "loai": "KHAI_RANG",
+    "den": "Johny ở nhà khi vụ án xảy ra",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L1"
+    ]
+  },
+  {
+    "tu": "Johny",
+    "loai": "CO_MAT_TAI",
+    "den": "Nhà Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L1"
+    ]
+  },
+  {
+    "tu": "Johny",
+    "loai": "SO_HUU",
+    "den": "Tấm ảnh ngoại phạm của Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L1"
+    ]
+  },
+  {
+    "tu": "Tấm ảnh ngoại phạm của Johny",
+    "loai": "LA_BANG_CHUNG_NGOAI_PHAM_CHO",
+    "den": "Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L1"
+    ]
+  },
+  {
+    "tu": "Đồng hồ trong tấm ảnh ngoại phạm",
+    "loai": "NAM_TRONG",
+    "den": "Tấm ảnh ngoại phạm của Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L1"
+    ]
+  },
+  {
+    "tu": "Đồng hồ trong tấm ảnh ngoại phạm",
+    "loai": "XAC_DINH_THOI_DIEM_CUA",
+    "den": "Tấm ảnh ngoại phạm của Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L1"
+    ]
+  },
+  {
+    "tu": "Thời điểm 2 phút trước vụ án",
+    "loai": "DANH_DAU",
+    "den": "Tấm ảnh ngoại phạm của Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L1"
+    ]
+  },
+  {
+    "tu": "Thời điểm 2 phút trước vụ án",
+    "loai": "NAM_TRONG",
+    "den": "Đêm xảy ra án mạng",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L1"
+    ]
+  },
+  {
+    "tu": "Tấm ảnh ngoại phạm của Johny",
+    "loai": "GHI_LAI",
+    "den": "Trận bóng",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L2"
+    ]
+  },
+  {
+    "tu": "Trận bóng",
+    "loai": "XAC_DINH_THOI_DIEM_CUA",
+    "den": "Tấm ảnh ngoại phạm của Johny",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "23_johny#L2"
+    ]
+  },
+  {
+    "tu": "Johny",
+    "loai": "SO_HUU",
+    "den": "Bộ ảnh chụp ngôi nhà nạn nhân",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L3"
+    ]
+  },
+  {
+    "tu": "Bộ ảnh chụp ngôi nhà nạn nhân",
+    "loai": "GHI_LAI",
+    "den": "Ngôi nhà nạn nhân",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L3"
+    ]
+  },
+  {
+    "tu": "Bộ ảnh chụp ngôi nhà nạn nhân",
+    "loai": "UNG_HO",
+    "den": "Giả thuyết Johny theo dõi cặp đôi Chris–Danie",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "23_johny#L3"
+    ]
+  },
+  {
+    "tu": "Johny",
+    "loai": "SO_HUU",
+    "den": "Tấm ảnh chiếc xe",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L4"
+    ]
+  },
+  {
+    "tu": "Tấm ảnh chiếc xe",
+    "loai": "GHI_LAI",
+    "den": "Chiếc xe đậu trước ngôi nhà nạn nhân",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L4"
+    ]
+  },
+  {
+    "tu": "Chiếc xe đậu trước ngôi nhà nạn nhân",
+    "loai": "CO_MAT_TAI",
+    "den": "Ngôi nhà nạn nhân",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L4"
+    ]
+  },
+  {
+    "tu": "Tấm ảnh chiếc xe",
+    "loai": "MANH_MOI_CHO",
+    "den": "Giả thuyết có người thứ ba tại hiện trường",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "23_johny#L4"
+    ]
+  },
+  {
+    "tu": "Johny",
+    "loai": "SO_HUU",
+    "den": "Tấm ảnh ghi lời nói của Chris và Danie",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L5"
+    ]
+  },
+  {
+    "tu": "Tấm ảnh ghi lời nói của Chris và Danie",
+    "loai": "GHI_LAI",
+    "den": "Chris",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L5"
+    ]
+  },
+  {
+    "tu": "Tấm ảnh ghi lời nói của Chris và Danie",
+    "loai": "GHI_LAI",
+    "den": "Danie",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L5"
+    ]
+  },
+  {
+    "tu": "Tấm ảnh ghi lời nói của Chris và Danie",
+    "loai": "UNG_HO",
+    "den": "Giả thuyết Johny theo dõi cặp đôi Chris–Danie",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "23_johny#L5"
+    ]
+  },
+  {
+    "tu": "Johny",
+    "loai": "SO_HUU",
+    "den": "Đôi găng tay",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L6"
+    ]
+  },
+  {
+    "tu": "Đôi găng tay",
+    "loai": "DUOC_TIM_THAY_TAI",
+    "den": "Phòng Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L6"
+    ]
+  },
+  {
+    "tu": "Phòng Johny",
+    "loai": "NAM_TRONG",
+    "den": "Nhà Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "23_johny#L6"
+    ]
+  },
+  {
+    "tu": "Margaret",
+    "loai": "LA_ONG_BA_CUA",
+    "den": "Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "24_ba-johny#L1"
+    ]
+  },
+  {
+    "tu": "Margaret",
+    "loai": "SONG_TAI",
+    "den": "Nhà Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "24_ba-johny#L1"
+    ]
+  },
+  {
+    "tu": "Johny",
+    "loai": "SONG_TAI",
+    "den": "Nhà Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "24_ba-johny#L1"
+    ]
+  },
+  {
+    "tu": "Margaret",
+    "loai": "THANH_VIEN_CUA",
+    "den": "Gia đình Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "24_ba-johny#L1"
+    ]
+  },
+  {
+    "tu": "Johny",
+    "loai": "THANH_VIEN_CUA",
+    "den": "Gia đình Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "24_ba-johny#L1"
+    ]
+  },
+  {
+    "tu": "Ba mẹ Johny",
+    "loai": "LA_CHA_ME_CUA",
+    "den": "Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "24_ba-johny#L2"
+    ]
+  },
+  {
+    "tu": "Ba mẹ Johny",
+    "loai": "THANH_VIEN_CUA",
+    "den": "Gia đình Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "24_ba-johny#L2"
+    ]
+  },
+  {
+    "tu": "Ba mẹ Johny",
+    "loai": "GAY_RA",
+    "den": "Xung đột bạo lực của ba mẹ Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "24_ba-johny#L2"
+    ]
+  },
+  {
+    "tu": "Xung đột bạo lực của ba mẹ Johny",
+    "loai": "XAY_RA_VAO",
+    "den": "Thời thơ ấu của Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "24_ba-johny#L2"
+    ]
+  },
+  {
+    "tu": "Margaret",
+    "loai": "KHAI_RANG",
+    "den": "Ba mẹ Johny thường xuyên cãi nhau và bạo lực khi Johny còn bé",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "24_ba-johny#L2"
+    ]
+  },
+  {
+    "tu": "Ba mẹ Johny",
+    "loai": "GAY_RA",
+    "den": "Vụ tự sát của ba mẹ Johny",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "24_ba-johny#L3"
+    ]
+  },
+  {
+    "tu": "Vụ tự sát của ba mẹ Johny",
+    "loai": "GIONG_VOI",
+    "den": "Vụ án Chris–Danie",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "24_ba-johny#L3"
+    ],
+    "thuoc_tinh": {
+      "mo_ta": "Hiện trường vụ tự sát của ba mẹ Johny tương tự hiện trường vụ án Chris–Danie."
+    }
+  },
+  {
+    "tu": "Margaret",
+    "loai": "KHAI_RANG",
+    "den": "Vụ tự sát của ba mẹ Johny tương tự hiện trường vụ án Chris–Danie",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "24_ba-johny#L3"
+    ]
+  },
+  {
+    "tu": "Vụ tự sát của ba mẹ Johny tương tự hiện trường vụ án Chris–Danie",
+    "loai": "UNG_HO",
+    "den": "Giả thuyết có người thứ ba tại hiện trường",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "24_ba-johny#L3"
+    ]
+  },
+  {
+    "tu": "Thi thể Danie",
+    "loai": "CO_DAU_HIEU",
+    "den": "Vết cháy và tóc cháy trên thi thể Danie",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L1"
+    ]
+  },
+  {
+    "tu": "Vết cháy và tóc cháy trên thi thể Danie",
+    "loai": "MANH_MOI_CHO",
+    "den": "Danie bị bắn",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L1"
+    ]
+  },
+  {
+    "tu": "Edward",
+    "loai": "KHAI_RANG",
+    "den": "Danie bị bắn ở khoảng cách gần dưới 10cm",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L1"
+    ]
+  },
+  {
+    "tu": "Thi thể Danie",
+    "loai": "CO_DAU_HIEU",
+    "den": "Vết đạn xuyên bụng Danie",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L2"
+    ]
+  },
+  {
+    "tu": "Khẩu súng",
+    "loai": "GAY_RA",
+    "den": "Danie bị bắn",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L1",
+      "25_phap-y#L2"
+    ]
+  },
+  {
+    "tu": "Danie",
+    "loai": "LA_NAN_NHAN_TRONG",
+    "den": "Danie bị bắn",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L2"
+    ]
+  },
+  {
+    "tu": "Thi thể Danie",
+    "loai": "CO_DAU_HIEU",
+    "den": "Dấu ẩu đả",
+    "trang_thai": "xac_nhan",
+    "phu_dinh": true,
+    "nguon_chunk": [
+      "25_phap-y#L3"
+    ]
+  },
+  {
+    "tu": "Danie",
+    "loai": "CO_DAU_VET_CAM",
+    "den": "Khẩu súng",
+    "trang_thai": "xac_nhan",
+    "phu_dinh": true,
+    "nguon_chunk": [
+      "25_phap-y#L3"
+    ]
+  },
+  {
+    "tu": "Edward",
+    "loai": "KHAI_RANG",
+    "den": "Trên tay Danie không có dấu ẩu đả và không có dấu hiệu cầm súng",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L3"
+    ]
+  },
+  {
+    "tu": "Trên tay Danie không có dấu ẩu đả và không có dấu hiệu cầm súng",
+    "loai": "MAU_THUAN",
+    "den": "Giả thuyết Danie tự sát hoặc chống cự",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L3"
+    ]
+  },
+  {
+    "tu": "Edward",
+    "loai": "KHAI_RANG",
+    "den": "Dấu vân tay có thể tiết lộ thêm thông tin",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "25_phap-y#L3"
+    ]
+  },
+  {
+    "tu": "Dấu vân tay",
+    "loai": "MANH_MOI_CHO",
+    "den": "Vụ án Chris–Danie",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "25_phap-y#L3"
+    ]
+  },
+  {
+    "tu": "Thi thể Danie",
+    "loai": "CO_DAU_HIEU",
+    "den": "Vết thương cũ trên tay Danie",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L4"
+    ]
+  },
+  {
+    "tu": "Vết thương cũ trên tay Danie",
+    "loai": "XAY_RA_VAO",
+    "den": "Nhiều năm trước",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L4"
+    ]
+  },
+  {
+    "tu": "Vết thương cũ trên tay Danie",
+    "loai": "GAY_RA_BOI",
+    "den": "Lưỡi dao",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "25_phap-y#L4"
+    ]
+  },
+  {
+    "tu": "Edward",
+    "loai": "KHAI_RANG",
+    "den": "Có thể ai đó hoặc chính Danie đã dùng lưỡi dao gây tổn thương cho Danie nhiều lần",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "25_phap-y#L4"
+    ]
+  },
+  {
+    "tu": "Danie",
+    "loai": "CO_DAC_DIEM",
+    "den": "Nồng độ cồn cao",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L5"
+    ]
+  },
+  {
+    "tu": "Thi thể Chris",
+    "loai": "CO_DAU_HIEU",
+    "den": "Vết đạn trên trán Chris",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L6"
+    ]
+  },
+  {
+    "tu": "Khẩu súng",
+    "loai": "GAY_RA",
+    "den": "Chris bị bắn vào đầu",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L6"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "LA_NAN_NHAN_TRONG",
+    "den": "Chris bị bắn vào đầu",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L6"
+    ]
+  },
+  {
+    "tu": "Vết đạn trên trán Chris",
+    "loai": "UNG_HO",
+    "den": "Giả thuyết Chris tự bắn mình",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L6"
+    ]
+  },
+  {
+    "tu": "Thi thể Chris",
+    "loai": "CO_DAU_HIEU",
+    "den": "Vết vỡ hộp sọ bên trái đầu Chris",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L7"
+    ]
+  },
+  {
+    "tu": "Edward",
+    "loai": "KHAI_RANG",
+    "den": "Vết vỡ thứ hai trên hộp sọ Chris là vết đạn bay ra",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "25_phap-y#L7"
+    ]
+  },
+  {
+    "tu": "Thi thể Chris",
+    "loai": "CO_DAU_HIEU",
+    "den": "Dấu vết cầm súng trên tay trái Chris",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L8"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "CO_DAU_VET_CAM",
+    "den": "Khẩu súng",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L8"
+    ],
+    "thuoc_tinh": {
+      "vi_tri": "tay trái"
+    }
+  },
+  {
+    "tu": "Dấu vết cầm súng trên tay trái Chris",
+    "loai": "UNG_HO",
+    "den": "Giả thuyết Chris tự bắn mình",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L8"
+    ]
+  },
+  {
+    "tu": "Dấu vết cầm súng trên tay trái Chris",
+    "loai": "UNG_HO",
+    "den": "Giả thuyết giết người rồi tự sát",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L8"
+    ]
+  },
+  {
+    "tu": "Chris",
+    "loai": "CO_DAC_DIEM",
+    "den": "Nồng độ cồn cao",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L9"
+    ]
+  },
+  {
+    "tu": "Edward",
+    "loai": "KHAI_RANG",
+    "den": "Không chắc chắn Chris là người bắn Danie",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L10"
+    ]
+  },
+  {
+    "tu": "Không chắc chắn Chris là người bắn Danie",
+    "loai": "MAU_THUAN",
+    "den": "Giả thuyết giết người rồi tự sát",
+    "trang_thai": "xac_nhan",
+    "nguon_chunk": [
+      "25_phap-y#L10"
+    ]
+  },
+  {
+    "tu": "Không chắc chắn Chris là người bắn Danie",
+    "loai": "UNG_HO",
+    "den": "Giả thuyết có người thứ ba tại hiện trường",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "25_phap-y#L10"
+    ]
+  },
+  {
+    "tu": "Jack",
+    "loai": "QUEN_BIET",
+    "den": "Chris",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "26_jack#L1"
+    ],
+    "thuoc_tinh": {
+      "muc_do": "bạn thân"
+    }
+  },
+  {
+    "tu": "Jack",
+    "loai": "QUEN_BIET",
+    "den": "Danie",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "26_jack#L1"
+    ],
+    "thuoc_tinh": {
+      "muc_do": "bạn thân"
+    }
+  },
+  {
+    "tu": "Jack",
+    "loai": "LAM_CHU",
+    "den": "Tiệm sửa xe của Jack",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "26_jack#L2"
+    ]
+  },
+  {
+    "tu": "Jack",
+    "loai": "CHUNG_KIEN",
+    "den": "Chuyến thăm của Jack tối hôm trước án mạng",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "26_jack#L3"
+    ]
+  },
+  {
+    "tu": "Jack",
+    "loai": "CO_MAT_TAI",
+    "den": "Ngôi nhà nạn nhân",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "26_jack#L3"
+    ]
+  },
+  {
+    "tu": "Chuyến thăm của Jack tối hôm trước án mạng",
+    "loai": "XAY_RA_TAI",
+    "den": "Ngôi nhà nạn nhân",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "26_jack#L3"
+    ]
+  },
+  {
+    "tu": "Chuyến thăm của Jack tối hôm trước án mạng",
+    "loai": "XAY_RA_VAO",
+    "den": "Tối hôm trước án mạng",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "26_jack#L3"
+    ]
+  },
+  {
+    "tu": "Cặp đôi Chris–Danie",
+    "loai": "SO_HUU",
+    "den": "Xe của cặp đôi Chris–Danie",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "26_jack#L3"
+    ]
+  },
+  {
+    "tu": "Jack",
+    "loai": "SUA_CHUA",
+    "den": "Xe của cặp đôi Chris–Danie",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "26_jack#L3"
+    ],
+    "thuoc_tinh": {
+      "muc_dich": "thăm hỏi Chris và Danie và sửa chữa chiếc xe"
+    }
+  },
+  {
+    "tu": "Jack",
+    "loai": "KHAI_RANG",
+    "den": "Tối hôm trước án mạng Chris và Danie vẫn hòa thuận",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "26_jack#L4"
+    ]
+  },
+  {
+    "tu": "Tối hôm trước án mạng Chris và Danie vẫn hòa thuận",
+    "loai": "MAU_THUAN",
+    "den": "Giả thuyết cặp đôi Chris–Danie bất hòa",
+    "trang_thai": "loi_khai",
+    "nguon_chunk": [
+      "26_jack#L4"
+    ]
+  },
+  {
+    "tu": "Jack",
+    "loai": "KHAI_RANG",
+    "den": "Chris và Danie không tự sát",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "26_jack#L5"
+    ]
+  },
+  {
+    "tu": "Chris và Danie không tự sát",
+    "loai": "MAU_THUAN",
+    "den": "Giả thuyết giết người rồi tự sát",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "26_jack#L5"
+    ]
+  },
+  {
+    "tu": "Chris và Danie không tự sát",
+    "loai": "MAU_THUAN",
+    "den": "Giả thuyết Chris tự bắn mình",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "26_jack#L5"
+    ]
+  },
+  {
+    "tu": "Chris và Danie không tự sát",
+    "loai": "UNG_HO",
+    "den": "Giả thuyết có người thứ ba tại hiện trường",
+    "trang_thai": "suy_doan",
+    "nguon_chunk": [
+      "26_jack#L5"
+    ]
+  }
+]

@@ -36,7 +36,7 @@ Người dùng có yêu cầu rõ ràng, đã áp dụng nhất quán trong toà
 
 1. **SOLID.**
 2. **Không hardcode literal.** Mọi prompt, ngưỡng, template, ký tự nối đều nằm trong
-   `appsettings.json` và bind vào options class có `public const string SectionName`.
+   `appsettings.json` / `Config/*.json` và bind vào options class có `public const string SectionName`.
    Prompt **không bao giờ** là string literal trong code — luôn qua `string.Format` với template từ config.
 3. **Hằng số giao thức** (ràng buộc của nhà cung cấp, không phải cấu hình người dùng) đặt trong
    `Class/Constants/` kèm XML comment giải thích rõ sự khác biệt đó.
@@ -142,7 +142,7 @@ mã `NotSupported`, chiến lược `Off` trả `RouterDisabled`.
 | `thanks` | 0.78 | 40 | Cảm ơn, khen |
 | `out_of_scope` | 0.78 | 39 | **Guardrail** — chặn câu ngoài thế giới game |
 
-Cấu hình ở `appsettings.json` mục `SemanticRouter`. Thêm route mới = thêm một object JSON, không sửa code.
+Cấu hình ở `Config/semantic-router.json` mục `SemanticRouter`. Thêm route mới = thêm một object JSON, không sửa code.
 
 ### HAI chiến lược, chọn bằng `SemanticRouter:Strategy`
 
@@ -523,7 +523,9 @@ Cập nhật sau đợt refactor SOLID (xem `## 9`).
 ```
 RAG/
   Program.cs                        chỉ còn AddRagStack — thứ tự đăng ký nằm trong DI, không ở đây
-  appsettings.json                  prompt, ngưỡng, câu mẫu, chunking, thông báo lỗi
+  appsettings.json                  chỉ còn Logging, AllowedHosts, OpenApi
+  Config/*.json                     cấu hình tách theo chủ đề (prompts, semantic-router, graph, llm, ...),
+                                    nạp ngay sau appsettings.json; <tên>.{Env}.json để ghi đè theo môi trường
   .env                              secret + URL (gitignored)
   Design game.docx                  thiết kế game — đọc khi cần hiểu domain
   Interface/

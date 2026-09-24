@@ -1,0 +1,593 @@
+{
+  "phien_ban": "3.0.0",
+  "mo_ta": "Tu vung cua do thi tri thuc vu an Chris-Danie, rut tu 45 dong trong corpus/. NGUON SU THAT DUY NHAT cua ten nhan, ten loai quan he va gia tri trang_thai: code C# khong duoc chua mot chuoi nao trong so nay - chung di vao Cypher duoi dang THAM SO.",
+  "nhan": [
+    {
+      "ten": "ThucThe",
+      "goc": true,
+      "mo_ta": "Nhan nen tren MOI node. Truy van mo rong bat dau tu day, nen them mot loai thuc the moi khong phai sua Cypher."
+    },
+    {
+      "ten": "NhanVat",
+      "npc": true,
+      "mo_ta": "NPC nguoi choi thau van duoc. Day la nhan THU HAI dat tren chinh node :Nguoi tuong ung, khong phai mot node rieng. Chi node mang nhan nay moi co thuoc tinh duoc_biet."
+    },
+    {
+      "ten": "Nguoi",
+      "mo_ta": "Mot ca nhan trong cau chuyen."
+    },
+    {
+      "ten": "Nhom",
+      "mo_ta": "Mot tap nguoi duoc nhac toi nhu mot the: cap doi, gia dinh, dam dong khu pho, to canh sat."
+    },
+    {
+      "ten": "SuKien",
+      "mo_ta": "Mot chuyen da xay ra."
+    },
+    {
+      "ten": "VatChung",
+      "mo_ta": "Mot vat the mang thong tin ve vu an."
+    },
+    {
+      "ten": "DiaDiem",
+      "mo_ta": "Mot noi chon."
+    },
+    {
+      "ten": "ThoiGian",
+      "mo_ta": "Mot moc hoac khoang thoi gian; thuoc_tinh thu_tu cho phep dung dong thoi gian."
+    },
+    {
+      "ten": "DacDiem",
+      "mo_ta": "Mot dac diem hoac dau vet quan sat duoc tren nguoi hoac vat."
+    },
+    {
+      "ten": "NhanDinh",
+      "mo_ta": "Mot phat bieu cua ai do, KHONG phai su that. Mang nguoi_khai va do_tin_cay, nho do loi khai sai van o lai trong do thi ma khong duoc doc nhu ket luan."
+    },
+    {
+      "ten": "GiaThuyet",
+      "mo_ta": "Mot loi giai thich kha di cho vu an; diem quy tu cua UNG_HO va MAU_THUAN. Do thi KHONG danh dau gia thuyet nao dung - do la viec cua nguoi choi."
+    }
+  ],
+  "trang_thai": [
+    {
+      "ten": "xac_nhan",
+      "uu_tien": 0,
+      "cho_phep_vao_prompt": true,
+      "nhan_hien_thi": "đã xác nhận"
+    },
+    {
+      "ten": "loi_khai",
+      "uu_tien": 1,
+      "cho_phep_vao_prompt": true,
+      "nhan_hien_thi": "theo lời khai"
+    },
+    {
+      "ten": "tin_don",
+      "uu_tien": 2,
+      "cho_phep_vao_prompt": true,
+      "nhan_hien_thi": "tin đồn"
+    },
+    {
+      "ten": "suy_doan",
+      "uu_tien": 3,
+      "cho_phep_vao_prompt": true,
+      "nhan_hien_thi": "suy đoán"
+    }
+  ],
+  "quan_he": [
+    {
+      "loai": "BAO_LUC_VOI",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "bạo lực với",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "Nguoi"
+        ]
+      ]
+    },
+    {
+      "loai": "CHUNG_KIEN",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "chứng kiến",
+      "nhan_hien_thi_phu_dinh": "không chứng kiến",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "SuKien"
+        ],
+        [
+          "Nhom",
+          "SuKien"
+        ]
+      ]
+    },
+    {
+      "loai": "CO_CHUNG_CU_NGOAI_PHAM",
+      "doi_xung": false,
+      "mang_lap_luan": true,
+      "nhan_hien_thi": "có chứng cứ ngoại phạm vào",
+      "nhan_hien_thi_phu_dinh": "không có chứng cứ ngoại phạm vào",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "ThoiGian"
+        ]
+      ]
+    },
+    {
+      "loai": "CO_DAC_DIEM",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "có đặc điểm",
+      "nhan_hien_thi_phu_dinh": "không có đặc điểm",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "DacDiem"
+        ]
+      ]
+    },
+    {
+      "loai": "CO_DAU_HIEU",
+      "doi_xung": false,
+      "mang_lap_luan": true,
+      "nhan_hien_thi": "có dấu hiệu",
+      "nhan_hien_thi_phu_dinh": "không có dấu hiệu",
+      "cap_hop_le": [
+        [
+          "DiaDiem",
+          "GiaThuyet"
+        ],
+        [
+          "SuKien",
+          "GiaThuyet"
+        ],
+        [
+          "VatChung",
+          "DacDiem"
+        ],
+        [
+          "VatChung",
+          "VatChung"
+        ]
+      ]
+    },
+    {
+      "loai": "CO_DAU_VET_CAM",
+      "doi_xung": false,
+      "mang_lap_luan": true,
+      "nhan_hien_thi": "có dấu vết cầm",
+      "nhan_hien_thi_phu_dinh": "không có dấu vết cầm",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "VatChung"
+        ]
+      ]
+    },
+    {
+      "loai": "CO_MAT_TAI",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "có mặt tại",
+      "nhan_hien_thi_phu_dinh": "không có mặt tại",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "DiaDiem"
+        ],
+        [
+          "VatChung",
+          "DiaDiem"
+        ]
+      ]
+    },
+    {
+      "loai": "CO_QUAN_HE_TINH_CAM",
+      "doi_xung": true,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "có quan hệ tình cảm với",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "Nguoi"
+        ]
+      ]
+    },
+    {
+      "loai": "CO_THAI_DO_VOI",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "có thái độ với",
+      "cap_hop_le": [
+        [
+          "Nhom",
+          "Nhom"
+        ]
+      ]
+    },
+    {
+      "loai": "DANH_DAU",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "đánh dấu mốc thời gian của",
+      "cap_hop_le": [
+        [
+          "ThoiGian",
+          "NhanDinh"
+        ],
+        [
+          "ThoiGian",
+          "SuKien"
+        ],
+        [
+          "ThoiGian",
+          "VatChung"
+        ]
+      ]
+    },
+    {
+      "loai": "DUOC_TIM_THAY_TAI",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "được tìm thấy tại",
+      "cap_hop_le": [
+        [
+          "VatChung",
+          "DiaDiem"
+        ]
+      ]
+    },
+    {
+      "loai": "GAY_RA",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "gây ra",
+      "nhan_hien_thi_phu_dinh": "không gây ra",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "SuKien"
+        ],
+        [
+          "Nhom",
+          "SuKien"
+        ],
+        [
+          "VatChung",
+          "SuKien"
+        ]
+      ]
+    },
+    {
+      "loai": "GAY_RA_BOI",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "gây ra bởi",
+      "cap_hop_le": [
+        [
+          "GiaThuyet",
+          "Nhom"
+        ],
+        [
+          "VatChung",
+          "VatChung"
+        ]
+      ]
+    },
+    {
+      "loai": "GHI_LAI",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "ghi lại",
+      "cap_hop_le": [
+        [
+          "VatChung",
+          "DiaDiem"
+        ],
+        [
+          "VatChung",
+          "Nguoi"
+        ],
+        [
+          "VatChung",
+          "SuKien"
+        ],
+        [
+          "VatChung",
+          "VatChung"
+        ]
+      ]
+    },
+    {
+      "loai": "GIONG_VOI",
+      "doi_xung": true,
+      "mang_lap_luan": true,
+      "nhan_hien_thi": "giống với",
+      "cap_hop_le": [
+        [
+          "SuKien",
+          "SuKien"
+        ]
+      ]
+    },
+    {
+      "loai": "KHAI_RANG",
+      "doi_xung": false,
+      "mang_lap_luan": true,
+      "nhan_hien_thi": "khai rằng",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "NhanDinh"
+        ],
+        [
+          "Nhom",
+          "NhanDinh"
+        ]
+      ]
+    },
+    {
+      "loai": "LAM_CHU",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "làm chủ",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "DiaDiem"
+        ]
+      ]
+    },
+    {
+      "loai": "LA_BANG_CHUNG_NGOAI_PHAM_CHO",
+      "doi_xung": false,
+      "mang_lap_luan": true,
+      "nhan_hien_thi": "là bằng chứng ngoại phạm cho",
+      "cap_hop_le": [
+        [
+          "VatChung",
+          "Nguoi"
+        ]
+      ]
+    },
+    {
+      "loai": "LA_CHA_ME_CUA",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "là cha mẹ của",
+      "cap_hop_le": [
+        [
+          "Nhom",
+          "Nguoi"
+        ]
+      ]
+    },
+    {
+      "loai": "LA_KHACH_CUA",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "là khách của",
+      "nhan_hien_thi_phu_dinh": "không còn là khách của",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "DiaDiem"
+        ]
+      ]
+    },
+    {
+      "loai": "LA_NAN_NHAN_TRONG",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "là nạn nhân trong",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "SuKien"
+        ],
+        [
+          "Nhom",
+          "SuKien"
+        ]
+      ]
+    },
+    {
+      "loai": "LA_ONG_BA_CUA",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "là ông bà của",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "Nguoi"
+        ]
+      ]
+    },
+    {
+      "loai": "MANH_MOI_CHO",
+      "doi_xung": false,
+      "mang_lap_luan": true,
+      "nhan_hien_thi": "là manh mối cho",
+      "cap_hop_le": [
+        [
+          "VatChung",
+          "GiaThuyet"
+        ],
+        [
+          "VatChung",
+          "SuKien"
+        ]
+      ]
+    },
+    {
+      "loai": "MAU_THUAN",
+      "doi_xung": false,
+      "mang_lap_luan": true,
+      "nhan_hien_thi": "mâu thuẫn với",
+      "cap_hop_le": [
+        [
+          "NhanDinh",
+          "GiaThuyet"
+        ]
+      ]
+    },
+    {
+      "loai": "NAM_TRONG",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "nằm trong",
+      "cap_hop_le": [
+        [
+          "DiaDiem",
+          "DiaDiem"
+        ],
+        [
+          "ThoiGian",
+          "ThoiGian"
+        ],
+        [
+          "VatChung",
+          "VatChung"
+        ]
+      ]
+    },
+    {
+      "loai": "QUEN_BIET",
+      "doi_xung": true,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "quen biết",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "Nguoi"
+        ]
+      ]
+    },
+    {
+      "loai": "SONG_TAI",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "sống tại",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "DiaDiem"
+        ],
+        [
+          "Nhom",
+          "DiaDiem"
+        ]
+      ]
+    },
+    {
+      "loai": "SO_HUU",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "sở hữu",
+      "nhan_hien_thi_phu_dinh": "không sở hữu",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "VatChung"
+        ],
+        [
+          "Nhom",
+          "VatChung"
+        ]
+      ]
+    },
+    {
+      "loai": "SUA_CHUA",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "sửa chữa",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "VatChung"
+        ]
+      ]
+    },
+    {
+      "loai": "THANH_VIEN_CUA",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "là thành viên của",
+      "cap_hop_le": [
+        [
+          "Nguoi",
+          "Nhom"
+        ],
+        [
+          "Nhom",
+          "Nhom"
+        ]
+      ]
+    },
+    {
+      "loai": "UNG_HO",
+      "doi_xung": false,
+      "mang_lap_luan": true,
+      "nhan_hien_thi": "ủng hộ",
+      "cap_hop_le": [
+        [
+          "NhanDinh",
+          "GiaThuyet"
+        ],
+        [
+          "VatChung",
+          "GiaThuyet"
+        ]
+      ]
+    },
+    {
+      "loai": "XAC_DINH_THOI_DIEM_CUA",
+      "doi_xung": false,
+      "mang_lap_luan": true,
+      "nhan_hien_thi": "xác định thời điểm của",
+      "cap_hop_le": [
+        [
+          "SuKien",
+          "VatChung"
+        ],
+        [
+          "VatChung",
+          "VatChung"
+        ]
+      ]
+    },
+    {
+      "loai": "XAY_RA_TAI",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "xảy ra tại",
+      "cap_hop_le": [
+        [
+          "SuKien",
+          "DiaDiem"
+        ]
+      ]
+    },
+    {
+      "loai": "XAY_RA_VAO",
+      "doi_xung": false,
+      "mang_lap_luan": false,
+      "nhan_hien_thi": "xảy ra vào",
+      "cap_hop_le": [
+        [
+          "SuKien",
+          "ThoiGian"
+        ],
+        [
+          "VatChung",
+          "ThoiGian"
+        ]
+      ]
+    }
+  ]
+}

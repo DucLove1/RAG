@@ -25,8 +25,9 @@
       "FulltextAliasIndex": "thucthe_bidanh"
     },
     "Extraction": {
-      "Provider": "Gemini",
-      "Model": "gemini-3.1-flash-lite",
+      "Provider": "Groq",
+      "Model": "",
+      "ThinkingLevel": "Low",
       "MaxInputLength": 500,
       "MaxEntities": 5,
       "MaxRelationTypes": 4,

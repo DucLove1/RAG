@@ -1,8 +1,9 @@
 {
   "WeakPoint": {
     "Enabled": true,
-    "Provider": "Gemini",
-    "Model": "gemini-3.5-flash-lite",
+    "Provider": "Groq",
+    "Model": "",
+    "ThinkingLevel": "Minimal",
     "MaxInputLength": 500,
     "HitLabel": "trung_diem_yeu",
     "NoHitLabel": "khong_trung",

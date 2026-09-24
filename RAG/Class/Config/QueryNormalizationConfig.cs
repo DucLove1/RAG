@@ -23,6 +23,9 @@ namespace RAG.Class.Config
         /// </summary>
         public string? Model { get; set; }
 
+        /// <summary>Để trống thì không gửi, model chạy theo mức suy nghĩ mặc định của nhà cung cấp.</summary>
+        public LlmThinkingLevel? ThinkingLevel { get; set; }
+
         /// <summary>System prompt mô tả nhiệm vụ chuẩn hóa.</summary>
         public string SystemPrompt { get; set; } = string.Empty;
 

@@ -1,4 +1,5 @@
 using RAG.Class.Constants;
+using RAG.Class.Dto;
 using RAG.Interface;
 
 namespace RAG.Class.Diagnostics.Timing
@@ -29,8 +30,8 @@ namespace RAG.Class.Diagnostics.Timing
 
         public Task<string> AskAsync(string system,
                                      string user,
-                                     string? model = null,
+                                     LlmRequestOptions? options = null,
                                      CancellationToken cancellationToken = default) =>
-            _latency.TrackAsync(LatencyStages.LlmAnswer, () => _inner.AskAsync(system, user, model, cancellationToken));
+            _latency.TrackAsync(LatencyStages.LlmAnswer, () => _inner.AskAsync(system, user, options, cancellationToken));
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace RAG.Interface
+﻿using RAG.Class.Dto;
+
+namespace RAG.Interface
 {
     public interface ILLMProvider
     {
@@ -9,11 +11,11 @@
         int MaxOutputTokens { get; }
 
         /// <summary>
-        /// <paramref name="model"/> để trống thì provider dùng model mặc định của chính nó
-        /// (cấu hình Model trong section provider). Cho phép mỗi consumer (chuẩn hóa, router...)
-        /// chọn model riêng mà không cần thêm provider hay pool API key mới.
+        /// <paramref name="options"/> null thì provider dùng toàn bộ mặc định trong section của chính nó
+        /// (Model, mức suy nghĩ). Có options thì mỗi consumer (chuẩn hóa, router...) tự chọn model và
+        /// mức suy nghĩ riêng mà không cần thêm provider hay pool API key mới — xem <see cref="LlmRequestOptions"/>.
         /// </summary>
-        Task<string> AskAsync(string system, string user, string? model = null, CancellationToken cancellationToken = default);
+        Task<string> AskAsync(string system, string user, LlmRequestOptions? options = null, CancellationToken cancellationToken = default);
     }
 
     /// <summary>
@@ -41,7 +43,7 @@
     {
         IAsyncEnumerable<string> AskStreamAsync(string system,
                                                 string user,
-                                                string? model = null,
+                                                LlmRequestOptions? options = null,
                                                 CancellationToken cancellationToken = default);
     }
 }

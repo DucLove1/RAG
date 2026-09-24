@@ -7,7 +7,7 @@ using RAG.Interface;
 namespace RAG.Class.Answering
 {
     /// <summary>
-    /// Dựng ngữ cảnh truy hồi từ HAI NHÁNH CHẠY SONG SONG, gộp ở cuối:
+    /// Dựng ngữ cảnh truy hồi từ HAI NHÁNH CHẠY CONCURRENCY, gộp ở cuối:
     /// <para>
     /// [A] Qdrant KNN bằng vector câu hỏi đã có sẵn.
     /// [B] Đồ thị: LLM trích thực thể trong danh mục NPC được biết → Neo4j mở rộng quanh chúng → tra

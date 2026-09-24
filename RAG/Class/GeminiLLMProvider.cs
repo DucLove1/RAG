@@ -12,7 +12,7 @@ using System.Text.Json;
 namespace RAG.Class
 {
     /// <summary>
-    /// <see cref="ILLMProvider"/> và <see cref="ILLMStreamProvider"/> dùng Gemini generateContent.
+    /// <see cref="ILLMProvider"/> và <see cref="ILLMStreamProvider"/> dùng Gemini Interactions API.
     /// Đăng ký kèm khóa <see cref="LlmProviderKey.Gemini"/> để sống chung với GroqCloudProvider.
     /// Luân chuyển API key khi bị 429 (rate limit).
     /// </summary>
@@ -36,7 +36,7 @@ namespace RAG.Class
 
         public int MaxOutputTokens => _config.MaxOutputTokens;
 
-        public async Task<string> AskAsync(string system, string user, string? model = null, CancellationToken cancellationToken = default)
+        public async Task<string> AskAsync(string system, string user, LlmRequestOptions? options = null, CancellationToken cancellationToken = default)
         {
             var unavailableRetriesLeft = _config.ServiceUnavailableRetries;
 
@@ -52,7 +52,7 @@ namespace RAG.Class
                 // rơi vào nhánh mặc định, tức là người chơi nhận 500 thay vì 429. Giờ nó là một
                 // nhánh điều khiển bình thường, không còn chuỗi nào để gõ sai.
                 var (answer, unavailable) = await TryAskAsync(
-                    system, user, model, key, allowUnavailableRetry: unavailableRetriesLeft > 0, cancellationToken);
+                    system, user, options, key, allowUnavailableRetry: unavailableRetriesLeft > 0, cancellationToken);
 
                 if (answer is not null)
                     return answer;
@@ -79,14 +79,14 @@ namespace RAG.Class
         /// </returns>
         private async Task<(string? Answer, bool Unavailable)> TryAskAsync(string system,
                                                                             string user,
-                                                                            string? model,
+                                                                            LlmRequestOptions? options,
                                                                             string apiKey,
                                                                             bool allowUnavailableRetry,
                                                                             CancellationToken cancellationToken)
         {
             var httpClient = _httpClientFactory.CreateClient(HttpClientNames.GeminiLlm);
 
-            using var httpRequest = BuildRequest(_config.BuildGenerateContentPath(model), system, user, apiKey);
+            using var httpRequest = BuildRequest(_config.InteractionsPath, system, user, options, apiKey, stream: false);
 
             using var response = await httpClient.SendAsync(httpRequest, cancellationToken);
 
@@ -96,10 +96,10 @@ namespace RAG.Class
             if (response.StatusCode == HttpStatusCode.ServiceUnavailable && allowUnavailableRetry)
                 return (null, true);
 
-            response.EnsureSuccessStatusCode();
+            await EnsureSuccessAsync(response, cancellationToken);
 
             var payload = await response.Content
-                .ReadFromJsonAsync<GeminiGenerateContentResponse>(cancellationToken: cancellationToken);
+                .ReadFromJsonAsync<GeminiInteractionResponse>(cancellationToken: cancellationToken);
 
             // Trim CẢ chuỗi một lần ở đây là đúng; đường streaming bên dưới thì tuyệt đối không
             // được trim từng mảnh.
@@ -107,7 +107,7 @@ namespace RAG.Class
         }
 
         /// <summary>
-        /// Bản streaming, đọc SSE từ <c>:streamGenerateContent?alt=sse</c>.
+        /// Bản streaming, đọc SSE từ <c>interactions?alt=sse</c>.
         /// <para>
         /// Cùng cấu trúc hai giai đoạn với <c>GroqCloudProvider.AskStreamAsync</c> và cùng lý do:
         /// C# cấm <c>yield return</c> trong <c>try</c> có <c>catch</c>, nên việc mở kết nối (giai
@@ -118,7 +118,7 @@ namespace RAG.Class
         public async IAsyncEnumerable<string> AskStreamAsync(
             string system,
             string user,
-            string? model = null,
+            LlmRequestOptions? options = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -132,7 +132,7 @@ namespace RAG.Class
             {
                 var key = _rotator.GetCurrentKey();
 
-                response = await TryOpenStreamAsync(system, user, model, key, deadline.Token);
+                response = await TryOpenStreamAsync(system, user, options, key, deadline.Token);
 
                 if (response is null)
                     _rotator.ReportRateLimited(key);
@@ -154,16 +154,26 @@ namespace RAG.Class
                     if (!line.StartsWith(SseProtocol.DataPrefix, StringComparison.Ordinal))
                         continue;
 
-                    var json = line[SseProtocol.DataPrefix.Length..];
+                    var json = line[SseProtocol.DataPrefix.Length..].TrimStart();
 
                     if (json == SseProtocol.DoneSentinel)
                         break;
 
+                    var streamEvent = JsonSerializer.Deserialize<GeminiInteractionStreamEvent>(json);
+
+                    if (streamEvent?.EventType == GeminiApiDefaults.ErrorEventType)
+                        throw new HttpRequestException($"Gemini báo lỗi giữa luồng: {json}");
+
+                    // Chỉ lấy mảnh văn bản; bỏ qua thought, interaction.created/completed, step.start/stop...
+                    if (streamEvent?.EventType != GeminiApiDefaults.StepDeltaEventType
+                        || streamEvent.Delta?.Type != GeminiApiDefaults.TextContentType)
+                        continue;
+
                     // KHÔNG Trim() ở đây. Đường không streaming trim CẢ chuỗi một lần; trim từng
                     // mảnh sẽ ăn mất khoảng trắng giữa hai token và câu trả lời dính chữ vào nhau.
-                    var text = ExtractText(JsonSerializer.Deserialize<GeminiGenerateContentResponse>(json));
+                    var text = streamEvent.Delta.Text;
 
-                    if (text.Length > 0)
+                    if (!string.IsNullOrEmpty(text))
                         yield return text;
                 }
             }
@@ -172,13 +182,13 @@ namespace RAG.Class
         /// <returns>Response đã mở, hoặc <c>null</c> khi gặp 429 và caller nên xoay sang key khác.</returns>
         private async Task<HttpResponseMessage?> TryOpenStreamAsync(string system,
                                                                     string user,
-                                                                    string? model,
+                                                                    LlmRequestOptions? options,
                                                                     string apiKey,
                                                                     CancellationToken cancellationToken)
         {
             var httpClient = _httpClientFactory.CreateClient(HttpClientNames.GeminiLlmStream);
 
-            using var httpRequest = BuildRequest(_config.BuildStreamGenerateContentPath(model), system, user, apiKey);
+            using var httpRequest = BuildRequest(_config.StreamInteractionsPath, system, user, options, apiKey, stream: true);
 
             // ResponseHeadersRead là CỜ SỐNG CÒN của cả tính năng. Mặc định (ResponseContentRead),
             // SendAsync không trả về cho tới khi đã đệm xong TOÀN BỘ body — biến một luồng thành
@@ -192,34 +202,53 @@ namespace RAG.Class
                 return null;
             }
 
-            response.EnsureSuccessStatusCode();
+            try
+            {
+                await EnsureSuccessAsync(response, cancellationToken);
+            }
+            catch
+            {
+                response.Dispose();
+                throw;
+            }
+
             return response;
+        }
+
+        /// <summary>
+        /// Thay cho <c>EnsureSuccessStatusCode()</c>: Google ghi lý do thật (field sai, giá trị không hỗ
+        /// trợ...) trong body, còn exception mặc định vứt body đi và chỉ còn "400 (Bad Request)".
+        /// </summary>
+        private static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+        {
+            if (response.IsSuccessStatusCode)
+                return;
+
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+
+            throw new HttpRequestException(
+                $"Gemini trả {(int)response.StatusCode} ({response.ReasonPhrase}): {body}",
+                inner: null,
+                response.StatusCode);
         }
 
         /// <summary>
         /// Dựng request và gắn API key theo TỪNG request chứ không bake vào HttpClient — hai đường
         /// dùng chung một pool key xoay vòng, nên key không thể là thuộc tính của client.
         /// </summary>
-        private HttpRequestMessage BuildRequest(string path, string system, string user, string apiKey)
+        private HttpRequestMessage BuildRequest(string path, string system, string user, LlmRequestOptions? options, string apiKey, bool stream)
         {
-            var payload = new GeminiGenerateContentRequest
+            var payload = new GeminiInteractionRequest
             {
-                SystemInstruction = string.IsNullOrWhiteSpace(system)
-                    ? null
-                    : new GeminiContent { Parts = new[] { new GeminiPart { Text = system } } },
-                Contents = new[]
-                {
-                    new GeminiContent
-                    {
-                        Role = GeminiApiDefaults.UserRole,
-                        Parts = new[] { new GeminiPart { Text = user } }
-                    }
-                },
+                Model = _config.ResolveModel(options?.Model),
+                SystemInstruction = string.IsNullOrWhiteSpace(system) ? null : system,
+                Input = user,
+                Stream = stream,
                 GenerationConfig = new GeminiGenerationConfig
                 {
                     Temperature = _config.Temperature,
                     MaxOutputTokens = _config.MaxOutputTokens,
-                    ThinkingConfig = BuildThinkingConfig()
+                    ThinkingLevel = ResolveThinkingLevel(options)
                 }
             };
 
@@ -235,26 +264,31 @@ namespace RAG.Class
         }
 
         /// <summary>
-        /// Mỗi khung SSE của Gemini mang đúng một <see cref="GeminiGenerateContentResponse"/>, y hệt
-        /// hình dạng của đường không streaming — nên cùng một hàm rút text dùng được cho cả hai.
+        /// Không có options (đường trả lời chính) thì dùng mức của section GEMINILLM. Có options thì mức của
+        /// consumer là tuyệt đối: để trống nghĩa là KHÔNG gửi, chứ không rơi về mức chung — mỗi model
+        /// nhận một tập mức khác nhau, rơi về mức chung dễ gửi một giá trị model đó không hỗ trợ (400).
         /// </summary>
-        private static string ExtractText(GeminiGenerateContentResponse? payload)
-        {
-            var parts = payload?.Candidates.FirstOrDefault()?.Content?.Parts;
-
-            return parts is null || parts.Length == 0
-                ? string.Empty
-                : string.Concat(parts.Select(part => part.Text));
-        }
-
-        /// <summary>Không cấu hình mức suy nghĩ nào thì bỏ hẳn thinkingConfig để model chạy theo mặc định.</summary>
-        private GeminiThinkingConfig? BuildThinkingConfig() =>
-            _config.ThinkingLevel is null && _config.ThinkingBudget is null
-                ? null
-                : new GeminiThinkingConfig
+        private GeminiThinkingLevel? ResolveThinkingLevel(LlmRequestOptions? options) =>
+            options is null
+                ? _config.ThinkingLevel
+                : options.ThinkingLevel switch
                 {
-                    ThinkingLevel = _config.ThinkingLevel,
-                    ThinkingBudget = _config.ThinkingBudget
+                    null => null,
+                    LlmThinkingLevel.Minimal => GeminiThinkingLevel.Minimal,
+                    LlmThinkingLevel.Low => GeminiThinkingLevel.Low,
+                    LlmThinkingLevel.Medium => GeminiThinkingLevel.Medium,
+                    LlmThinkingLevel.High => GeminiThinkingLevel.High,
+                    _ => throw new ArgumentOutOfRangeException(nameof(options), options.ThinkingLevel, null)
                 };
+
+        /// <summary>Chỉ ghép văn bản của các step <c>model_output</c>; step thought/user_input bị bỏ qua.</summary>
+        private static string ExtractText(GeminiInteractionResponse? payload) =>
+            payload is null
+                ? string.Empty
+                : string.Concat(payload.Steps
+                    .Where(step => step.Type == GeminiApiDefaults.ModelOutputStepType)
+                    .SelectMany(step => step.Content)
+                    .Where(content => content.Type == GeminiApiDefaults.TextContentType)
+                    .Select(content => content.Text));
     }
 }

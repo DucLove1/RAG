@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using RAG.Class.Dto;
 using RAG.Class.Config;
 using RAG.Class.Routing;
 using RAG.Interface;
@@ -22,6 +23,7 @@ namespace RAG.Class.WeakPoint
     public sealed class LlmWeakPointDetector : IWeakPointDetector
     {
         private readonly ILLMProvider _llmProvider;
+        private readonly LlmRequestOptions _requestOptions;
         private readonly WeakPointConfig _config;
         private readonly ILogger<LlmWeakPointDetector> _logger;
         private readonly RouteLabelParser _parser;
@@ -39,6 +41,7 @@ namespace RAG.Class.WeakPoint
             // Resolve theo khóa cấu hình riêng, độc lập với provider của đường trả lời — giống
             // router và node chuẩn hóa.
             _llmProvider = llmProviderResolver.Resolve(_config.Provider);
+            _requestOptions = new LlmRequestOptions(_config.Model, _config.ThinkingLevel);
 
             // Tập nhãn chỉ có MỘT phần tử, nên bắt buộc tắt bước quét toàn đầu ra: bước đó dò bằng
             // chuỗi con và lưới an toàn "hai nhãn trở lên thì bỏ" của nó không thể kích hoạt với
@@ -80,7 +83,7 @@ namespace RAG.Class.WeakPoint
                 var output = await _llmProvider.AskAsync(
                     target.SystemPrompt,
                     _config.BuildUserPrompt(question),
-                    _config.Model,
+                    _requestOptions,
                     cancellationToken);
 
                 var resolution = _parser.Resolve(output);

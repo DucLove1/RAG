@@ -199,6 +199,9 @@ namespace RAG.Class.Config
         /// <summary>Để trống thì dùng model mặc định của provider.</summary>
         public string? Model { get; set; }
 
+        /// <summary>Để trống thì không gửi, model chạy theo mức suy nghĩ mặc định của nhà cung cấp.</summary>
+        public LlmThinkingLevel? ThinkingLevel { get; set; }
+
         /// <summary>Câu dài hơn thì không trích (trả rỗng, không tính là suy biến).</summary>
         [Range(1, int.MaxValue)]
         public int MaxInputLength { get; set; } = 500;

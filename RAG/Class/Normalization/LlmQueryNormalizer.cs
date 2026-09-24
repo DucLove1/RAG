@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using RAG.Class.Dto;
 using RAG.Class.Config;
 using RAG.Interface;
 
@@ -11,6 +12,7 @@ namespace RAG.Class.Normalization
     public class LlmQueryNormalizer : IQueryNormalizer
     {
         private readonly ILLMProvider _llmProvider;
+        private readonly LlmRequestOptions _requestOptions;
         private readonly QueryNormalizationConfig _config;
         private readonly ILogger<LlmQueryNormalizer> _logger;
 
@@ -21,6 +23,7 @@ namespace RAG.Class.Normalization
         {
             _config = options.Value;
             _llmProvider = llmProviderResolver.Resolve(_config.Provider);
+            _requestOptions = new LlmRequestOptions(_config.Model, _config.ThinkingLevel);
             _logger = logger;
         }
 
@@ -34,7 +37,7 @@ namespace RAG.Class.Normalization
                 var normalized = await _llmProvider.AskAsync(
                     _config.SystemPrompt,
                     _config.BuildUserPrompt(question),
-                    _config.Model,
+                    _requestOptions,
                     cancellationToken);
 
                 if (!IsAcceptable(normalized, question))

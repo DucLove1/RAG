@@ -10,8 +10,9 @@
       "WarmupMaxAttempts": 5
     },
     "Llm": {
-      "Provider": "Gemini",
-      "Model": "gemini-3.5-flash-lite",
+      "Provider": "Groq",
+      "Model": "",
+      "ThinkingLevel": "Minimal",
       "MaxExamplesPerRoute": 8,
       "MaxInputLength": 500,
       "NoMatchLabel": "khong_khop",

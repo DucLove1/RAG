@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace RAG.Class.Config
 {
     /// <summary>
-    /// Cấu hình cho Gemini generateContent (LLM sinh văn bản), tách biệt hoàn toàn với
+    /// Cấu hình cho Gemini Interactions API (LLM sinh văn bản), tách biệt hoàn toàn với
     /// <see cref="GeminiEmbeddingModelConfig"/> để mỗi config chỉ có một lý do thay đổi (SRP).
     /// </summary>
     public class GeminiLlmConfig : IValidatableObject
@@ -22,37 +22,30 @@ namespace RAG.Class.Config
         [Required(AllowEmptyStrings = false)]
         public string Model { get; set; } = string.Empty;
 
-        /// <summary>Đường dẫn tương đối tới endpoint sinh nội dung; {0} là tên model.</summary>
+        /// <summary>Đường dẫn tương đối tới Interactions API. Model nằm trong body, không nằm trong URL.</summary>
         [Required(AllowEmptyStrings = false)]
-        public string GenerateContentPathTemplate { get; set; } = "models/{0}:generateContent";
+        public string InteractionsPath { get; set; } = "interactions";
 
         /// <summary>
-        /// Đường dẫn tương đối tới endpoint sinh nội dung theo LUỒNG; {0} là tên model.
+        /// Đường dẫn tương đối tới Interactions API theo LUỒNG.
         /// <para>
         /// <c>alt=sse</c> là phần chịu tải của chuỗi này, và <c>Validate</c> bên dưới bắt buộc nó
         /// phải có mặt — xem <see cref="GeminiApiDefaults.SseAltQuery"/> cho hậu quả khi thiếu.
         /// </para>
         /// </summary>
         [Required(AllowEmptyStrings = false)]
-        public string StreamGenerateContentPathTemplate { get; set; } = "models/{0}:streamGenerateContent?alt=sse";
+        public string StreamInteractionsPath { get; set; } = "interactions?alt=sse";
 
         public double Temperature { get; set; }
 
         public int MaxOutputTokens { get; set; }
 
         /// <summary>
-        /// Mức suy nghĩ cho dòng Gemini 3.x (thinkingLevel). <see cref="GeminiThinkingLevel.Minimal"/> là mức
-        /// gần với tắt hẳn nhất. Để trống thì không gửi, model chạy theo mặc định của Google.
-        /// Không được đặt cùng <see cref="ThinkingBudget"/>.
+        /// Mức suy nghĩ (thinking_level) cho đường trả lời chính — lời gọi KHÔNG kèm
+        /// <see cref="Dto.LlmRequestOptions"/>. Consumer có config riêng (router, graph...) tự khai mức
+        /// của mình và không dùng giá trị này. Để trống thì không gửi, model chạy theo mặc định của Google.
         /// </summary>
         public GeminiThinkingLevel? ThinkingLevel { get; set; }
-
-        /// <summary>
-        /// Ngân sách token suy nghĩ cho dòng Gemini 2.5 (thinkingBudget): 0 = tắt (Flash / Flash-Lite),
-        /// -1 = để model tự quyết. Để trống thì không gửi. Không được đặt cùng <see cref="ThinkingLevel"/>.
-        /// </summary>
-        [Range(-1, 32768)]
-        public int? ThinkingBudget { get; set; }
 
         /// <summary>
         /// Hạn thời gian cho mỗi lời gọi. Mặc định của <c>HttpClient</c> là 100 giây — quá dài cho
@@ -93,15 +86,8 @@ namespace RAG.Class.Config
         public int ServiceUnavailableRetryDelayMs { get; set; } = 300;
 
         /// <summary><paramref name="model"/> để trống thì dùng <see cref="Model"/> mặc định.</summary>
-        public string BuildGenerateContentPath(string? model = null) =>
-            string.Format(GenerateContentPathTemplate,
-                string.IsNullOrWhiteSpace(model) ? Model : model);
-
-        /// <summary><paramref name="model"/> để trống thì dùng <see cref="Model"/> mặc định.</summary>
-        public string BuildStreamGenerateContentPath(string? model = null) =>
-            string.Format(StreamGenerateContentPathTemplate,
-                string.IsNullOrWhiteSpace(model) ? Model : model);
-
+        public string ResolveModel(string? model = null) =>
+            string.IsNullOrWhiteSpace(model) ? Model : model;
         public IEnumerable<ValidationResult> Validate(ValidationContext context)
         {
             if (ApiKeys == null || ApiKeys.Count == 0)
@@ -120,16 +106,10 @@ namespace RAG.Class.Config
             // Thiếu alt=sse thì Google trả một mảng JSON thay vì SSE, bộ đọc theo dòng không khớp
             // dòng nào, và triệu chứng là câu trả lời RỖNG chứ không phải lỗi. Chặn ngay lúc khởi
             // động rẻ hơn nhiều so với đi tìm nguyên nhân của một luồng im lặng.
-            if (!StreamGenerateContentPathTemplate.Contains(GeminiApiDefaults.SseAltQuery, StringComparison.Ordinal))
+            if (!StreamInteractionsPath.Contains(GeminiApiDefaults.SseAltQuery, StringComparison.Ordinal))
                 yield return new ValidationResult(
-                    $"{nameof(StreamGenerateContentPathTemplate)} phải chứa \"{GeminiApiDefaults.SseAltQuery}\".",
-                    new[] { nameof(StreamGenerateContentPathTemplate) });
-
-            // Gemini trả 400 nếu request có cả thinkingLevel lẫn thinkingBudget, nên chặn ngay lúc khởi động.
-            if (ThinkingLevel.HasValue && ThinkingBudget.HasValue)
-                yield return new ValidationResult(
-                    $"Chỉ được đặt một trong {nameof(ThinkingLevel)} hoặc {nameof(ThinkingBudget)}.",
-                    new[] { nameof(ThinkingLevel), nameof(ThinkingBudget) });
+                    $"{nameof(StreamInteractionsPath)} phải chứa \"{GeminiApiDefaults.SseAltQuery}\".",
+                    new[] { nameof(StreamInteractionsPath) });
         }
     }
 }

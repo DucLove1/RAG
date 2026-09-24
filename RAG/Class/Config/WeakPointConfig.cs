@@ -49,6 +49,9 @@ namespace RAG.Class.Config
         /// <summary>Để trống thì dùng model mặc định của provider.</summary>
         public string? Model { get; set; }
 
+        /// <summary>Để trống thì không gửi, model chạy theo mức suy nghĩ mặc định của nhà cung cấp.</summary>
+        public LlmThinkingLevel? ThinkingLevel { get; set; }
+
         /// <summary>
         /// Cổng độ dài. Rộng hơn router (200) một cách CỐ Ý và vì lý do ngược lại: ở router, cổng
         /// này để khỏi trả tiền phân loại cả đoạn văn; ở đây nó lặng lẽ nuốt mất một nhịp game khi

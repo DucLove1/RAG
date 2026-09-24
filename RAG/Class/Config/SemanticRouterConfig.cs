@@ -219,6 +219,9 @@ namespace RAG.Class.Config
         /// </summary>
         public string? Model { get; set; }
 
+        /// <summary>Để trống thì không gửi, model chạy theo mức suy nghĩ mặc định của nhà cung cấp.</summary>
+        public LlmThinkingLevel? ThinkingLevel { get; set; }
+
         /// <summary>
         /// Số câu mẫu tối đa lấy từ mỗi route làm ví dụ few-shot. Lấy các câu ĐẦU danh sách,
         /// nên thứ tự trong <see cref="SemanticRouteConfig.Utterances"/> có ý nghĩa.

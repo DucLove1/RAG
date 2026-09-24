@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.Options;
+using RAG.Class.Dto;
 using RAG.Class.Config;
 using RAG.Class.Constants;
 using RAG.Extension;
@@ -24,6 +25,7 @@ namespace RAG.Class.Graph
     public sealed class LlmGraphEntityExtractor : IGraphEntityExtractor
     {
         private readonly ILLMProvider _llmProvider;
+        private readonly LlmRequestOptions _requestOptions;
         private readonly IGraphEntityCatalog _catalog;
         private readonly GraphExtractionConfig _config;
         private readonly ILogger<LlmGraphEntityExtractor> _logger;
@@ -42,6 +44,7 @@ namespace RAG.Class.Graph
         {
             _config = options.Value;
             _llmProvider = llmProviderResolver.Resolve(_config.Provider);
+            _requestOptions = new LlmRequestOptions(_config.Model, _config.ThinkingLevel);
             _catalog = catalog;
             _logger = logger;
 
@@ -87,7 +90,7 @@ namespace RAG.Class.Graph
             {
                 output = await _llmProvider.AskAsync(systemPrompt,
                                                      _config.BuildUserPrompt(question),
-                                                     _config.Model,
+                                                     _requestOptions,
                                                      deadline.Token);
             }
             // Thứ tự hai filter là thứ tự ưu tiên: caller hủy thật thì ném tiếp để cả pipeline dừng;

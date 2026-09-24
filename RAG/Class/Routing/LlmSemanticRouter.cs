@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using RAG.Class.Dto;
 using RAG.Class.Config;
 using RAG.Class.Constants;
 using RAG.Interface;
@@ -31,6 +32,7 @@ namespace RAG.Class.Routing
     public sealed class LlmSemanticRouter : ISemanticRouter, IRouteExplainer
     {
         private readonly ILLMProvider _llmProvider;
+        private readonly LlmRequestOptions _requestOptions;
         private readonly LlmRouterConfig _config;
         private readonly ILogger<LlmSemanticRouter> _logger;
 
@@ -53,6 +55,7 @@ namespace RAG.Class.Routing
             // Resolve theo khóa cấu hình riêng, độc lập với provider của đường trả lời — giống
             // cách node chuẩn hóa chọn provider của nó.
             _llmProvider = llmProviderResolver.Resolve(_config.Provider);
+            _requestOptions = new LlmRequestOptions(_config.Model, _config.ThinkingLevel);
 
             var routes = RouteTableFactory.Resolve(routerConfig, promptOptions.Value, logger);
 
@@ -117,7 +120,7 @@ namespace RAG.Class.Routing
                 var output = await _llmProvider.AskAsync(
                     _systemPrompt,
                     _config.BuildUserPrompt(question),
-                    _config.Model,
+                    _requestOptions,
                     cancellationToken);
 
                 var resolution = _parser.Resolve(output);

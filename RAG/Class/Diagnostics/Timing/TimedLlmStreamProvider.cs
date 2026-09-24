@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using RAG.Class.Constants;
+using RAG.Class.Dto;
 using RAG.Interface;
 
 namespace RAG.Class.Diagnostics.Timing
@@ -31,7 +32,7 @@ namespace RAG.Class.Diagnostics.Timing
         public async IAsyncEnumerable<string> AskStreamAsync(
             string system,
             string user,
-            string? model = null,
+            LlmRequestOptions? options = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             var startedAt = Stopwatch.GetTimestamp();
@@ -40,7 +41,7 @@ namespace RAG.Class.Diagnostics.Timing
             try
             {
                 await foreach (var chunk in _inner
-                    .AskStreamAsync(system, user, model, cancellationToken)
+                    .AskStreamAsync(system, user, options, cancellationToken)
                     .WithCancellation(cancellationToken))
                 {
                     if (isFirstChunk)

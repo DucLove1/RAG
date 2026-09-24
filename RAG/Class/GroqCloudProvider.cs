@@ -2,6 +2,7 @@ using OpenAI;
 using OpenAI.Chat;
 using RAG.Class.Config;
 using RAG.Class.Constants;
+using RAG.Class.Dto;
 using RAG.Interface;
 using System.Collections.Concurrent;
 using System.ClientModel;
@@ -31,10 +32,10 @@ namespace RAG.Class
 
         public int MaxOutputTokens => _config.MaxOutputTokens;
 
-        public async Task<string> AskAsync(string system, string user, string? model = null, CancellationToken cancellationToken = default)
+        public async Task<string> AskAsync(string system, string user, LlmRequestOptions? options = null, CancellationToken cancellationToken = default)
         {
             var messages = BuildMessages(system, user);
-            var options = BuildOptions();
+            var chatOptions = BuildOptions(options);
 
             while (true)
             {
@@ -42,9 +43,9 @@ namespace RAG.Class
                 {
                     var key = _rotator.GetCurrentKey();
 
-                    var response = await ResolveClient(key, model).CompleteChatAsync(
+                    var response = await ResolveClient(key, options?.Model).CompleteChatAsync(
                         messages: messages,
-                        options: options,
+                        options: chatOptions,
                         cancellationToken: cancellationToken);
 
                     return response.Value.Content.Count > 0 ?
@@ -87,14 +88,14 @@ namespace RAG.Class
         /// </summary>
         public async IAsyncEnumerable<string> AskStreamAsync(string system,
                                                              string user,
-                                                             string? model = null,
+                                                             LlmRequestOptions? options = null,
                                                              [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             deadline.CancelAfter(TimeSpan.FromSeconds(_config.StreamTimeoutSeconds));
 
             var messages = BuildMessages(system, user);
-            var options = BuildOptions();
+            var chatOptions = BuildOptions(options);
 
             // GIAI ĐOẠN 1 — mở luồng. Giai đoạn DUY NHẤT còn xoay key được: 429 của Groq nằm ở
             // status line của response, tức là trước delta đầu tiên. Sau khi delta đầu đã ra dây
@@ -106,8 +107,8 @@ namespace RAG.Class
             {
                 var key = _rotator.GetCurrentKey();
 
-                updates = ResolveClient(key, model)
-                    .CompleteChatStreamingAsync(messages, options, deadline.Token)
+                updates = ResolveClient(key, options?.Model)
+                    .CompleteChatStreamingAsync(messages, chatOptions, deadline.Token)
                     .GetAsyncEnumerator(deadline.Token);
 
                 var opened = await TryAdvanceFirstAsync(updates, key);
@@ -169,12 +170,30 @@ namespace RAG.Class
             new UserChatMessage(user)
         ];
 
-        private ChatCompletionOptions BuildOptions() => new()
+        private ChatCompletionOptions BuildOptions(LlmRequestOptions? options) => new()
         {
             Temperature = _config.Temperature,
             MaxOutputTokenCount = _config.MaxOutputTokens,
-            ReasoningEffortLevel = _config.ReasoningEffort is { } effort ? ToSdkLevel(effort) : null
+            ReasoningEffortLevel = ResolveReasoningEffort(options) is { } effort ? ToSdkLevel(effort) : null
         };
+
+        /// <summary>
+        /// Cùng quy tắc với Gemini: không có options thì dùng mức của section GROQ; có options thì mức của
+        /// consumer là tuyệt đối, để trống nghĩa là KHÔNG gửi.
+        /// </summary>
+        private GroqReasoningEffort? ResolveReasoningEffort(LlmRequestOptions? options) =>
+            options is null
+                ? _config.ReasoningEffort
+                : options.ThinkingLevel switch
+                {
+                    null => null,
+                    // gpt-oss không có mức nào thấp hơn low.
+                    LlmThinkingLevel.Minimal => GroqReasoningEffort.Low,
+                    LlmThinkingLevel.Low => GroqReasoningEffort.Low,
+                    LlmThinkingLevel.Medium => GroqReasoningEffort.Medium,
+                    LlmThinkingLevel.High => GroqReasoningEffort.High,
+                    _ => throw new ArgumentOutOfRangeException(nameof(options), options.ThinkingLevel, null)
+                };
 
         /// <summary>
         /// Model bake vào ChatClient lúc khởi tạo, nên khóa cache phải gồm cả model:

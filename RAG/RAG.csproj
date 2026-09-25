@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
@@ -52,7 +52,7 @@
     <PackageReference Include="Faiss.NET.Native.Windows" Version="[1.0.0-preview.4]" />
     <PackageReference Include="Faiss.NET.Native.Linux" Version="[1.0.0-preview.4]" />
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.15" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
     <!-- Driver chinh thuc cua Neo4j, dung cho tang do thi tri thuc (Graph:Enabled).
          Bolt chu khong phai HTTP Query API: Bolt co connection pool san, va Aura dam phan
          phien ban giao thuc ngay o buoc bat tay nen nang version la mot viec CO CHU DICH. -->

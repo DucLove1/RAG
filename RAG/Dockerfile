@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY RAG/RAG.csproj RAG/
@@ -8,7 +8,7 @@ COPY RAG/ RAG/
 WORKDIR /src/RAG
 RUN dotnet publish RAG.csproj -c Release -o /app/publish --no-restore
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
 COPY --from=build /app/publish .
@@ -61,7 +61,7 @@ RUN mkdir -p /var/data
 #         chay binh thuong, chi la cache rong lai sau moi lan deploy.
 #       - Scale ra nhieu instance thi MOI INSTANCE MOT CACHE RIENG, va hai instance cung ghi de
 #         len mot file neu dung chung Disk. Can dung chung cache thi phai doi sang Redis.
-#     Native cua FAISS co san cho linux-x64 va linux-arm64 nen image aspnet:9.0 tren ca hai kien
+#     Native cua FAISS co san cho linux-x64 va linux-arm64 nen image aspnet:10.0 tren ca hai kien
 #     truc deu chay.
 #
 #   SemanticAnswerCache__Provider=Redis

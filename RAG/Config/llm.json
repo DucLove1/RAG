@@ -10,7 +10,8 @@
     "StreamTimeoutSeconds": 120,
     "Temperature": 0.5,
     "MaxOutputTokens": 400,
-    "ThinkingLevel": "Minimal",    "ServiceUnavailableRetries": 1,
+    "ThinkingLevel": "Minimal",
+    "ServiceUnavailableRetries": 1,
     "ServiceUnavailableRetryDelayMs": 300
   },
   "GROQ": {
@@ -18,7 +19,7 @@
     "StreamTimeoutSeconds": 120,
     "Temperature": 0.5,
     "MaxOutputTokens": 400,
-    "ReasoningEffort": "Low"
+    "ReasoningEffort": "Medium"
   },
   "EmbeddingModel": {
     "Url": "https://generativelanguage.googleapis.com/v1beta",

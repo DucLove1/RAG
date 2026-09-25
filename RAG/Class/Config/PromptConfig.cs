@@ -70,7 +70,7 @@ namespace RAG.Class.Config
         [Required(AllowEmptyStrings = false)]
         public string AnswerSystemTemplate { get; set; } = string.Empty;
 
-        /// <summary>{0} = ngữ cảnh truy hồi, {1} = câu hỏi đã chuẩn hóa.</summary>
+        /// <summary>{0} = ngữ cảnh truy hồi, {1} = câu hỏi đã chuẩn hóa, {2} = tên NPC.</summary>
         [Required(AllowEmptyStrings = false)]
         public string AnswerUserTemplate { get; set; } = string.Empty;
 
@@ -106,25 +106,25 @@ namespace RAG.Class.Config
         public string BuildSystemPrompt(string npcName, string npcPersonality, string lengthInstruction) =>
             string.Format(AnswerSystemTemplate, npcName, npcPersonality) + lengthInstruction;
 
-        public string BuildUserPrompt(string context, string question) =>
-            string.Format(AnswerUserTemplate, context, question);
-
         /// <summary>
-        /// Bản có khối đồ thị. Khối rỗng thì trả ĐÚNG chuỗi của bản hai tham số, từng byte — bật hay
-        /// tắt <c>Graph:Enabled</c> không đổi prompt của câu hỏi không có cạnh nào.
+        /// Khối đồ thị rỗng thì prompt giống hệt bản không có đồ thị, từng byte — bật hay tắt
+        /// <c>Graph:Enabled</c> không đổi prompt của câu hỏi không có cạnh nào.
         /// <para>
         /// Khối đồ thị đặt SAU nguyên văn: template để câu hỏi ở cuối, nên phần cuối của ngữ cảnh là
         /// phần nằm gần câu hỏi nhất.
         /// </para>
         /// </summary>
-        public string BuildUserPrompt(string context, string graphBlock, string question)
+        public string BuildUserPrompt(string npcName, string context, string graphBlock, string question)
         {
             if (string.IsNullOrEmpty(graphBlock))
-                return BuildUserPrompt(context, question);
+                return FormatUserPrompt(npcName, context, question);
 
             var combined = string.IsNullOrEmpty(context) ? graphBlock : context + Graph.BlockSeparator + graphBlock;
 
-            return BuildUserPrompt(combined, question);
+            return FormatUserPrompt(npcName, combined, question);
         }
+
+        private string FormatUserPrompt(string npcName, string context, string question) =>
+            string.Format(AnswerUserTemplate, context, question, npcName);
     }
 }

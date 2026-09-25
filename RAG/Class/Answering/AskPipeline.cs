@@ -144,7 +144,7 @@ namespace RAG.Class.Answering
 
             var answer = await _llmProvider.AskAsync(
                 _promptConfig.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
-                _promptConfig.BuildUserPrompt(context.Text, context.Graph, question),
+                _promptConfig.BuildUserPrompt(npcName, context.Text, context.Graph, question),
                 cancellationToken: cancellationToken);
 
             // Cờ hasContext để cache tự quyết định có ghi hay không: caller biết truy hồi có ra gì

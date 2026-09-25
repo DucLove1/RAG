@@ -143,7 +143,7 @@ namespace RAG.Class.Answering
 
             var answerStream = _llmStreamProvider.AskStreamAsync(
                 _promptConfig.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
-                _promptConfig.BuildUserPrompt(context.Text, context.Graph, normalizedQuestion),
+                _promptConfig.BuildUserPrompt(npcName, context.Text, context.Graph, normalizedQuestion),
                 cancellationToken: cancellationToken);
 
             await foreach (var chunk in answerStream.WithCancellation(cancellationToken))

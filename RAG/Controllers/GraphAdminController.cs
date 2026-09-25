@@ -115,7 +115,7 @@ namespace RAG.Controllers
                 context.Cacheable,
                 TextChars = context.Text.Length,
                 GraphChars = context.Graph.Length,
-                UserPrompt = _prompts.BuildUserPrompt(context.Text, context.Graph, request.Question)
+                UserPrompt = _prompts.BuildUserPrompt(request.NpcName, context.Text, context.Graph, request.Question)
             });
         }
 

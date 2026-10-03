@@ -6,6 +6,7 @@
     "GraphAdminDisabledTitle": "Không tìm thấy.",
     "GraphUnavailableTitle": "Không kết nối được tới đồ thị tri thức, vui lòng thử lại.",
     "GraphStatementRejectedTitle": "Neo4j từ chối câu lệnh quản trị đồ thị.",
+    "ConversationTooLongTitle": "Đoạn lịch sử gửi lên quá dài để gộp một lần. Hãy compact sớm hơn hoặc gửi theo từng phần kèm previousSummary.",
     "UnexpectedTitle": "Đã có lỗi ngoài dự kiến."
   },
   "RouteMessages": {

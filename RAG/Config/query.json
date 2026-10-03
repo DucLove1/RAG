@@ -7,7 +7,11 @@
     "MaxInputLength": 512,
     "MaxLengthRatio": 3.0,
     "SystemPrompt": "Bạn là bộ chuẩn hóa câu hỏi tiếng Việt cho hệ thống tìm kiếm. Nhiệm vụ duy nhất của bạn là viết lại câu hỏi của người dùng về dạng chuẩn: mở rộng từ viết tắt (ko -> không, dc/đc -> được, sdt -> số điện thoại, ntn -> như thế nào, vs -> với, k -> không), sửa lỗi chính tả, thêm dấu tiếng Việt còn thiếu và chuẩn hóa dấu câu. QUY TẮC BẮT BUỘC: giữ nguyên ý nghĩa và ngôn ngữ gốc; không trả lời câu hỏi; không thêm thông tin mới; giữ nguyên tên riêng, thuật ngữ, số liệu và mã định danh; nếu câu hỏi đã chuẩn thì trả lại y hệt. CHỈ xuất ra đúng câu hỏi đã chuẩn hóa, không giải thích, không thêm tiền tố hay dấu ngoặc kép.",
-    "UserPromptTemplate": "Câu hỏi gốc: {0}\nCâu hỏi đã chuẩn hóa:"
+    "UserPromptTemplate": "Câu hỏi gốc: {0}\nCâu hỏi đã chuẩn hóa:",
+    "HistoryMaxTurns": 4,
+    "HistoryMaxOutputLength": 300,
+    "HistorySystemPrompt": "Bạn là bộ chuẩn hóa câu hỏi tiếng Việt cho hệ thống tìm kiếm trong một game trinh thám. Bạn nhận một đoạn hội thoại trước đó giữa người chơi và NPC, rồi câu hỏi MỚI của người chơi. Nhiệm vụ duy nhất của bạn là viết lại câu hỏi mới thành một câu ĐỨNG ĐỘC LẬP được: mở rộng từ viết tắt (ko -> không, dc/đc -> được, ntn -> như thế nào, k -> không), sửa lỗi chính tả, thêm dấu tiếng Việt còn thiếu, VÀ thay mọi đại từ hoặc tham chiếu (hắn, anh ta, cô ấy, người đó, chỗ đó, hôm đó, cái đó...) bằng đúng tên người, địa điểm, thời điểm hay đồ vật mà đoạn hội thoại đang nói tới. QUY TẮC BẮT BUỘC: giữ nguyên ý định và ngôn ngữ của câu hỏi mới; không trả lời câu hỏi; chỉ dùng thông tin có trong đoạn hội thoại, không bịa thêm; khi người chơi hỏi \"ông\", \"bà\", \"anh\", \"chị\", \"bạn\" thì đó là đang hỏi chính NPC, giữ nguyên; đại từ ngôi thứ ba (hắn, anh ta, cô ấy, ông ta, bà ta, người đó) KHÔNG BAO GIỜ chỉ chính NPC đang trò chuyện mà chỉ một người thứ ba được nhắc tới trong hội thoại, và chỉ thay khi giới tính lẫn ngữ cảnh khớp rõ ràng với đúng một người (\"hắn\" không dùng cho phụ nữ); nếu không chắc một tham chiếu trỏ tới ai/cái gì thì GIỮ NGUYÊN tham chiếu đó; nếu câu đã đứng độc lập được thì chỉ chuẩn hóa chính tả; câu chào hỏi, cảm ơn, tạm biệt thì giữ nguyên ý. CHỈ xuất ra đúng một câu hỏi đã viết lại, không giải thích, không thêm tiền tố hay dấu ngoặc kép.",
+    "HistoryUserPromptTemplate": "Đoạn hội thoại trước đó:\n{0}\n\nCâu hỏi mới của người chơi: {1}\nCâu hỏi đã viết lại:"
   },
   "QueryCache": {
     "Enabled": true,

@@ -909,3 +909,153 @@ Content-Type: application/json
 # so voi ban cua Edward de kiem ACL bang mat. selfName phai la ten chuan cua NPC.
 GET {{RAG_HostAddress}}/api/graph/catalog-debug?npcName=Jack
 Accept: application/json
+
+###
+# ==========================================================================
+# HOI THOAI - lich su do CLIENT giu, server khong luu phien.
+# ask / ask-stream nhan them "summary" va "history" (TUY CHON). Bo trong ca hai thi
+# hanh vi y het truoc. Khi co lich su:
+#   - buoc chuan hoa VIET LAI cau noi tiep thanh cau doc lap (xem log "Chuan hoa cau hoi")
+#   - cache chuan hoa va cache cau tra loi ngu nghia BI BO QUA
+# compact-history gop doan lich su thanh MOT chuoi summary; client tu quyet khi nao goi.
+#
+# Moi vi du bam dung corpus/: NPC chi tra loi duoc tu tai lieu co "nguon" la chinh NPC do.
+#   Wills (20_wills): nghe 2 tieng sung cach nhau 15 phut; cho rang Chris la ga ban trai toi te, bao luc.
+#   Jack  (26_jack) : ban than ca Chris lan Danie, mo tiem sua xe; toi hom TRUOC an mang den nha
+#                     ho tham va sua xe, thay ho van hoa thuan; khong tin ho tu sat.
+#   Johny (23_johny): khai o nha, dua tam anh chup cung dong ho (truoc vu an 2 phut) lam ngoai pham,
+#                     trong anh co tran bong dang chieu; co nhieu anh chup nha Chris va Danie,
+#                     anh chup chiec xe dau truoc nha, va mot doi gang tay tren ban.
+# ==========================================================================
+
+### HT-1. Cau noi tiep: "han" phai duoc viet lai thanh "Chris".
+# Ky vong log: "... -> Ông nghĩ Chris có phải là người bạo lực không?"
+# Ky vong cau tra loi: Wills cho rang Chris la ga ban trai toi te va bao luc.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{
+  "npcName": "Wills", "npcSystem": "cộc cằn, hay phàn nàn",
+  "question": "ông nghĩ hắn có phải người bạo lực không?",
+  "history": [
+    { "role": "player", "content": "Ông có biết Chris, người sống ở căn nhà xảy ra án mạng không?" },
+    { "role": "npc", "content": "Biết chứ, cái gã sống chung với Danie ở căn nhà đó." }
+  ]
+}
+
+### HT-2. Cung cau, nhung lich su chi noi ve DANIE (nu) -> "han" khong chi ai ro rang, phai GIU NGUYEN.
+# Da tung bi viet lai thanh chinh NPC dang noi chuyen - luat trong HistorySystemPrompt chan.
+# Ky vong log: cau sau chuan hoa van con chu "hắn".
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{
+  "npcName": "Wills", "npcSystem": "cộc cằn, hay phàn nàn",
+  "question": "ông nghĩ hắn có phải người bạo lực không?",
+  "history": [
+    { "role": "player", "content": "Ông có hay gặp Danie không?" },
+    { "role": "npc", "content": "Ít lắm, cô ta suốt ngày ở trong nhà." }
+  ]
+}
+
+### HT-3. Dai tu so nhieu: "ho" phai duoc viet lai thanh "Chris và Danie".
+# Ky vong cau tra loi: Jack den nha ho toi hom truoc de tham va sua xe, ho van hoa thuan, vui ve.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{
+  "npcName": "Jack", "npcSystem": "thẳng thắn, đau buồn vì mất bạn",
+  "question": "tối hôm trước án mạng anh có gặp họ không?",
+  "history": [
+    { "role": "player", "content": "Anh quen Chris và Danie à?" },
+    { "role": "npc", "content": "Tôi là bạn thân của cả hai người họ." }
+  ]
+}
+
+### HT-4. Cau noi tiep ve dia diem: "o do" -> nha Chris va Danie; hoi tiep muc dich chuyen den.
+# Ky vong cau tra loi: chi de tham hoi va sua chiec xe cua Chris va Danie.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{
+  "npcName": "Jack", "npcSystem": "thẳng thắn, đau buồn vì mất bạn",
+  "question": "anh tới đó làm gì?",
+  "summary": "Jack là bạn thân của cả Chris và Danie, và Jack có đến nhà Chris và Danie vào tối hôm trước án mạng.",
+  "history": [
+    { "role": "player", "content": "Tối hôm trước án mạng anh có ghé nhà Chris và Danie không?" },
+    { "role": "npc", "content": "Có, tôi có ghé qua nhà họ tối hôm đó." }
+  ]
+}
+
+### HT-5. Nhanh route + summary: "cam on" van khop thanks, cau dap noi mach chuyen.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{
+  "npcName": "Jack", "npcSystem": "thẳng thắn, đau buồn vì mất bạn",
+  "question": "cảm ơn anh đã kể cho tôi",
+  "summary": "Jack kể tối hôm trước án mạng Jack đến sửa xe cho Chris và Danie, hai người vẫn hòa thuận và vui vẻ; Jack không tin họ tự sát.",
+  "history": [
+    { "role": "player", "content": "Anh có tin họ tự sát không?" },
+    { "role": "npc", "content": "Không, tôi không tin." }
+  ]
+}
+
+### HT-6. Ban streaming cua HT-3: thu tu su kien van la meta -> token... -> done
+POST {{RAG_HostAddress}}/api/query/ask-stream
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+  "npcName": "Jack", "npcSystem": "thẳng thắn, đau buồn vì mất bạn",
+  "question": "tối hôm trước án mạng anh có gặp họ không?",
+  "history": [
+    { "role": "player", "content": "Anh quen Chris và Danie à?" },
+    { "role": "npc", "content": "Tôi là bạn thân của cả hai người họ." }
+  ]
+}
+
+### HT-7. Compact lan dau. Summary phai giu: tam anh co dong ho lam ngoai pham, tran bong tren TV,
+# nhieu anh chup nha Chris va Danie. Khong duoc them chi tiet khong co trong ban ghi.
+POST {{RAG_HostAddress}}/api/query/compact-history
+Content-Type: application/json
+
+{
+  "npcName": "Johny",
+  "history": [
+    { "role": "player", "content": "Chào ông Johny." },
+    { "role": "npc", "content": "Chào. Có chuyện gì?" },
+    { "role": "player", "content": "Lúc xảy ra vụ án ông ở đâu?" },
+    { "role": "npc", "content": "Tôi ở nhà. Tôi có tấm ảnh chụp cùng đồng hồ, giờ trên đó trước lúc xảy ra vụ án 2 phút." },
+    { "role": "player", "content": "Trong tấm ảnh còn có gì nữa?" },
+    { "role": "npc", "content": "Chỉ có cái TV đang chiếu trận bóng thôi." },
+    { "role": "player", "content": "Sao ông có nhiều ảnh chụp nhà Chris và Danie thế?" },
+    { "role": "npc", "content": "Tôi thích chụp ảnh khu phố, vậy thôi." }
+  ]
+}
+
+### HT-8. Compact noi tiep: summary moi phai GIU noi dung cua previousSummary VA them doi gang tay.
+# Da tung lam roi noi dung cu khi tom tat cu duoc dung chung voi ban ghi.
+POST {{RAG_HostAddress}}/api/query/compact-history
+Content-Type: application/json
+
+{
+  "npcName": "Johny",
+  "previousSummary": "Johny khai lúc xảy ra vụ án ông ở nhà, đưa ra tấm ảnh chụp cùng đồng hồ chỉ trước thời điểm vụ án 2 phút làm bằng chứng ngoại phạm; trong ảnh có TV đang chiếu trận bóng. Khi bị hỏi vì sao có nhiều ảnh chụp nhà Chris và Danie, Johny nói chỉ thích chụp ảnh khu phố.",
+  "history": [
+    { "role": "player", "content": "Đôi găng tay trên bàn kia là của ai?" },
+    { "role": "npc", "content": "Của tôi. Có gì lạ đâu." }
+  ]
+}
+
+### HT-9. history rong -> 400 (validation)
+POST {{RAG_HostAddress}}/api/query/compact-history
+Content-Type: application/json
+
+{ "npcName": "Johny", "history": [] }
+
+### HT-10. role sai -> 400 (chi nhan "player" / "npc")
+POST {{RAG_HostAddress}}/api/query/compact-history
+Content-Type: application/json
+
+{ "npcName": "Johny", "history": [ { "role": "ghost", "content": "x" } ] }

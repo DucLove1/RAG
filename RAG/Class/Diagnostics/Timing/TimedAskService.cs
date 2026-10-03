@@ -27,6 +27,7 @@ namespace RAG.Class.Diagnostics.Timing
         public async Task<AskResult> AskAsync(string npcName,
                                               string npcSystem,
                                               string question,
+                                              ConversationHistory history,
                                               int topK,
                                               CancellationToken cancellationToken = default)
         {
@@ -41,7 +42,7 @@ namespace RAG.Class.Diagnostics.Timing
             // không thì đúng những request đáng điều tra nhất lại là những request thiếu thông tin nhất.
             try
             {
-                return await _inner.AskAsync(npcName, npcSystem, question, topK, cancellationToken);
+                return await _inner.AskAsync(npcName, npcSystem, question, history, topK, cancellationToken);
             }
             finally
             {

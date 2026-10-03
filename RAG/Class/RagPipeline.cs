@@ -35,16 +35,18 @@ namespace RAG.Class
         public Task<AskResult> AskAsync(string npcName,
                                         string npcSystem,
                                         string question,
+                                        ConversationHistory history,
                                         int topK,
                                         CancellationToken cancellationToken = default) =>
-            _askService.AskAsync(npcName, npcSystem, question, topK, cancellationToken);
+            _askService.AskAsync(npcName, npcSystem, question, history, topK, cancellationToken);
 
         public IAsyncEnumerable<AskStreamEvent> AskStreamAsync(string npcName,
                                                                string npcSystem,
                                                                string question,
+                                                               ConversationHistory history,
                                                                int topK,
                                                                CancellationToken cancellationToken = default) =>
-            _askStreamService.AskStreamAsync(npcName, npcSystem, question, topK, cancellationToken);
+            _askStreamService.AskStreamAsync(npcName, npcSystem, question, history, topK, cancellationToken);
 
         public Task CreateCollectionAsync(CancellationToken cancellationToken = default) =>
             _ingestionService.CreateCollectionAsync(cancellationToken);

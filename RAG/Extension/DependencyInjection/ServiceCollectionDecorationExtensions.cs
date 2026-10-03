@@ -44,6 +44,20 @@ namespace RAG.Extension.DependencyInjection
         }
 
         /// <summary>
+        /// Như <see cref="Decorate{TService}"/> nhưng bỏ qua khi service chỉ được đăng ký có điều kiện
+        /// và lần này vắng mặt — thay vì ném lúc khởi động.
+        /// </summary>
+        internal static IServiceCollection TryDecorate<TService>(this IServiceCollection services,
+                                                                 Func<TService, IServiceProvider, TService> decorator)
+            where TService : class
+        {
+            var registered = services.Any(service =>
+                service.ServiceType == typeof(TService) && service.ServiceKey is null);
+
+            return registered ? services.Decorate(decorator) : services;
+        }
+
+        /// <summary>
         /// Dựng instance gốc từ descriptor đã gỡ ra. Ba nhánh tương ứng ba cách đăng ký mà repo này
         /// đang dùng: <c>AddSingleton&lt;IFace, Impl&gt;()</c>, <c>AddSingleton&lt;IFace&gt;(sp =&gt; ...)</c>,
         /// và <c>AddSingleton&lt;IFace&gt;(instance)</c>.

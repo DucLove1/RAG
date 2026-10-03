@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using RAG.Class.Caching;
 using RAG.Class.Config;
 using RAG.Class.Constants;
 using RAG.Interface;
@@ -24,6 +25,7 @@ namespace RAG.Class.Answering
         private readonly ISemanticRouter _semanticRouter;
         private readonly IWeakPointDetector _weakPointDetector;
         private readonly ISemanticAnswerCache _answerCache;
+        private readonly IConversationFormatter _conversationFormatter;
         private readonly PromptConfig _promptConfig;
 
         public AskPipeline(ILLMProvider llmProvider,
@@ -33,6 +35,7 @@ namespace RAG.Class.Answering
                            ISemanticRouter semanticRouter,
                            IWeakPointDetector weakPointDetector,
                            ISemanticAnswerCache answerCache,
+                           IConversationFormatter conversationFormatter,
                            IOptions<PromptConfig> promptConfig)
         {
             _llmProvider = llmProvider;
@@ -42,17 +45,24 @@ namespace RAG.Class.Answering
             _semanticRouter = semanticRouter;
             _weakPointDetector = weakPointDetector;
             _answerCache = answerCache;
+            _conversationFormatter = conversationFormatter;
             _promptConfig = promptConfig.Value;
         }
 
         public async Task<AskResult> AskAsync(string npcName,
                                               string npcSystem,
                                               string question,
+                                              ConversationHistory history,
                                               int topK,
                                               CancellationToken cancellationToken = default)
         {
+            // Client quên compact thì NPC chỉ quên bớt chuyện cũ, prompt không phình vô hạn.
+            history = _conversationFormatter.Trim(history);
+
             // Node chuẩn hóa: mở rộng từ viết tắt / sửa chính tả trước khi định tuyến và dựng prompt.
-            var normalizedQuestion = await _queryNormalizer.NormalizeAsync(question, cancellationToken);
+            // Có lịch sử thì nó còn viết lại câu nối tiếp thành câu độc lập, nên mọi node phía sau
+            // (định tuyến, điểm yếu, nhúng, truy hồi) chỉ cần nhìn câu đã chuẩn hóa.
+            var normalizedQuestion = await _queryNormalizer.NormalizeAsync(question, history, cancellationToken);
 
             // Node định tuyến chạy TRƯỚC bước nhúng: câu tán gẫu được trả lời thẳng và không tốn
             // lượt gọi API embedding nào. Bản trước nhúng trước rồi mới định tuyến, nên 100% câu
@@ -71,7 +81,7 @@ namespace RAG.Class.Answering
             if (route is not null)
             {
                 var routedAnswer = await AnswerWithoutRetrievalAsync(
-                    npcName, npcSystem, normalizedQuestion, route, lengthInstruction, cancellationToken);
+                    npcName, npcSystem, normalizedQuestion, history, route, lengthInstruction, cancellationToken);
 
                 return new AskResult(routedAnswer, WeakPointHit: false);
             }
@@ -87,7 +97,7 @@ namespace RAG.Class.Answering
                 return new AskResult(weakPoint.Reply, WeakPointHit: true);
 
             var answer = await AnswerWithRetrievalAsync(
-                npcName, npcSystem, normalizedQuestion, topK, lengthInstruction, cancellationToken);
+                npcName, npcSystem, normalizedQuestion, history, topK, lengthInstruction, cancellationToken);
 
             return new AskResult(answer, WeakPointHit: false);
         }
@@ -99,12 +109,13 @@ namespace RAG.Class.Answering
         private Task<string> AnswerWithoutRetrievalAsync(string npcName,
                                                          string npcSystem,
                                                          string question,
+                                                         ConversationHistory history,
                                                          RouteMatch route,
                                                          string lengthInstruction,
                                                          CancellationToken cancellationToken) =>
             _llmProvider.AskAsync(
                 route.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
-                route.BuildUserPrompt(question),
+                _conversationFormatter.PrependToAnswerPrompt(history, route.BuildUserPrompt(question)),
                 cancellationToken: cancellationToken);
 
         /// <summary>
@@ -118,6 +129,7 @@ namespace RAG.Class.Answering
         private async Task<string> AnswerWithRetrievalAsync(string npcName,
                                                             string npcSystem,
                                                             string question,
+                                                            ConversationHistory history,
                                                             int topK,
                                                             string lengthInstruction,
                                                             CancellationToken cancellationToken)
@@ -135,8 +147,9 @@ namespace RAG.Class.Answering
             // về từ cache lại mang WeakPointHit = false, nên game cũng không ghi nhận đó là sự
             // kiện cốt truyện. Nó còn đóng băng cả câu tán gẫu, vốn phải đổi giọng mỗi lần gặp.
             var cacheQuery = new SemanticAnswerQuery(npcName, npcSystem, question, questionEmbedding);
+            var answerCache = AnswerCacheFor(history);
 
-            var cached = await _answerCache.TryGetAsync(cacheQuery, cancellationToken);
+            var cached = await answerCache.TryGetAsync(cacheQuery, cancellationToken);
             if (cached is not null)
                 return cached.Answer;
 
@@ -144,7 +157,8 @@ namespace RAG.Class.Answering
 
             var answer = await _llmProvider.AskAsync(
                 _promptConfig.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
-                _promptConfig.BuildUserPrompt(npcName, context.Text, context.Graph, question),
+                _conversationFormatter.PrependToAnswerPrompt(
+                    history, _promptConfig.BuildUserPrompt(npcName, context.Text, context.Graph, question)),
                 cancellationToken: cancellationToken);
 
             // Cờ hasContext để cache tự quyết định có ghi hay không: caller biết truy hồi có ra gì
@@ -153,9 +167,20 @@ namespace RAG.Class.Answering
             // biết", ghi lại là đóng băng một lần Qdrant hụt thành câu trả lời chính thức. Cacheable
             // còn loại cả câu trả lời dựng lúc đồ thị hỏng: nó sẽ được phục vụ tiếp sau khi đồ thị
             // đã sống lại.
-            await _answerCache.SetAsync(cacheQuery, answer, hasContext: context.Cacheable, cancellationToken);
+            await answerCache.SetAsync(cacheQuery, answer, hasContext: context.Cacheable, cancellationToken);
 
             return answer;
         }
+
+        /// <summary>
+        /// Có lịch sử hội thoại thì KHÔNG đọc cũng KHÔNG ghi cache ngữ nghĩa. Cache khớp theo câu hỏi
+        /// trong phân vùng NPC + persona, nhưng câu trả lời giờ phụ thuộc cả mạch chuyện: đọc thì người
+        /// chơi B nhận câu sinh cho mạch chuyện của người chơi A, ghi thì đóng băng một câu nối tiếp
+        /// thành câu trả lời chính thức cho người hỏi lần đầu.
+        /// </summary>
+        private ISemanticAnswerCache AnswerCacheFor(ConversationHistory history) =>
+            history.IsEmpty ? _answerCache : ConversationBypassCache;
+
+        private static readonly ISemanticAnswerCache ConversationBypassCache = new NullSemanticAnswerCache();
     }
 }

@@ -1,0 +1,24 @@
+{
+  "Conversation": {
+    "MaxTurns": 12,
+    "MaxTurnLength": 500,
+    "MaxSummaryLength": 1500,
+    "Render": {
+      "SummaryTemplate": "(Tóm tắt phần trò chuyện trước: {0})",
+      "PlayerLineTemplate": "Người chơi: {0}",
+      "NpcLineTemplate": "{0}: {1}",
+      "LineSeparator": "\n",
+      "AnswerBlockTemplate": "Cuộc trò chuyện gần đây giữa người chơi và {0} (chỉ để bạn nói tiếp cho liền mạch và không lặp lại điều đã nói; dữ kiện về vụ án vẫn CHỈ được lấy từ ký ức của bạn):\n{1}\n\n"
+    },
+    "Compaction": {
+      "Provider": "Groq",
+      "Model": "",
+      "ThinkingLevel": "Low",
+      "MaxOutputTokens": 1200,
+      "MaxInputTurns": 200,
+      "SystemPromptTemplate": "Bạn là bộ tóm tắt hội thoại cho một game trinh thám tiếng Việt. Bạn nhận bản tóm tắt cũ (có thể chưa có) và các lượt trò chuyện mới giữa người chơi và NPC tên {0}. Hãy viết MỘT đoạn tóm tắt ở ngôi thứ ba để NPC dùng làm trí nhớ cho các lượt sau. QUY TẮC BẮT BUỘC: giữ đúng mọi tên riêng, địa điểm, đồ vật và dữ kiện đã được nhắc tới; giữ NGUYÊN cách ghi ngày giờ như trong bản ghi, không tự diễn giải (\"tối 12\" là tối ngày 12, không phải 12 giờ tối); ghi rõ người chơi đã hỏi những gì và {0} đã kể gì; chỉ nhắc lời hứa hay lời từ chối nếu thực sự có, không viết câu kiểu \"không đề cập đến\"; gộp nội dung của bản tóm tắt cũ vào, không bỏ sót; không thêm thông tin không có trong bản ghi; bỏ qua lời chào hỏi xã giao. Viết bằng tiếng Việt, không quá {1} ký tự. CHỈ xuất ra đoạn tóm tắt, không tiêu đề, không gạch đầu dòng, không giải thích.",
+      "UserPromptTemplate": "Bản tóm tắt cũ (mọi dữ kiện trong đây PHẢI được giữ lại trong bản mới):\n{0}\n\nCác lượt trò chuyện mới:\n{1}\n\nĐoạn tóm tắt mới (gộp cả tóm tắt cũ lẫn các lượt mới):",
+      "NoPreviousSummaryText": "(chưa có)"
+    }
+  }
+}

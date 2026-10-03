@@ -173,7 +173,7 @@ namespace RAG.Class
         private ChatCompletionOptions BuildOptions(LlmRequestOptions? options) => new()
         {
             Temperature = _config.Temperature,
-            MaxOutputTokenCount = _config.MaxOutputTokens,
+            MaxOutputTokenCount = options?.MaxOutputTokens ?? _config.MaxOutputTokens,
             ReasoningEffortLevel = ResolveReasoningEffort(options) is { } effort ? ToSdkLevel(effort) : null
         };
 

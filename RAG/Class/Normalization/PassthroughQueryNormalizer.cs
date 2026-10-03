@@ -8,7 +8,9 @@ namespace RAG.Class.Normalization
     /// </summary>
     public class PassthroughQueryNormalizer : IQueryNormalizer
     {
-        public Task<string> NormalizeAsync(string question, CancellationToken cancellationToken = default) =>
+        public Task<string> NormalizeAsync(string question,
+                                           ConversationHistory history,
+                                           CancellationToken cancellationToken = default) =>
             Task.FromResult(question);
     }
 }

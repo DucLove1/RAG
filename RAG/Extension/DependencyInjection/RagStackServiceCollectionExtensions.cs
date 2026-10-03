@@ -46,7 +46,14 @@ namespace RAG.Extension.DependencyInjection
             // ở trên cũng là một ràng buộc thứ tự thật.
             services.AddSemanticAnswerCache(configuration);
 
-            // Node chuẩn hóa câu hỏi người dùng (viết tắt, sai chính tả, thiếu dấu).
+            // Lịch sử hội thoại do client gửi kèm (dựng thành văn bản) + endpoint compact. Phải sau
+            // AddLLM (compactor cần ILlmProviderResolver) và trước AddLatencyTracking (bị bọc ở đó).
+            // Đặt trước AddQueryNormalization chỉ để đọc theo thứ tự phụ thuộc: bộ chuẩn hóa dùng
+            // IConversationFormatter để dựng lịch sử cho bước viết lại câu nối tiếp.
+            services.AddConversation(configuration);
+
+            // Node chuẩn hóa câu hỏi người dùng (viết tắt, sai chính tả, thiếu dấu; có lịch sử thì
+            // viết lại câu nối tiếp thành câu độc lập).
             services.AddQueryNormalization(configuration);
 
             // Node định tuyến ngữ nghĩa: nhận diện câu tán gẫu để trả lời thẳng, bỏ qua truy hồi.

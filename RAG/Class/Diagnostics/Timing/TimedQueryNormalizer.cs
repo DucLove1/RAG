@@ -23,7 +23,9 @@ namespace RAG.Class.Diagnostics.Timing
             _latency = latency;
         }
 
-        public Task<string> NormalizeAsync(string question, CancellationToken cancellationToken = default) =>
-            _latency.TrackAsync(LatencyStages.Normalize, () => _inner.NormalizeAsync(question, cancellationToken));
+        public Task<string> NormalizeAsync(string question,
+                                           ConversationHistory history,
+                                           CancellationToken cancellationToken = default) =>
+            _latency.TrackAsync(LatencyStages.Normalize, () => _inner.NormalizeAsync(question, history, cancellationToken));
     }
 }

@@ -30,7 +30,7 @@ namespace RAG.Class.Routing
         public async Task<RouteExplanation> ExplainRouteAsync(string question,
                                                               CancellationToken cancellationToken = default)
         {
-            var normalizedQuestion = await _queryNormalizer.NormalizeAsync(question, cancellationToken);
+            var normalizedQuestion = await _queryNormalizer.NormalizeAsync(question, ConversationHistory.Empty, cancellationToken);
 
             return await _routeExplainer.ExplainAsync(normalizedQuestion, cancellationToken);
         }

@@ -40,7 +40,39 @@ namespace RAG.Class.Config
         /// </summary>
         public double MaxLengthRatio { get; set; } = 3.0;
 
+        /// <summary>
+        /// System prompt khi CÓ lịch sử hội thoại: chuẩn hóa như trên VÀ thay đại từ / tham chiếu
+        /// ("hắn", "chỗ đó", "hôm ấy") bằng tên cụ thể lấy từ lịch sử, để câu đứng độc lập được.
+        /// Để trống thì có lịch sử cũng chuẩn hóa như không có — câu nối tiếp sẽ truy hồi kém.
+        /// </summary>
+        public string HistorySystemPrompt { get; set; } = string.Empty;
+
+        /// <summary>Template user prompt khi có lịch sử; {0} = bản ghi hội thoại, {1} = câu hỏi gốc.</summary>
+        public string HistoryUserPromptTemplate { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Số lượt CUỐI đưa cho bộ chuẩn hóa (kèm tóm tắt nếu có). Tham chiếu gần như luôn trỏ về vài
+        /// lượt vừa nói, nên đưa ít lượt giữ cho lượt gọi này rẻ.
+        /// </summary>
+        public int HistoryMaxTurns { get; set; } = 4;
+
+        /// <summary>
+        /// Trần độ dài TUYỆT ĐỐI của câu đã viết lại khi có lịch sử, thay cho <see cref="MaxLengthRatio"/>:
+        /// câu nối tiếp thường rất ngắn ("thế còn hắn?", "ừ, rồi sao?") nên viết lại có thể dài gấp nhiều
+        /// lần mà vẫn đúng — so theo tỉ lệ thì gần như mọi lần viết lại đều bị loại.
+        /// </summary>
+        public int HistoryMaxOutputLength { get; set; } = 300;
+
+        /// <summary>Có đủ template để viết lại câu theo lịch sử không.</summary>
+        public bool CanRewriteWithHistory =>
+            !string.IsNullOrWhiteSpace(HistorySystemPrompt) &&
+            HistoryUserPromptTemplate.Contains("{0}", StringComparison.Ordinal) &&
+            HistoryUserPromptTemplate.Contains("{1}", StringComparison.Ordinal);
+
         public string BuildUserPrompt(string question) =>
             string.Format(UserPromptTemplate, question);
+
+        public string BuildHistoryUserPrompt(string transcript, string question) =>
+            string.Format(HistoryUserPromptTemplate, transcript, question);
     }
 }

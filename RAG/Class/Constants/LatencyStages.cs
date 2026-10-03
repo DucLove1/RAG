@@ -10,6 +10,9 @@ namespace RAG.Class.Constants
         // Đường trả lời, theo đúng thứ tự AskPipeline chạy.
         public const string Normalize = "normalize";
         public const string Route = "route";
+
+        /// <summary>Lượt gọi Jev của router. LỒNG trong <see cref="Route"/>; vắng mặt nghĩa là cache quyết định đã trúng.</summary>
+        public const string RouteJev = "routeJev";
         public const string WeakPoint = "weakPoint";
         public const string Embedding = "embedding";
         public const string AnswerCacheGet = "answerCacheGet";
@@ -60,6 +63,9 @@ namespace RAG.Class.Constants
         public const string VectorUpsert = "vectorUpsert";
         public const string CollectionEnsure = "collectionEnsure";
         public const string CollectionCreate = "collectionCreate";
+
+        // Endpoint gộp lịch sử hội thoại.
+        public const string Compaction = "compaction";
     }
 
     /// <summary>Tên các phiên đo, tức giá trị <c>Operation</c> của báo cáo.</summary>
@@ -75,5 +81,6 @@ namespace RAG.Class.Constants
             /// </summary>
             public const string AskStream = "askStream";
         public const string Ingest = "ingest";
+        public const string CompactHistory = "compactHistory";
     }
 }

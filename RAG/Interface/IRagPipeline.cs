@@ -10,9 +10,11 @@ namespace RAG.Interface
         /// Câu trả lời kèm cờ <c>WeakPointHit</c>. Cờ bật nghĩa là câu hỏi trúng điểm yếu của NPC
         /// và pipeline đã thoát sớm: không truy hồi, không gọi LLM trả lời lần nào.
         /// </returns>
+        /// <param name="history">Lịch sử hội thoại client gửi kèm; <see cref="ConversationHistory.Empty"/> khi không có.</param>
         Task<AskResult> AskAsync(string npcName,
                                  string npcSystem,
                                  string question,
+                                 ConversationHistory history,
                                  int topK,
                                  CancellationToken cancellationToken = default);
     }
@@ -45,6 +47,7 @@ namespace RAG.Interface
         IAsyncEnumerable<AskStreamEvent> AskStreamAsync(string npcName,
                                                         string npcSystem,
                                                         string question,
+                                                        ConversationHistory history,
                                                         int topK,
                                                         CancellationToken cancellationToken = default);
     }

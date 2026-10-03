@@ -28,6 +28,7 @@ namespace RAG.Extension.Errors
             GraphAdminDisabledException => (StatusCodes.Status404NotFound, _config.GraphAdminDisabledTitle),
             GraphUnavailableException => (StatusCodes.Status503ServiceUnavailable, _config.GraphUnavailableTitle),
             GraphStatementRejectedException => (StatusCodes.Status400BadRequest, _config.GraphStatementRejectedTitle),
+            ConversationTooLongException => (StatusCodes.Status400BadRequest, _config.ConversationTooLongTitle),
             _ => (StatusCodes.Status500InternalServerError, _config.UnexpectedTitle)
         };
     }

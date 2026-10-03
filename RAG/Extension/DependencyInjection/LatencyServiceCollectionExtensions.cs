@@ -76,11 +76,20 @@ namespace RAG.Extension.DependencyInjection
             services.Decorate<IIngestionService>((inner, sp) => new TimedIngestionService(
                 inner, sp.GetRequiredService<ILatencySessionFactory>()));
 
+            services.Decorate<IConversationCompactor>((inner, sp) => new TimedConversationCompactor(
+                inner,
+                sp.GetRequiredService<ILatencyTracker>(),
+                sp.GetRequiredService<ILatencySessionFactory>()));
+
             // Các stage bên trong.
             services.Decorate<IQueryNormalizer>((inner, sp) => new TimedQueryNormalizer(
                 inner, sp.GetRequiredService<ILatencyTracker>()));
 
             services.Decorate<ISemanticRouter>((inner, sp) => new TimedSemanticRouter(
+                inner, sp.GetRequiredService<ILatencyTracker>()));
+
+            // Try: IJevClient chỉ được đăng ký khi chiến lược định tuyến là Jev.
+            services.TryDecorate<IJevClient>((inner, sp) => new TimedJevClient(
                 inner, sp.GetRequiredService<ILatencyTracker>()));
 
             services.Decorate<IWeakPointDetector>((inner, sp) => new TimedWeakPointDetector(

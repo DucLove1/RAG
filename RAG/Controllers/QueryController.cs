@@ -47,7 +47,8 @@ namespace RAG.Controllers
         public async Task<IActionResult> Post([FromBody] RequestDto request, CancellationToken cancellationToken = default)
         {
             var result = await _askService.AskAsync(
-                request.NpcName, request.NpcSystem, request.Question, _config.TopK, cancellationToken);
+                request.NpcName, request.NpcSystem, request.Question, request.ToConversationHistory(),
+                _config.TopK, cancellationToken);
 
             return Ok(result);
         }
@@ -76,7 +77,8 @@ namespace RAG.Controllers
         public IActionResult PostStream([FromBody] RequestDto request, CancellationToken cancellationToken = default)
         {
             var events = _askStreamService.AskStreamAsync(
-                request.NpcName, request.NpcSystem, request.Question, _config.TopK, cancellationToken);
+                request.NpcName, request.NpcSystem, request.Question, request.ToConversationHistory(),
+                _config.TopK, cancellationToken);
 
             return new AskStreamSseResult(events, _errorMapper, _logger);
         }

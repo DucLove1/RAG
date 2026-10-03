@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Extensions.Options;
+using RAG.Class.Caching;
 using RAG.Class.Config;
 using RAG.Class.Constants;
 using RAG.Interface;
@@ -33,7 +34,11 @@ namespace RAG.Class.Answering
         private readonly ISemanticRouter _semanticRouter;
         private readonly IWeakPointDetector _weakPointDetector;
         private readonly ISemanticAnswerCache _answerCache;
+        private readonly IConversationFormatter _conversationFormatter;
         private readonly PromptConfig _promptConfig;
+
+        /// <summary>Cùng lý do với <c>AskPipeline.AnswerCacheFor</c>: có lịch sử thì không đọc, không ghi cache.</summary>
+        private static readonly ISemanticAnswerCache ConversationBypassCache = new NullSemanticAnswerCache();
 
         /// <param name="llmProvider">
         /// CHỈ để đọc <see cref="ILLMProvider.MaxOutputTokens"/>. Ngân sách token là thuộc tính của
@@ -48,8 +53,10 @@ namespace RAG.Class.Answering
                                  ISemanticRouter semanticRouter,
                                  IWeakPointDetector weakPointDetector,
                                  ISemanticAnswerCache answerCache,
+                                 IConversationFormatter conversationFormatter,
                                  IOptions<PromptConfig> promptConfig)
         {
+            _conversationFormatter = conversationFormatter;
             _llmProvider = llmProvider;
             _llmStreamProvider = llmStreamProvider;
             _embeddingProvider = embeddingProvider;
@@ -65,10 +72,13 @@ namespace RAG.Class.Answering
             string npcName,
             string npcSystem,
             string question,
+            ConversationHistory history,
             int topK,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var normalizedQuestion = await _queryNormalizer.NormalizeAsync(question, cancellationToken);
+            history = _conversationFormatter.Trim(history);
+
+            var normalizedQuestion = await _queryNormalizer.NormalizeAsync(question, history, cancellationToken);
             var route = await _semanticRouter.RouteAsync(normalizedQuestion, cancellationToken);
             var lengthInstruction = _promptConfig.BuildLengthInstruction(_llmProvider.MaxOutputTokens);
 
@@ -80,7 +90,7 @@ namespace RAG.Class.Answering
 
                 var routedStream = _llmStreamProvider.AskStreamAsync(
                     route.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
-                    route.BuildUserPrompt(normalizedQuestion),
+                    _conversationFormatter.PrependToAnswerPrompt(history, route.BuildUserPrompt(normalizedQuestion)),
                     cancellationToken: cancellationToken);
 
                 await foreach (var chunk in routedStream.WithCancellation(cancellationToken))
@@ -114,8 +124,9 @@ namespace RAG.Class.Answering
             var questionEmbedding = await _embeddingProvider.GetEmbeddingsAsync(normalizedQuestion, cancellationToken);
 
             var cacheQuery = new SemanticAnswerQuery(npcName, npcSystem, normalizedQuestion, questionEmbedding);
+            var answerCache = history.IsEmpty ? _answerCache : ConversationBypassCache;
 
-            var cached = await _answerCache.TryGetAsync(cacheQuery, cancellationToken);
+            var cached = await answerCache.TryGetAsync(cacheQuery, cancellationToken);
             if (cached is not null)
             {
                 // Câu trả lời đã có sẵn trọn vẹn, không có gì để stream. Cùng lý do với nhánh điểm
@@ -143,7 +154,8 @@ namespace RAG.Class.Answering
 
             var answerStream = _llmStreamProvider.AskStreamAsync(
                 _promptConfig.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
-                _promptConfig.BuildUserPrompt(npcName, context.Text, context.Graph, normalizedQuestion),
+                _conversationFormatter.PrependToAnswerPrompt(
+                    history, _promptConfig.BuildUserPrompt(npcName, context.Text, context.Graph, normalizedQuestion)),
                 cancellationToken: cancellationToken);
 
             await foreach (var chunk in answerStream.WithCancellation(cancellationToken))
@@ -159,7 +171,7 @@ namespace RAG.Class.Answering
             // văn cho mọi câu hỏi gần nghĩa cho tới khi hết hạn, đúng loại lỗi mà cờ
             // CacheAnswersWithoutContext sinh ra để tránh. Ngữ nghĩa dispose của iterator cho ta
             // điều đó mà không cần một dòng if nào.
-            await _answerCache.SetAsync(cacheQuery, builder.ToString(), hasContext: context.Cacheable, cancellationToken);
+            await answerCache.SetAsync(cacheQuery, builder.ToString(), hasContext: context.Cacheable, cancellationToken);
         }
     }
 }

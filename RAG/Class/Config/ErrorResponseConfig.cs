@@ -27,6 +27,8 @@ namespace RAG.Class.Config
         public string GraphStatementRejectedTitle { get; set; } = string.Empty;
 
         /// <summary>Mọi lỗi ngoài dự kiến khác (500).</summary>
+        public string ConversationTooLongTitle { get; set; } = string.Empty;
+
         public string UnexpectedTitle { get; set; } = string.Empty;
     }
 }

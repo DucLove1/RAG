@@ -24,10 +24,15 @@ namespace RAG.Class.Caching
             _logger = logger;
         }
 
-        public async Task<string> NormalizeAsync(string question, CancellationToken cancellationToken = default)
+        public async Task<string> NormalizeAsync(string question,
+                                                 ConversationHistory history,
+                                                 CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(question))
-                return await _inner.NormalizeAsync(question, cancellationToken);
+            // Có lịch sử thì KHÔNG dùng cache: khóa chỉ là câu hỏi, mà cùng câu "thế còn hắn?" với
+            // hai lịch sử khác nhau phải viết lại thành hai câu khác nhau. Đưa lịch sử vào khóa thì
+            // gần như không bao giờ trúng (lịch sử đổi sau mỗi lượt) mà chỉ làm phình cache.
+            if (string.IsNullOrWhiteSpace(question) || !history.IsEmpty)
+                return await _inner.NormalizeAsync(question, history, cancellationToken);
 
             var key = question.Trim();
 
@@ -37,7 +42,7 @@ namespace RAG.Class.Caching
                 return cached;
             }
 
-            var normalized = await _inner.NormalizeAsync(question, cancellationToken);
+            var normalized = await _inner.NormalizeAsync(question, history, cancellationToken);
 
             if (string.IsNullOrWhiteSpace(normalized))
                 return normalized;

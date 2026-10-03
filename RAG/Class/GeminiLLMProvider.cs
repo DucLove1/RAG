@@ -247,7 +247,7 @@ namespace RAG.Class
                 GenerationConfig = new GeminiGenerationConfig
                 {
                     Temperature = _config.Temperature,
-                    MaxOutputTokens = _config.MaxOutputTokens,
+                    MaxOutputTokens = options?.MaxOutputTokens ?? _config.MaxOutputTokens,
                     ThinkingLevel = ResolveThinkingLevel(options)
                 }
             };

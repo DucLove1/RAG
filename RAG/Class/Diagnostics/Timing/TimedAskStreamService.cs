@@ -43,6 +43,7 @@ namespace RAG.Class.Diagnostics.Timing
             string npcName,
             string npcSystem,
             string question,
+            ConversationHistory history,
             int topK,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
@@ -59,7 +60,7 @@ namespace RAG.Class.Diagnostics.Timing
             try
             {
                 await foreach (var streamEvent in _inner
-                    .AskStreamAsync(npcName, npcSystem, question, topK, cancellationToken)
+                    .AskStreamAsync(npcName, npcSystem, question, history, topK, cancellationToken)
                     .WithCancellation(cancellationToken))
                 {
                     yield return streamEvent;

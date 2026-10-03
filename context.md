@@ -114,6 +114,7 @@ nhánh truy hồi là cache hit, tổng vẫn đúng 1 lượt gọi API. **Đá
 |---|---|---|
 | POST | `api/query/ask` | Hỏi NPC. Trả **object** `{ "answer": "...", "weakPointHit": false }` |
 | POST | `api/query/ask-stream` | Hỏi NPC, trả lời **từng mảnh** qua SSE. Xem mục 4d |
+| POST | `api/query/compact-history` | **Gộp lịch sử hội thoại** client gửi lên thành một chuỗi `summary`. Xem mục 4e |
 | POST | `api/query/upload` | Nạp tài liệu |
 | POST | `api/query/create-collection` | Tạo collection Qdrant |
 | POST | `api/query/route-debug` | **Chẩn đoán định tuyến** — trả đánh giá mọi route + `strategy`. Không chạm Qdrant; CÓ gọi LLM khi `Strategy = Llm` |
@@ -359,6 +360,51 @@ node LLM phụ trợ ở đầu pipeline chứ không phải vào tầng này.
 localhost**: stream chạy đẹp ở máy dev rồi lên Render thì cả câu trả lời rơi xuống một lần.
 Chứng minh bằng `curl -N` kèm mốc thời gian, không bằng REST Client của VS Code (nó gom cả
 luồng rồi mới hiện).
+
+---
+
+## 4e. Lịch sử hội thoại (client giữ, server không lưu phiên)
+
+Server **vẫn không lưu trạng thái**. Client giữ lịch sử và gửi kèm mỗi lần hỏi:
+
+```jsonc
+// ask / ask-stream — hai trường TÙY CHỌN; bỏ trống thì hành vi y hệt trước (client cũ không sửa gì)
+{ "npcName": "Johny", "npcSystem": "...", "question": "thế tối hôm đó hắn ở đâu?",
+  "summary": "…tóm tắt từ compact-history…",
+  "history": [ { "role": "player", "content": "Ông có biết Wills không?" },
+               { "role": "npc",    "content": "Hắn hay lui tới quán bar gần bến tàu." } ] }
+
+// compact-history — client gửi phần CẦN gộp (kèm tóm tắt lần trước), nhận một chuỗi tóm tắt
+{ "npcName": "Johny", "previousSummary": "…", "history": [ … ] }  →  { "summary": "…" }
+```
+
+Luồng client: hỏi kèm `history` → khi lịch sử dài thì gọi `compact-history` với các lượt cũ (+
+`previousSummary`) → thay các lượt đó bằng `summary`, giữ vài lượt gần nhất nguyên văn → lần hỏi
+sau gửi `summary` + `history`. **Client tự quyết định khi nào compact.**
+
+- **Viết lại câu nối tiếp nằm ở bước chuẩn hóa** (`LlmQueryNormalizer`, prompt
+  `QueryNormalization:HistorySystemPrompt`): "thế còn hắn?" → "thế còn Wills thì sao?". Route,
+  điểm yếu, nhúng, Qdrant và trích thực thể đồ thị đều chỉ nhìn câu đã chuẩn hóa nên tự đúng theo.
+  Chỉ đưa `HistoryMaxTurns` lượt cuối; kiểm độ dài bằng `HistoryMaxOutputLength` tuyệt đối thay
+  cho `MaxLengthRatio` (câu nối tiếp ngắn, viết lại dài gấp nhiều lần là bình thường).
+- **Prompt trả lời**: khối lịch sử gắn lên ĐẦU user prompt ở cả nhánh RAG lẫn nhánh route
+  (`Conversation:Render:AnswerBlockTemplate`, tiêu đề khối tự nói "dữ kiện vẫn chỉ lấy từ ký ức").
+  Lịch sử rỗng → prompt giống hệt bản cũ từng byte.
+- **Cache bị bỏ qua khi có lịch sử** — khóa của chúng chỉ là câu hỏi:
+  - cache chuẩn hóa (`CachingQueryNormalizer`): cùng câu "hắn ở đâu?" khác lịch sử phải ra câu khác;
+  - cache câu trả lời ngữ nghĩa (pipeline dùng `NullSemanticAnswerCache` cho request đó): nếu
+    không, người chơi B nhận câu sinh cho mạch chuyện của người chơi A.
+  - Cache định tuyến và cache embedding vẫn dùng bình thường — khóa là câu ĐÃ viết lại.
+- `Conversation:MaxTurns` (12): ask chỉ giữ N lượt cuối, **cắt chứ không báo lỗi** — client quên
+  compact thì NPC chỉ quên bớt chuyện cũ.
+- **Compact KHÔNG fail-open**: lỗi LLM lộ ra (429 / 500) để client giữ lịch sử cũ và thử lại; trả
+  chuỗi rỗng thì client sẽ thay lịch sử thật bằng tóm tắt trống. Có trần token riêng
+  (`Compaction:MaxOutputTokens`, qua `LlmRequestOptions.MaxOutputTokens` mới) vì trần 400 của
+  provider được chỉnh cho câu thoại ngắn. Vượt `MaxInputTurns` → 400 `ConversationTooLongTitle`.
+- Tóm tắt cũ đi trong prompt compact như một **khối riêng** chứ không phải dòng đầu bản ghi: dựng
+  chung thì mô hình coi nó là ghi chú phụ và làm rơi nội dung cũ (đã gặp khi kiểm chứng).
+- Tắt node chuẩn hóa (`QueryNormalization:Enabled = false`) thì không có bước viết lại câu nối tiếp;
+  lịch sử vẫn vào prompt trả lời.
 
 ---
 

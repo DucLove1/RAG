@@ -17,6 +17,12 @@ namespace RAG.Class.Constants
         Embedding = 1,
 
         /// <summary>Định tuyến bằng cách để LLM đọc câu hỏi và chọn nhãn route.</summary>
-        Llm = 2
+        Llm = 2,
+
+        /// <summary>
+        /// Định tuyến bằng mô hình quyết định Jev (TypeSafe): một câu hỏi Choice trả về nhãn thắng,
+        /// xác suất từng nhãn và độ tin cậy đã hiệu chỉnh.
+        /// </summary>
+        Jev = 3
     }
 }

@@ -15,7 +15,7 @@
     "NotReady": "Router chưa nạp xong vector, thử lại sau.",
     "NothingAdded": "Không có câu mẫu nào được thêm (trùng lặp hoặc vector không hợp lệ).",
     "RouterDisabled": "Node định tuyến đang tắt (SemanticRouter:Strategy = Off) nên không thể thêm câu mẫu.",
-    "NotSupported": "Chiến lược định tuyến đang chạy (SemanticRouter:Strategy = Llm) không nhận diện route bằng vector, nên không dùng được câu mẫu thêm lúc chạy. Muốn dạy router nhận diện tốt hơn thì sửa Description và Utterances của route trong cấu hình rồi khởi động lại.",
+    "NotSupported": "Chiến lược định tuyến đang chạy (SemanticRouter:Strategy = Llm hoặc Jev) không nhận diện route bằng vector, nên không dùng được câu mẫu thêm lúc chạy. Muốn dạy router nhận diện tốt hơn thì sửa Description và Utterances của route trong cấu hình rồi khởi động lại.",
     "RouteNameSeparator": ", "
   }
 }

@@ -40,8 +40,8 @@ namespace RAG.Controllers
         /// Chẩn đoán định tuyến: trả về đánh giá của mọi route cho một câu hỏi.
         /// Không sinh câu trả lời và không chạm Qdrant.
         /// <para>
-        /// Với <c>SemanticRouter:Strategy = Llm</c> thì endpoint này CÓ gọi LLM (một lượt phân
-        /// loại), khác với bản trước vốn chỉ nhúng vector. Vẫn rẻ hơn nhiều so với chạy cả đường
+        /// Với <c>SemanticRouter:Strategy = Llm</c> / <c>Jev</c> thì endpoint này CÓ gọi model (một
+        /// lượt phân loại), khác với bản trước vốn chỉ nhúng vector. Vẫn rẻ hơn nhiều so với chạy cả đường
         /// trả lời, và cố tình không đi qua cache định tuyến để kết quả luôn phản ánh prompt hiện tại.
         /// </para>
         /// </summary>

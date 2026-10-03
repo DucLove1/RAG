@@ -144,28 +144,37 @@ mã `NotSupported`, chiến lược `Off` trả `RouterDisabled`.
 
 Cấu hình ở `Config/semantic-router.json` mục `SemanticRouter`. Thêm route mới = thêm một object JSON, không sửa code.
 
-### HAI chiến lược, chọn bằng `SemanticRouter:Strategy`
+### BA chiến lược, chọn bằng `SemanticRouter:Strategy`
 
-`Llm` (mặc định) | `Embedding` | `Off`. Đăng ký qua **Keyed Services**; chỉ khóa của chiến lược đang
-chọn mới được đăng ký, nên chạy `Llm` thì warm-up của router embedding không tồn tại và không đốt
-hạn mức Gemini.
+`Jev` (mặc định) | `Llm` | `Embedding` | `Off`. Đăng ký qua **Keyed Services**; chỉ khóa của chiến
+lược đang chọn mới được đăng ký, nên chạy `Llm` / `Jev` thì warm-up của router embedding không tồn
+tại và không đốt hạn mức Gemini, và chạy khác `Jev` thì không cần key TypeSafe.
 
-**Bảng `Routes` dùng CHUNG** cho cả hai chiến lược — tên, `Description`, `Utterances` và template
+**Bảng `Routes` dùng CHUNG** cho mọi chiến lược — tên, `Description`, `Utterances` và template
 prompt là mô tả của chính route, không phụ thuộc cách nhận diện nó. Núm chỉnh riêng nằm trong
-section con `SemanticRouter:Embedding` và `SemanticRouter:Llm`. `Utterances` phục vụ hai vai trò:
-vector cho chiến lược cũ, ví dụ few-shot cho chiến lược mới (lấy `MaxExamplesPerRoute` câu ĐẦU —
-nên thứ tự trong danh sách có ý nghĩa).
+section con `SemanticRouter:Embedding`, `SemanticRouter:Llm` và `SemanticRouter:Jev`. `Utterances`
+phục vụ ba vai trò: vector cho `Embedding`, ví dụ few-shot cho `Llm`, trường `examples` của option
+cho `Jev` (hai chiến lược sau lấy `MaxExamplesPerRoute` câu ĐẦU — nên thứ tự trong danh sách có ý nghĩa).
 
-| | `Llm` | `Embedding` |
-|---|---|---|
-| Cách quyết định | LLM đọc câu, xuất một nhãn | MAX cosine trên vector câu mẫu |
-| Câu pha trộn ý định | **Đọc hiểu được** → đi RAG đúng | Không phân biệt được → né bằng `MaxRoutableLength = 60` |
-| Ngưỡng phải dò tay | Không | Có, mỗi route một ngưỡng |
-| Warm-up | Không | 160 câu mẫu, ~2-3 phút lần đầu |
-| Embedding cho câu tán gẫu | **0 lượt** | 1 lượt |
-| Chi phí thêm mỗi request nguội | 1 lượt gọi LLM | 0 |
-| `score` trong `route-debug` | `null` (chọn nhãn, không chấm điểm) | số thực |
-| `route-utterances` | HTTP 400 `NotSupported` | HTTP 200 |
+| | `Jev` | `Llm` | `Embedding` |
+|---|---|---|---|
+| Cách quyết định | Câu hỏi Choice cho Jev (TypeSafe), nhận nhãn + xác suất | LLM đọc câu, xuất một nhãn | MAX cosine trên vector câu mẫu |
+| Câu pha trộn ý định | Đọc hiểu được (luật trong `Jev:Instructions`) | **Đọc hiểu được** → đi RAG đúng | Không phân biệt được → né bằng `MaxRoutableLength = 60` |
+| Ngưỡng phải dò tay | Một ngưỡng chung `Jev:MinProbability` (0.7) | Không | Có, mỗi route một ngưỡng |
+| Warm-up | Không | Không | 160 câu mẫu, ~2-3 phút lần đầu |
+| Embedding cho câu tán gẫu | **0 lượt** | **0 lượt** | 1 lượt |
+| Chi phí thêm mỗi request nguội | 1 lượt gọi Jev (~175ms median theo TypeSafe) | 1 lượt gọi LLM (~300-800ms) | 0 |
+| `score` trong `route-debug` | xác suất từng route | `null` (chọn nhãn, không chấm điểm) | số thực |
+| `route-utterances` | HTTP 400 `NotSupported` | HTTP 400 `NotSupported` | HTTP 200 |
+
+Chiến lược `Jev` (`JevSemanticRouter` + `TypeSafeJevClient`, gọi thẳng `POST /v1/systemone`, không
+dùng gói NuGet không chính thức) dựng MỘT câu hỏi Choice trong constructor: option `khong_khop`
+(→ RAG) đứng **ĐẦU** vì jev-1.13 nghiêng về option đứng trước, rồi mỗi route là
+`{ what: Description, examples: N câu mẫu đầu }`. Khớp khi Jev chọn một route **và**
+`probabilities[route] >= Jev:MinProbability` — so trên xác suất chứ không trên trường `confidence`
+để `route-debug` hiển thị đúng con số bị so ngưỡng. Jev chính xác nhất với tiếng Anh, nên
+`Instructions` / `NoMatchDescription` viết tiếng Anh. Kết nối ở section `TYPESAFE` (`Config/typesafe.json`),
+key ở `.env` (`TYPESAFE__APIKEYS__0`); `TYPESAFE:TimeoutSeconds = 5` — quá hạn thì fail-open, không 500.
 
 Chiến lược `Llm` gọi Gemini (`Llm:Provider`, độc lập với provider trả lời) với một system prompt
 dựng sẵn trong constructor gồm tên + `Description` + few-shot của từng route, và yêu cầu xuất **một

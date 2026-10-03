@@ -1,0 +1,9 @@
+{
+  "TYPESAFE": {
+    "Url": "https://jevmodel.org",
+    "SystemOnePath": "v1/systemone",
+    "Model": "jev-latest",
+    "TimeoutSeconds": 5,
+    "ErrorBodyLogLimit": 500
+  }
+}

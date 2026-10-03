@@ -21,5 +21,7 @@ namespace RAG.Class.Constants
         public const string GeminiLlmStream = nameof(GeminiLlmStream);
 
         public const string GeminiEmbedding = nameof(GeminiEmbedding);
+
+        public const string TypeSafe = nameof(TypeSafe);
     }
 }

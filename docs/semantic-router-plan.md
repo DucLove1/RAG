@@ -1051,3 +1051,70 @@ qua phép thử model nói nhiều.
 Chuẩn hóa và phân loại giờ là hai lượt gọi Gemini liền kề nhau, cùng một dạng việc. Gộp thành **một**
 lượt trả về "câu đã chuẩn hóa + nhãn" sẽ cắt một round-trip cho mọi request nguội. Đổi lại là ghép
 hai trách nhiệm vào một node và một prompt.
+
+
+---
+
+# Phụ lục F — Chiến lược thứ ba: định tuyến bằng Jev (TypeSafe), đặt làm mặc định
+
+## Vì sao
+
+Router LLM đúng 9/9 nhưng mỗi lần trượt cache tốn một lượt gọi LLM đầy đủ (~300-800ms), phải parse
+văn bản tự do (`RouteLabelParser`), và không có con số nào để đặt ngưỡng. **Jev** là "System One
+decision model" của TypeSafe: nhận `state` và câu hỏi kiểu **Choice** (`tên option → mô tả`), trả về
+option thắng, xác suất từng option và `confidence` đã hiệu chỉnh. Theo TypeSafe: median ~175ms,
+~$0.042 / 1 triệu token input, tối đa 255 option, 1.200 request/phút.
+
+`Llm` và `Embedding` được **giữ nguyên**; chỉ đổi mặc định trong `Config/semantic-router.json`.
+Rollback = một dòng (`SemanticRouter__Strategy=Llm`).
+
+## Thiết kế
+
+- `JevSemanticRouter : ISemanticRouter, IRouteExplainer` — cùng khuôn `LlmSemanticRouter`: dùng
+  `RouteTableFactory`, dựng sẵn câu hỏi Choice + từ điển route trong constructor, bọc bởi
+  `CachingSemanticRouter` ở đường trả lời, đường `route-debug` không qua cache.
+- `TypeSafeJevClient : IJevClient` — gọi thẳng `POST /v1/systemone` qua `IHttpClientFactory` +
+  `IApiKeyRotator` (`ApiKeyPoolKey.TypeSafe`). **Không** dùng gói NuGet `TypeSafe.Jev`: tài liệu chính
+  thức chỉ có SDK Python/JS, và SDK .NET kia hỏi Choice bằng `enum` lúc biên dịch trong khi route nằm
+  trong cấu hình.
+- `AddTypeSafeJev` **chỉ** được gọi từ `AddJevRouter`: chạy chiến lược khác thì không cần key TypeSafe.
+
+## Ba quyết định đáng ghi lại
+
+1. **Option `khong_khop` đứng ĐẦU danh sách criteria.** Tài liệu jev-1.13: *"leans toward the option
+   that comes first"*. Đặt đường an toàn (RAG) ở đó để thiên lệch rơi về phía fail-open. Thứ tự được
+   giữ bằng `OrderedDictionary<string, object>` — `Dictionary` không cam kết thứ tự chèn.
+2. **Ngưỡng so trên `probabilities[choice]`, không trên `confidence`.** `route-debug` hiển thị xác
+   suất từng route; ngưỡng phải so đúng con số đó, nếu không sẽ có ca "score 0.75 ≥ threshold 0.7 mà
+   `matched = false`" không ai giải thích được. Núm: `Jev:MinProbability = 0.7`, nghiêng về cao vì nhầm
+   theo hướng route (trả lời câu tri thức không ngữ cảnh) đắt hơn nhầm theo hướng RAG.
+3. **Tiếng Anh cho phần mô hình đọc luật.** Jev chính xác nhất với tiếng Anh ("other languages ...
+   lower accuracy"), nên `Jev:Instructions` và `Jev:NoMatchDescription` viết tiếng Anh; câu người chơi
+   và `Description` của route vẫn tiếng Việt. Nếu đo thấy hụt, viết `Description` bằng tiếng Anh là
+   núm kế tiếp (router LLM đọc tiếng Anh vẫn tốt).
+
+Timeout: `HttpClient` báo quá hạn bằng `TaskCanceledException`. Client phân biệt nó với việc caller
+hủy (`when (cancellationToken.IsCancellationRequested)`) — nếu không, một lần quá hạn sẽ lan ra như
+một lần hủy và làm hỏng cả request thay vì fail-open.
+
+## Kết quả đo — với mock `/v1/systemone` cục bộ (CHƯA có key TypeSafe thật)
+
+| Phép kiểm | Kết quả |
+|---|---|
+| Body gửi đi | `model = jev-1.13.0`, `Authorization: Bearer`, `type = choice`, `khong_khop` đứng đầu, mỗi route `{what, examples(8)}` |
+| `xin chào` (mock: chitchat p=0.91) | khớp `chitchat`, `matchedScore = 0.91` |
+| `cảm ơn ông` (mock: thanks p=0.62) | **không** khớp — dưới ngưỡng 0.7 → RAG |
+| Câu pha trộn / câu tri thức (mock: `khong_khop`) | không khớp → RAG |
+| Nhãn lạ không có trong bảng route | RAG + log cảnh báo |
+| HTTP 529 | fail-open, HTTP 200 |
+| Mock ngủ 8s (timeout 5s) | fail-open sau **5.01s**, HTTP 200 (không 500) |
+| `ask` câu chào 3 lần | 1 lượt gọi Jev; cache miss, hit, hit |
+| `route-utterances` | 400 `NotSupported` |
+| Thiếu `TYPESAFE__APIKEYS__0`, `Strategy=Jev` | app **từ chối khởi động** (`ApiKeys[0] không được trống`) |
+| Thiếu key, `Strategy=Llm` | app khởi động bình thường, router LLM chạy như cũ |
+
+## Chưa kiểm chứng
+
+- **Độ chính xác thật của Jev trên tiếng Việt**: cần key thật, chạy lại 9 ca ở Phụ lục E + các ca
+  RANH GIỚI trong `RAG.http` (khối ROUTER JEV), rồi chỉnh `Jev:MinProbability` / `Instructions`.
+- Độ trễ thật (TypeSafe công bố median ~175ms).

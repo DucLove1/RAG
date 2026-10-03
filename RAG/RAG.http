@@ -17,12 +17,13 @@ Accept: application/json
 ###
 # ==========================================================================
 # CHAN DOAN DINH TUYEN.
-# LUU Y: voi SemanticRouter:Strategy = Llm thi endpoint nay CO goi LLM (mot
-# luot phan loai moi request). Van khong cham Qdrant va van re hon nhieu so voi
-# chay ca duong tra loi. Co tinh KHONG di qua cache dinh tuyen, de ket qua luon
-# phan anh prompt hien tai.
+# LUU Y: voi SemanticRouter:Strategy = Llm / Jev thi endpoint nay CO goi model
+# (mot luot phan loai moi request). Van khong cham Qdrant va van re hon nhieu so
+# voi chay ca duong tra loi. Co tinh KHONG di qua cache dinh tuyen, de ket qua
+# luon phan anh prompt / cau hoi Choice hien tai.
 # Truong "strategy" trong phan hoi cho biet chien luoc nao da quyet dinh;
-# "score" la null voi chien luoc Llm vi no chon nhan chu khong cham diem.
+# "score" la null voi chien luoc Llm vi no chon nhan chu khong cham diem;
+# voi Jev, "score" la XAC SUAT cua tung route va "threshold" la Jev:MinProbability.
 # ==========================================================================
 
 ### Route debug: cau chao hoi (ky vong khop chitchat)
@@ -46,6 +47,7 @@ Content-Type: application/json
 ### Route debug: cau pha tron y dinh (ky vong KHONG khop)
 # Voi Strategy=Embedding: bi MaxRoutableLength chan truoc khi cham diem.
 # Voi Strategy=Llm:       phai do LUAT TRONG PROMPT chan ("vua chao vua hoi -> khong_khop").
+# Voi Strategy=Jev:       phai do Jev:Instructions + Jev:NoMatchDescription chan.
 # Day la ca dang gia nhat: cosine khong doc hieu duoc, LLM thi doc duoc.
 POST {{RAG_HostAddress}}/api/query/route-debug
 Content-Type: application/json
@@ -230,7 +232,7 @@ Accept: application/json
 
 ###
 # ==========================================================================
-# ROUTER LLM - chien luoc SemanticRouter:Strategy = Llm (mac dinh)
+# ROUTER LLM - chien luoc SemanticRouter:Strategy = Llm
 # LLM doc cau hoi va chon dung mot nhan; khong dung vector nao.
 # Ket qua da chay that: 9/9 ca duoi day dung.
 # ==========================================================================
@@ -299,6 +301,49 @@ POST {{RAG_HostAddress}}/api/query/route-debug
 Content-Type: application/json
 
 { "Question": "Xin chào ông, tôi là thám tử mới tới thị trấn này hôm qua, trời thì mưa suốt từ sáng nên tôi phải trú nhờ ở quán trọ đầu phố, sáng nay tôi dậy sớm đi một vòng quanh khu chợ cũ rồi ghé qua bến tàu, thấy ở đâu cũng vắng tanh, thật ra tôi chỉ muốn chào ông một tiếng cho phải phép thôi chứ chưa có việc gì cả." }
+
+###
+# ==========================================================================
+# ROUTER JEV - chien luoc SemanticRouter:Strategy = Jev (mac dinh)
+# Mo hinh quyet dinh Jev (TypeSafe) tra loi mot cau hoi Choice: moi route la
+# mot option, option "khong_khop" dung DAU (Jev nghieng ve option dung truoc).
+# Can TYPESAFE__APIKEYS__0 trong .env; thieu key thi app tu choi khoi dong.
+# "score" = xac suat cua route; khop khi Jev chon route do VA score >= threshold.
+# Cac ca RANH GIOI o khoi LLM phia tren cung phai qua voi Jev - chay lai ca hai.
+# Neu cau pha tron / cau tri thuc bi route nham: nang Jev:MinProbability hoac
+# sua Jev:Instructions / Description cua route (co the viet bang tieng Anh -
+# Jev chinh xac nhat voi tieng Anh).
+# ==========================================================================
+
+### JEV route: chao hoi (ky vong chitchat, score = xac suat >= 0.7)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "xin chào ông" }
+
+### JEV route: cam on, khong dau (ky vong thanks)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "cam on ong nhieu" }
+
+### JEV route: tam biet (ky vong farewell)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "tạm biệt nhé" }
+
+### JEV route: hoi ve AI (ky vong out_of_scope - guardrail)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "bạn là AI phải không" }
+
+### JEV route: cau hoi tri thuc (ky vong null -> di duong RAG, khong_khop thang)
+POST {{RAG_HostAddress}}/api/query/route-debug
+Content-Type: application/json
+
+{ "Question": "kiếm sắt giá bao nhiêu" }
 
 ###
 # ==========================================================================
@@ -383,6 +428,12 @@ Accept: application/json
 #
 #   SemanticRouter__Strategy=Llm
 #     - route-utterances duoi day -> HTTP 400 kem message NotSupported
+#     - KHONG can key TypeSafe: section TYPESAFE chi duoc validate khi Strategy=Jev
+#
+#   SemanticRouter__Strategy=Jev   (mac dinh trong Config/semantic-router.json)
+#     - route-debug: strategy = "Jev", score la xac suat tung route
+#     - route-utterances duoi day -> HTTP 400 kem message NotSupported
+#     - Jev loi / qua han TYPESAFE:TimeoutSeconds / 529 -> moi cau di RAG, khong 500
 #
 #   SemanticRouter__Strategy=Off
 #     - Moi cau di RAG, route-debug tra scores rong va strategy = "Off"

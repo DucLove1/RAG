@@ -7,7 +7,7 @@ namespace RAG.Class.Routing
     /// (chuẩn hóa + định tuyến) rồi dừng lại.
     /// <para>
     /// KHÔNG sinh câu trả lời và KHÔNG chạm kho vector. Chi phí phụ thuộc chiến lược đang chạy:
-    /// với <c>Embedding</c> là một lần nhúng, với <c>Llm</c> là một lượt gọi mô hình — vẫn rẻ hơn
+    /// với <c>Embedding</c> là một lần nhúng, với <c>Llm</c> / <c>Jev</c> là một lượt gọi mô hình — vẫn rẻ hơn
     /// nhiều so với chạy cả đường trả lời, nhưng không còn miễn phí như bản trước.
     /// </para>
     /// <para>

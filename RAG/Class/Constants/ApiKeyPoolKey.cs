@@ -8,6 +8,7 @@ namespace RAG.Class.Constants
     {
         Groq = 0,
         GeminiLlm = 1,
-        GeminiEmbedding = 2
+        GeminiEmbedding = 2,
+        TypeSafe = 3
     }
 }

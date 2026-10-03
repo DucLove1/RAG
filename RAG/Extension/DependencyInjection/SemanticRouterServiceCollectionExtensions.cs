@@ -45,14 +45,18 @@ namespace RAG.Extension.DependencyInjection
                     services.AddLlmRouter();
                     break;
 
+                case SemanticRouterStrategy.Jev:
+                    services.AddJevRouter(configuration);
+                    break;
+
                 default:
                     services.AddSingleton<IRouteUtteranceAdmin, DisabledRouteUtteranceAdmin>();
                     break;
             }
 
-            // CHỈ đăng ký phần phụ thuộc của chiến lược đang chọn. Đăng ký sẵn cả ba để "đổi cho
+            // CHỈ đăng ký phần phụ thuộc của chiến lược đang chọn. Đăng ký sẵn tất cả để "đổi cho
             // nhanh" sẽ kéo theo warm-up của router embedding chạy nền và đốt hạn mức Gemini ngay
-            // cả khi đang chạy chiến lược LLM.
+            // cả khi đang chạy chiến lược LLM, và bắt khai key TypeSafe ngay cả khi không dùng Jev.
             services.AddSingleton<ISemanticRouter>(sp => sp.GetRequiredKeyedService<ISemanticRouter>(strategy));
             services.AddSingleton<IRouteExplainer>(sp => sp.GetRequiredKeyedService<IRouteExplainer>(strategy));
 
@@ -82,6 +86,34 @@ namespace RAG.Extension.DependencyInjection
 
             // Chiến lược này không nhận diện route bằng vector, nên câu mẫu thêm lúc chạy không đi
             // tới đâu. Trả về mã NotSupported thay vì im lặng nhận rồi bỏ qua.
+            services.AddSingleton<IRouteUtteranceAdmin, UnsupportedRouteUtteranceAdmin>();
+
+            return services;
+        }
+
+        /// <summary>
+        /// Chiến lược định tuyến bằng Jev (TypeSafe): một câu hỏi Choice mỗi lần trượt cache. Cùng
+        /// khuôn với <see cref="AddLlmRouter"/> — một instance, hai vai trò, cache chỉ ở đường trả lời.
+        /// </summary>
+        private static IServiceCollection AddJevRouter(this IServiceCollection services, IConfiguration configuration)
+        {
+            // Client và key TypeSafe chỉ được đăng ký ở đây, để chạy chiến lược khác thì không phải khai key.
+            services.AddTypeSafeJev(configuration);
+
+            services.AddSingleton<JevSemanticRouter>();
+
+            // Câu chào / cảm ơn lặp lại rất nhiều: cache quyết định giúp chúng không tốn lượt gọi Jev nào.
+            services.AddKeyedSingleton<ISemanticRouter>(SemanticRouterStrategy.Jev, (sp, _) =>
+                new CachingSemanticRouter(
+                    sp.GetRequiredService<JevSemanticRouter>(),
+                    sp.GetRequiredService<IRouteDecisionCache>(),
+                    sp.GetRequiredService<ILogger<CachingSemanticRouter>>()));
+
+            // Đường chẩn đoán CỐ TÌNH không qua cache, cùng lý do với chiến lược LLM.
+            services.AddKeyedSingleton<IRouteExplainer>(SemanticRouterStrategy.Jev,
+                (sp, _) => sp.GetRequiredService<JevSemanticRouter>());
+
+            // Jev không nhận diện route bằng vector, nên câu mẫu thêm lúc chạy không đi tới đâu.
             services.AddSingleton<IRouteUtteranceAdmin, UnsupportedRouteUtteranceAdmin>();
 
             return services;

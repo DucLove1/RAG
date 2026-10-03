@@ -4,7 +4,7 @@ namespace RAG.Class.Routing
 {
     /// <summary>
     /// Null Object cho <see cref="IRouteUtteranceAdmin"/> khi chiến lược đang chạy không nhận diện
-    /// route bằng vector — cụ thể là chiến lược định tuyến bằng LLM.
+    /// route bằng vector — cụ thể là chiến lược định tuyến bằng LLM và bằng Jev.
     /// <para>
     /// Tách khỏi <see cref="DisabledRouteUtteranceAdmin"/> chứ không gộp thành một lớp có cờ: hai
     /// tình huống này cần hai câu trả lời khác nhau cho người vận hành. "Router đang tắt" là lời

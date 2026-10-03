@@ -21,7 +21,7 @@ namespace RAG.Class.Constants
         /// <summary>Khóa cũ (tương đối trong section SemanticRouter) → chỗ ở mới.</summary>
         public static readonly IReadOnlyDictionary<string, string> Moved = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            ["Enabled"] = "SemanticRouter:Strategy (Off | Embedding | Llm)",
+            ["Enabled"] = "SemanticRouter:Strategy (Off | Embedding | Llm | Jev)",
             ["SimilarityThreshold"] = "SemanticRouter:Embedding:SimilarityThreshold",
             ["MaxRoutableLength"] = "SemanticRouter:Embedding:MaxRoutableLength",
             ["VectorCachePath"] = "SemanticRouter:Embedding:VectorCachePath",

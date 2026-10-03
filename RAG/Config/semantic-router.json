@@ -1,6 +1,6 @@
 {
   "SemanticRouter": {
-    "Strategy": "Llm",
+    "Strategy": "Jev",
     "Embedding": {
       "SimilarityThreshold": 0.8,
       "MaxRoutableLength": 60,
@@ -21,6 +21,15 @@
       "RouteBlockTemplate": "- {0}: {1}\n  Ví dụ: {2}",
       "RouteBlockSeparator": "\n",
       "ExampleSeparator": " | "
+    },
+    "Jev": {
+      "QuestionId": "route",
+      "Instructions": "A player is talking to an NPC in a Vietnamese-language detective game. The player's message (in Vietnamese) is the state. Pick the single option that best describes the player's intent. If the message asks for ANY information about the case, characters, places, times, evidence, items or anything else inside the story world, pick khong_khop. If the message mixes a greeting, thanks or farewell with such a question (for example \"chào ông, cho tôi hỏi...\"), pick khong_khop. If unsure between options, pick khong_khop.",
+      "NoMatchLabel": "khong_khop",
+      "NoMatchDescription": "The player asks for or about information that must be looked up in the story world: the case, a character, a place, a time, evidence, an item, an event, or the NPC's own knowledge of them. Also any message that mixes small talk with such a question.",
+      "MinProbability": 0.7,
+      "MaxExamplesPerRoute": 8,
+      "MaxInputLength": 500
     },
     "Routes": [
       {

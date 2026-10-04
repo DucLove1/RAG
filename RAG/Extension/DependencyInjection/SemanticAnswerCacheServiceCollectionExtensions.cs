@@ -100,6 +100,11 @@ namespace RAG.Extension.DependencyInjection
             services.AddSingleton<ISemanticAnswerCacheStatistics>(sp => sp.GetRequiredService<FaissSemanticAnswerCache>());
             services.AddSingleton<ISemanticAnswerCacheAdmin>(sp => sp.GetRequiredService<FaissSemanticAnswerCache>());
             services.AddSingleton<IPersistableAnswerCache>(sp => sp.GetRequiredService<FaissSemanticAnswerCache>());
+            services.AddSingleton<IAnswerCacheNativeProbe>(sp => sp.GetRequiredService<FaissSemanticAnswerCache>());
+
+            // Đăng ký VÔ ĐIỀU KIỆN, khác service ghi đĩa bên dưới: thiếu native thì cache chỉ sống
+            // trong RAM cũng hỏng y hệt, nên thăm dò phải chạy cả khi PersistPath rỗng.
+            services.AddHostedService<FaissNativeProbeService>();
 
             var faiss = configuration.GetSection(SemanticAnswerCacheFaissConfig.SectionName)
                                      .Get<SemanticAnswerCacheFaissConfig>() ?? new SemanticAnswerCacheFaissConfig();

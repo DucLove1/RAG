@@ -77,3 +77,10 @@ nunit-*.xml
 # Commit vao se tao diff vo nghia va cu ngay khi ai do sua cau mau.
 App_Data/
 route-vectors.json
+
+# Benchmark dinh tuyen: bo cau hoi va script chay/bao cao chi dung o may dev.
+# KHONG ignore code C# hay Config/route-benchmark.json: code da commit tham chieu toi chung, va
+# options RouteBenchmark duoc validate luc khoi dong ([Required]/[MinLength]) nen thieu file la
+# app khong len. Ket qua chay nam o App_Data/benchmark, von da bi ignore o tren.
+RAG/Benchmark/
+scripts/

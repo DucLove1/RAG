@@ -59,6 +59,10 @@ namespace RAG.Extension.DependencyInjection
             // Node định tuyến ngữ nghĩa: nhận diện câu tán gẫu để trả lời thẳng, bỏ qua truy hồi.
             services.AddSemanticRouter(configuration);
 
+            // Benchmark so sánh chiến lược định tuyến (chỉ Development). PHẢI ngay SAU AddSemanticRouter:
+            // chiến lược đang chạy đăng ký trước thì mới thắng TryAdd của IRouteUtteranceAdmin.
+            services.AddRouteBenchmark(configuration, environment);
+
             // Node phát hiện "trúng điểm yếu": chạy SAU định tuyến, và trúng thì THẮNG route vì nó
             // là sự kiện cốt truyện chứ không phải một tối ưu chi phí. Phải sau AddLLM (cần
             // ILlmProviderResolver) và trước AddRagPipeline (AskPipeline nhận IWeakPointDetector).

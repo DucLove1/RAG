@@ -392,6 +392,42 @@ Accept: application/json
 
 ###
 # ==========================================================================
+# DO TRE DINH TUYEN - routeJev / routeLlm (log muc Information, logger LatencyLogReporter)
+# Ca hai router do CUNG mot cua so: tu luc gui cau hoi di toi luc chon xong route
+# (Jev: gui -> nhan JSON -> so nguong xac suat; LLM: gui -> nhan chu -> doc nhan).
+# Stage nay LONG trong "route"; "route" con tinh ca buoc tra cache quyet dinh.
+#   Strategy=Jev -> routeJev     Strategy=Llm -> routeLlm     Off/Embedding -> khong co
+# Khoi dong lai app truoc khi chay (cache quyet dinh chi song trong RAM).
+# CHAN DOAN:
+#   - R-1 khong co routeJev/routeLlm -> TimedRouteClassifier chua duoc boc trong
+#                                       AddJevRouter / AddLlmRouter
+#   - thay "routeJev=... x2"         -> con mot lop do khac ghi trung ten stage
+#   - routeJev > route               -> sai thu tu boc (stage con phai nam TRONG route)
+# ==========================================================================
+
+### R-1. Cau chao MOI TINH -> cache truot, router that duoc goi
+# Ky vong: Độ trễ [ask] ... route=chitchat ... | route=812.3ms | routeJev=810.9ms | ...
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "chào bác thợ rèn, hôm nay bác khỏe không" }
+
+### R-2. Gui lai Y HET R-1 -> cache quyet dinh trung
+# Ky vong: route=0.1ms va KHONG co routeJev / routeLlm.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "chào bác thợ rèn, hôm nay bác khỏe không" }
+
+### R-3. Cau tri thuc MOI TINH -> router VAN duoc goi, quyet dinh la "khong khop"
+# Ky vong: tag route=none, CO routeJev / routeLlm, sau do moi toi embedding, vectorSearch...
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Lan", "npcSystem": "vui vẻ, thân thiện", "Question": "tối hôm vụ án bác có thấy ai đi qua lò rèn không" }
+
+###
+# ==========================================================================
 # CHUNG MINH TIET KIEM EMBEDDING - phan thu loi chinh cua thay doi nay.
 # Doc khoi "embedding" trong cache-stats truoc va sau moi request.
 # Da chay that: cau tan gau = 0, cau tri thuc = 1.
@@ -1059,3 +1095,30 @@ POST {{RAG_HostAddress}}/api/query/compact-history
 Content-Type: application/json
 
 { "npcName": "Johny", "history": [ { "role": "ghost", "content": "x" } ] }
+
+###
+# ==========================================================================
+# ROUTE BENCHMARK - so sanh Llm vs Jev tren bo cau co dinh
+#   Bo cau: RAG/Benchmark/route-benchmark.csv (sua CSV roi dotnet run lai, KHONG sua code)
+#   Cau hinh: Config/route-benchmark.json (Strategies, NoRouteLabel = "rag", ...)
+# Chi mo khi RouteBenchmark:Enabled = true VA dang o Development (khong thi 404).
+# Moi lan chay ~90 luot goi: 30 chuan hoa (co cache) + 30 Groq + 30 Jev.
+# Router tra Match = null -> tinh la nhan "rag".
+# topCandidate / topCandidateScore: route diem cao nhat ke ca khi duoi nguong (Jev).
+#
+# DIEU KIEN DO CONG BANG giua hai router:
+#   - latencyMs: tu luc gui cau hoi toi luc chon xong route (sau chuan hoa, KHONG qua cache).
+#   - Cung han 5s: TypeSafe:TimeoutSeconds = SemanticRouter:Llm:TimeoutSeconds.
+#   - WarmupQuestion: goi thu moi router 1 lan truoc khi do (bo handshake luot dau).
+#   - AlternateOrder: cau chan chay Llm->Jev, cau le Jev->Llm.
+#   - Luot API loi / qua han: failed = true, correct = false, va KHONG tinh vao
+#     avg/median/maxLatencyMs. Tong so luot loi o summaries[].failures.
+# ==========================================================================
+
+### Benchmark day du 30 cau
+POST {{RAG_HostAddress}}/api/query/route-benchmark
+Accept: application/json
+
+### Chi liet ke cau co it nhat mot router chon sai (summary van tinh tren ca bo)
+POST {{RAG_HostAddress}}/api/query/route-benchmark?onlyMistakes=true
+Accept: application/json

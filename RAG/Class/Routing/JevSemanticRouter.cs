@@ -61,7 +61,7 @@ namespace RAG.Class.Routing
 
         public async Task<RouteMatch?> RouteAsync(string question, CancellationToken cancellationToken = default)
         {
-            var answer = await ClassifyAsync(question, cancellationToken);
+            var (answer, _) = await ClassifyAsync(question, cancellationToken);
             var match = Resolve(answer);
 
             if (match is not null)
@@ -76,7 +76,7 @@ namespace RAG.Class.Routing
         public async Task<RouteExplanation> ExplainAsync(string normalizedQuestion,
                                                          CancellationToken cancellationToken = default)
         {
-            var answer = await ClassifyAsync(normalizedQuestion, cancellationToken);
+            var (answer, failed) = await ClassifyAsync(normalizedQuestion, cancellationToken);
             var match = Resolve(answer);
 
             // Chấm một lần rồi suy ra cả bảng điểm lẫn route thắng từ cùng một đáp án, để điểm và
@@ -90,20 +90,22 @@ namespace RAG.Class.Routing
                 .OrderByDescending(score => score.Score ?? double.MinValue)
                 .ToList();
 
-            return new RouteExplanation(normalizedQuestion, scores, match, SemanticRouterStrategy.Jev);
+            return new RouteExplanation(normalizedQuestion, scores, match, SemanticRouterStrategy.Jev, failed);
         }
 
         /// <summary>
-        /// Một lượt gọi Jev. Mọi lỗi (trừ caller hủy) đều thành <c>null</c>, tức là fail-open.
+        /// Một lượt gọi Jev. Mọi lỗi (trừ caller hủy) đều thành đáp án <c>null</c>, tức là fail-open;
+        /// <c>Failed</c> tách lượt lỗi khỏi lượt bị cửa chặn bỏ qua — cả hai đều không có đáp án.
         /// </summary>
-        private async Task<SystemOneAnswer?> ClassifyAsync(string question, CancellationToken cancellationToken)
+        private async Task<(SystemOneAnswer? Answer, bool Failed)> ClassifyAsync(string question,
+                                                                                 CancellationToken cancellationToken)
         {
             if (!ShouldClassify(question))
-                return null;
+                return (null, false);
 
             try
             {
-                return await _jevClient.AskChoiceAsync(question, _config.QuestionId, _question, cancellationToken);
+                return (await _jevClient.AskChoiceAsync(question, _config.QuestionId, _question, cancellationToken), false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -112,7 +114,7 @@ namespace RAG.Class.Routing
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Phân loại định tuyến bằng Jev thất bại, dùng đường RAG.");
-                return null;
+                return (null, true);
             }
         }
 

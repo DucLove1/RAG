@@ -43,6 +43,29 @@ ENV SemanticRouter__Embedding__UtteranceStorePath=/var/data/route-utterances.jso
 ENV QueryCache__PersistPath=/var/data/query-cache.bin
 ENV SemanticAnswerCache__Faiss__PersistPath=/var/data/answer-cache.bin
 
+# ---------------------------------------------------------------------------
+# THU VIEN HE THONG CHO NATIVE CUA FAISS (provider Faiss cua cache ngu nghia)
+#
+# Nupkg Faiss.NET.Native.Linux CHI chua libfaiss.so + libfaiss_c.so. Kiem bang `readelf -d` thi
+# libfaiss.so con NEEDED hai thu vien KHONG di kem goi:
+#   - libopenblas.so.0  (goi libopenblas0-pthread)
+#   - libgomp.so.1      (goi libgomp1, OpenMP cua GCC)
+# va doi glibc >= 2.38 (GLIBC_2.38) cung libstdc++ >= GLIBCXX_3.4.32.
+#
+# Thieu hai goi nay thi app VAN KHOI DONG BINH THUONG: FaissSemanticAnswerCache fail-open nuot
+# DllNotFoundException, va trieu chung duy nhat la cache KHONG BAO GIO TRUNG. Day chinh la loi da
+# gap tren Render. Buoc tham do luc khoi dong (AnswerCachePersistenceService) se log Error neu tai
+# hien.
+#
+# DOI BASE IMAGE LA VIEC CO CHU DICH:
+#   - aspnet:10.0 hien la Ubuntu 24.04 (glibc 2.39) nen dat yeu cau glibc.
+#   - aspnet:9.0 cu la Debian 12 (glibc 2.36): KHONG du, cai them goi cung khong cuu duoc.
+#   - Tag -chiseled khong co apt; tag -alpine dung musl: ca hai deu lam FAISS chet.
+# ---------------------------------------------------------------------------
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libopenblas0-pthread libgomp1 \
+ && rm -rf /var/lib/apt/lists/*
+
 # Tao san thu muc de app van chay binh thuong khi CHUA gan Disk.
 # Luc do /var/data chi la thu muc thuong trong container: ghi doc deu duoc,
 # nhung mat sau moi lan deploy.
@@ -61,8 +84,8 @@ RUN mkdir -p /var/data
 #         chay binh thuong, chi la cache rong lai sau moi lan deploy.
 #       - Scale ra nhieu instance thi MOI INSTANCE MOT CACHE RIENG, va hai instance cung ghi de
 #         len mot file neu dung chung Disk. Can dung chung cache thi phai doi sang Redis.
-#     Native cua FAISS co san cho linux-x64 va linux-arm64 nen image aspnet:10.0 tren ca hai kien
-#     truc deu chay.
+#     Native cua FAISS co san cho linux-x64 va linux-arm64, NHUNG chi chay khi image co
+#     libopenblas + libgomp va glibc >= 2.38 — xem khoi "THU VIEN HE THONG" o tren.
 #
 #   SemanticAnswerCache__Provider=Redis
 #     Cache nam NGOAI tien trinh nen KHONG lien quan gi toi /var/data, va nhieu instance dung

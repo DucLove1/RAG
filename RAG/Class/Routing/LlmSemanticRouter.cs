@@ -103,17 +103,22 @@ namespace RAG.Class.Routing
 
             var match = matchedName is not null && _matches.TryGetValue(matchedName, out var found) ? found : null;
 
-            return new RouteExplanation(normalizedQuestion, scores, match, SemanticRouterStrategy.Llm);
+            return new RouteExplanation(normalizedQuestion, scores, match, SemanticRouterStrategy.Llm,
+                Failed: resolution.Outcome == RouteLabelOutcome.Failed);
         }
 
         /// <summary>
-        /// Một lượt gọi LLM để phân loại. Mọi lỗi đều thành <see cref="RouteLabelOutcome.Unparseable"/>,
-        /// tức là fail-open về đường RAG.
+        /// Một lượt gọi LLM để phân loại, chặn bởi <see cref="LlmRouterConfig.TimeoutSeconds"/>. Lỗi
+        /// và quá hạn thành <see cref="RouteLabelOutcome.Failed"/>, tức là fail-open về đường RAG —
+        /// y hệt cách <c>TypeSafeJevClient</c> biến quá hạn của Jev thành lỗi thay vì lần hủy.
         /// </summary>
         private async Task<RouteLabelResolution> ClassifyAsync(string question, CancellationToken cancellationToken)
         {
             if (!ShouldClassify(question))
                 return new RouteLabelResolution(RouteLabelOutcome.Unparseable, string.Empty);
+
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            deadline.CancelAfter(TimeSpan.FromSeconds(_config.TimeoutSeconds));
 
             try
             {
@@ -121,7 +126,7 @@ namespace RAG.Class.Routing
                     _systemPrompt,
                     _config.BuildUserPrompt(question),
                     _requestOptions,
-                    cancellationToken);
+                    deadline.Token);
 
                 var resolution = _parser.Resolve(output);
 
@@ -133,14 +138,20 @@ namespace RAG.Class.Routing
 
                 return resolution;
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // Caller hủy thật: phải lan ra ngoài, không được biến thành "router lỗi".
+                throw;
+            }
             catch (OperationCanceledException)
             {
-                throw;
+                _logger.LogWarning("Phân loại định tuyến quá hạn {Timeout}s, dùng đường RAG.", _config.TimeoutSeconds);
+                return new RouteLabelResolution(RouteLabelOutcome.Failed, string.Empty);
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Phân loại định tuyến thất bại, dùng đường RAG.");
-                return new RouteLabelResolution(RouteLabelOutcome.Unparseable, string.Empty);
+                return new RouteLabelResolution(RouteLabelOutcome.Failed, string.Empty);
             }
         }
 

@@ -11,8 +11,15 @@ namespace RAG.Class.Constants
         public const string Normalize = "normalize";
         public const string Route = "route";
 
-        /// <summary>Lượt gọi Jev của router. LỒNG trong <see cref="Route"/>; vắng mặt nghĩa là cache quyết định đã trúng.</summary>
+        /// <summary>
+        /// Router Jev: từ lúc gửi câu hỏi tới lúc chọn xong route. LỒNG trong <see cref="Route"/>;
+        /// vắng mặt nghĩa là cache quyết định đã trúng. Cùng cửa sổ đo với <see cref="RouteLlm"/>.
+        /// </summary>
         public const string RouteJev = "routeJev";
+
+        /// <summary>Router LLM: từ lúc gửi câu hỏi tới lúc parse xong nhãn route. Cùng cửa sổ với <see cref="RouteJev"/>.</summary>
+        public const string RouteLlm = "routeLlm";
+
         public const string WeakPoint = "weakPoint";
         public const string Embedding = "embedding";
         public const string AnswerCacheGet = "answerCacheGet";

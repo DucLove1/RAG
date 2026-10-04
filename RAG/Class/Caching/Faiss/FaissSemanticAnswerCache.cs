@@ -62,6 +62,7 @@ namespace RAG.Class.Caching.Faiss
                                                    ISemanticAnswerCacheStatistics,
                                                    ISemanticAnswerCacheAdmin,
                                                    IPersistableAnswerCache,
+                                                   IAnswerCacheNativeProbe,
                                                    IDisposable
     {
         /// <summary>Nhãn FAISS trả về cho một ô kết quả trống (k lớn hơn số vector trong index).</summary>
@@ -737,6 +738,32 @@ namespace RAG.Class.Caching.Faiss
             }
 
             return ids.Count;
+        }
+
+        // ---------------------------------------------------------------------------------------
+        // Thăm dò native
+        // ---------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Dựng rồi hủy ngay một phân vùng thật — đi đúng con đường P/Invoke mà lần ghi đầu tiên sẽ
+        /// đi, nên thăm dò qua là đường ghi qua. Không chạm khóa hay trạng thái nào của cache.
+        /// </summary>
+        public bool TryProbe(out Exception? error)
+        {
+            try
+            {
+                using var probe = Partition.Create(_dimensions);
+                error = null;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // DllNotFoundException khi thiếu libfaiss/libopenblas/libgomp, EntryPointNotFound hoặc
+                // BadImageFormat khi native lệch phiên bản/kiến trúc — kiểu nào cũng là "không dùng
+                // được", nên bắt hết.
+                error = ex;
+                return false;
+            }
         }
 
         // ---------------------------------------------------------------------------------------

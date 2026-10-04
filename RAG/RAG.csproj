@@ -16,6 +16,9 @@
     <!-- Cac file cau hinh tach tu appsettings.json (xem SplitJsonConfigurationExtensions).
          Web SDK von da publish moi *.json, dong nay ghi tuong minh de khong phu thuoc mac dinh. -->
     <Content Update="Config\**\*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+
+    <!-- Bo cau hoi benchmark dinh tuyen: chi dung o Development, khong dua vao publish / Docker image. -->
+    <None Update="Benchmark\**\*.csv" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
   <ItemGroup>

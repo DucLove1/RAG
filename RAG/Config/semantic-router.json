@@ -15,6 +15,7 @@
       "ThinkingLevel": "Minimal",
       "MaxExamplesPerRoute": 8,
       "MaxInputLength": 500,
+      "TimeoutSeconds": 5,
       "NoMatchLabel": "khong_khop",
       "SystemPromptTemplate": "Bạn là bộ phân loại ý định cho NPC trong một game trinh thám tiếng Việt. Nhiệm vụ duy nhất của bạn là đọc câu của người chơi và chọn ĐÚNG MỘT nhãn trong danh sách dưới đây.\n\nDANH SÁCH NHÃN:\n{0}\n\nQUY TẮC BẮT BUỘC:\n- Chỉ xuất ra đúng một nhãn, viết y hệt như trong danh sách.\n- Nếu người chơi hỏi bất cứ điều gì về vụ án, nhân vật, địa điểm, thời gian, vật chứng hay bất kỳ thông tin nào cần tra cứu trong thế giới của câu chuyện, xuất {1}.\n- Nếu câu vừa chào vừa hỏi thông tin (\"chào ông, cho tôi hỏi...\"), xuất {1}.\n- Nếu phân vân giữa hai nhãn, xuất {1}.\n- KHÔNG giải thích, KHÔNG thêm dấu câu, KHÔNG dùng markdown, KHÔNG lặp lại câu hỏi.",
       "UserPromptTemplate": "Câu của người chơi: {0}\nNhãn:",

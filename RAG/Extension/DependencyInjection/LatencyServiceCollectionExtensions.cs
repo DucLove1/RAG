@@ -88,9 +88,8 @@ namespace RAG.Extension.DependencyInjection
             services.Decorate<ISemanticRouter>((inner, sp) => new TimedSemanticRouter(
                 inner, sp.GetRequiredService<ILatencyTracker>()));
 
-            // Try: IJevClient chỉ được đăng ký khi chiến lược định tuyến là Jev.
-            services.TryDecorate<IJevClient>((inner, sp) => new TimedJevClient(
-                inner, sp.GetRequiredService<ILatencyTracker>()));
+            // routeJev / routeLlm KHÔNG bọc ở đây: router thật nằm bên trong CachingSemanticRouter,
+            // được dựng trong factory của AddJevRouter / AddLlmRouter — xem TimedRouteClassifier.
 
             services.Decorate<IWeakPointDetector>((inner, sp) => new TimedWeakPointDetector(
                 inner, sp.GetRequiredService<ILatencyTracker>()));

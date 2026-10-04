@@ -1,0 +1,13 @@
+{
+  "RouteBenchmark": {
+    "Enabled": false,
+    "Strategies": [ "Llm", "Jev" ],
+    "CasesPath": "Benchmark/route-benchmark.csv",
+    "NoRouteLabel": "rag",
+    "NormalizeQuestions": true,
+    "DelayBetweenCallsMilliseconds": 0,
+    "WarmupQuestion": "xin chào",
+    "AlternateOrder": true,
+    "DisabledMessage": "Benchmark định tuyến đang tắt. Bật bằng RouteBenchmark:Enabled = true và chạy ở môi trường Development — mỗi lần chạy tốn vài chục lượt gọi model."
+  }
+}

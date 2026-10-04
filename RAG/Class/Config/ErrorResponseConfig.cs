@@ -20,6 +20,9 @@ namespace RAG.Class.Config
         /// <summary>Thao tác quản trị đồ thị đang tắt (404).</summary>
         public string GraphAdminDisabledTitle { get; set; } = string.Empty;
 
+        /// <summary>Benchmark định tuyến đang tắt (404).</summary>
+        public string RouteBenchmarkDisabledTitle { get; set; } = string.Empty;
+
         /// <summary>Không nói chuyện được với Neo4j trên đường quản trị (503).</summary>
         public string GraphUnavailableTitle { get; set; } = string.Empty;
 

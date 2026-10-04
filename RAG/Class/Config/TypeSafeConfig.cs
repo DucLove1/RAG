@@ -13,7 +13,7 @@ namespace RAG.Class.Config
     {
         public const string SectionName = "TYPESAFE";
 
-        /// <summary>Danh sách API key, sử dụng cái đầu tiên rồi xoay sang cái tiếp theo nếu bị 429.</summary>
+        /// <summary>Danh sách API key, sử dụng cái đầu tiên rồi xoay sang cái tiếp theo khi gặp mã trong <see cref="RotateOnStatusCodes"/>.</summary>
         public List<string> ApiKeys { get; set; } = new();
 
         /// <summary>Base url, ví dụ: https://api.typesafe.ai</summary>
@@ -48,6 +48,16 @@ namespace RAG.Class.Config
         [Range(1, 3600)]
         public int RateLimitCooldownSeconds { get; set; } = 60;
 
+        /// <summary>
+        /// Mã HTTP nghĩa là "KEY này không dùng được nữa, thử key khác": 429 (rate limit) và 402
+        /// (hết credit). Gặp mã khác thì không xoay — lỗi đó cũng sẽ xảy ra với key kế tiếp.
+        /// <para>
+        /// Cố tình KHÔNG có giá trị mặc định trong code: binder của .NET NỐI mảng cấu hình vào
+        /// list có sẵn chứ không thay thế, nên mặc định ở đây sẽ bị nhân đôi.
+        /// </para>
+        /// </summary>
+        public List<int> RotateOnStatusCodes { get; set; } = new();
+
         public IEnumerable<ValidationResult> Validate(ValidationContext context)
         {
             if (ApiKeys == null || ApiKeys.Count == 0)
@@ -62,6 +72,11 @@ namespace RAG.Class.Config
                             new[] { nameof(ApiKeys) });
                 }
             }
+
+            if (RotateOnStatusCodes == null || RotateOnStatusCodes.Count == 0)
+                yield return new ValidationResult(
+                    "RotateOnStatusCodes không được trống (tối thiểu nên có 429).",
+                    new[] { nameof(RotateOnStatusCodes) });
         }
     }
 }

@@ -46,7 +46,8 @@ namespace RAG.Class
                 Questions = new Dictionary<string, SystemOneQuestion> { [questionId] = question }
             };
 
-            // Mỗi vòng một key: 429 thì đánh dấu key đó rồi thử key kế tiếp; hết key thì rotator ném.
+            // Mỗi vòng một key: gặp mã trong RotateOnStatusCodes (429 rate limit, 402 hết credit) thì
+            // đánh dấu key đó rồi thử key kế tiếp; hết key thì rotator ném.
             while (true)
             {
                 string key;
@@ -61,8 +62,10 @@ namespace RAG.Class
 
                 using var response = await SendAsync(payload, key, cancellationToken);
 
-                if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                if (_config.RotateOnStatusCodes.Contains((int)response.StatusCode))
                 {
+                    _logger.LogWarning("Key TypeSafe bị từ chối ({Status}), chuyển sang key kế tiếp.",
+                        (int)response.StatusCode);
                     _rotator.ReportRateLimited(key);
                     continue;
                 }

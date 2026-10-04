@@ -118,6 +118,14 @@ namespace RAG.Class.Config
                     "Llm:UserPromptTemplate phải chứa {0} (câu của người chơi).",
                     new[] { $"{nameof(Llm)}.{nameof(LlmRouterConfig.UserPromptTemplate)}" });
             }
+
+            // [Range] trên lớp lồng không được ValidateDataAnnotations duyệt tới, nên kiểm tay.
+            if (Llm.TimeoutSeconds < 1)
+            {
+                yield return new ValidationResult(
+                    $"Llm:TimeoutSeconds phải >= 1 (hiện là {Llm.TimeoutSeconds}).",
+                    new[] { $"{nameof(Llm)}.{nameof(LlmRouterConfig.TimeoutSeconds)}" });
+            }
         }
 
         private IEnumerable<ValidationResult> ValidateJev(IReadOnlyList<string> names)
@@ -318,6 +326,17 @@ namespace RAG.Class.Config
         /// </summary>
         [Range(1, int.MaxValue)]
         public int MaxInputLength { get; set; } = 200;
+
+        /// <summary>
+        /// Hạn chờ một lượt phân loại; quá hạn thì fail-open về đường RAG.
+        /// <para>
+        /// Nên đặt BẰNG <c>TypeSafe:TimeoutSeconds</c>: router Jev đã bị chặn ở mức đó, còn SDK
+        /// OpenAI mặc định chờ tới 100s và tự retry ngầm. Hai hạn khác nhau thì benchmark so độ
+        /// trễ hai router không công bằng — một bên bỏ cuộc sớm, bên kia được chờ thoải mái.
+        /// </para>
+        /// </summary>
+        [Range(1, int.MaxValue)]
+        public int TimeoutSeconds { get; set; } = 5;
 
         /// <summary>
         /// Nhãn mà LLM phải xuất ra khi không route nào khớp. Phải khác mọi tên route.

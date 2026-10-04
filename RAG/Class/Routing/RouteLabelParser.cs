@@ -14,7 +14,13 @@ namespace RAG.Class.Routing
         NoMatch = 1,
 
         /// <summary>Không đọc được nhãn nào. Cũng đi đường RAG, nhưng vì fail-open chứ không phải quyết định.</summary>
-        Unparseable = 2
+        Unparseable = 2,
+
+        /// <summary>
+        /// Lượt gọi LLM lỗi hoặc quá hạn — không có đầu ra nào để đọc. Khác <see cref="Unparseable"/>
+        /// (mô hình CÓ trả lời nhưng sai định dạng): đây là sự cố hạ tầng, benchmark tính riêng.
+        /// </summary>
+        Failed = 3
     }
 
     /// <param name="RouteName">Tên route đúng như khai trong cấu hình; rỗng nếu không phải <see cref="RouteLabelOutcome.Matched"/>.</param>

@@ -1,6 +1,8 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using RAG.Class.Caching;
 using RAG.Class.Config;
 using RAG.Class.Constants;
+using RAG.Class.Diagnostics.Timing;
 using RAG.Class.Routing;
 using RAG.Interface;
 using System.Text;
@@ -35,9 +37,44 @@ namespace RAG.Extension.DependencyInjection
             services.AddKeyedSingleton<IRouteExplainer>(SemanticRouterStrategy.Off,
                 (sp, _) => sp.GetRequiredService<PassthroughSemanticRouter>());
 
+            services.AddRouterStrategy(strategy, configuration);
+
+            // CHỈ đăng ký phần phụ thuộc của chiến lược đang chọn. Đăng ký sẵn tất cả để "đổi cho
+            // nhanh" sẽ kéo theo warm-up của router embedding chạy nền và đốt hạn mức Gemini ngay
+            // cả khi đang chạy chiến lược LLM, và bắt khai key TypeSafe ngay cả khi không dùng Jev.
+            services.AddSingleton<ISemanticRouter>(sp => sp.GetRequiredKeyedService<ISemanticRouter>(strategy));
+            services.AddSingleton<IRouteExplainer>(sp => sp.GetRequiredKeyedService<IRouteExplainer>(strategy));
+
+            return services;
+        }
+
+        /// <summary>
+        /// Đăng ký phần phụ thuộc của MỘT chiến lược dưới khóa của nó. Idempotent: gọi lại với
+        /// chiến lược đã có (ví dụ benchmark xin thêm đúng chiến lược đang chạy) thì bỏ qua.
+        /// <para>
+        /// <see cref="IRouteUtteranceAdmin"/> được đăng ký bằng TryAdd: chiến lược đang chạy luôn
+        /// được đăng ký TRƯỚC nên nó thắng, và chiến lược thêm vào cho benchmark không đổi được
+        /// hành vi của <c>route-utterances</c>.
+        /// </para>
+        /// </summary>
+        internal static IServiceCollection AddRouterStrategy(this IServiceCollection services,
+                                                             SemanticRouterStrategy strategy,
+                                                             IConfiguration configuration)
+        {
+            var alreadyRegistered = services.Any(descriptor =>
+                descriptor.IsKeyedService &&
+                descriptor.ServiceType == typeof(IRouteExplainer) &&
+                Equals(descriptor.ServiceKey, strategy) &&
+                strategy != SemanticRouterStrategy.Off);
+
+            if (alreadyRegistered)
+                return services;
+
             switch (strategy)
             {
                 case SemanticRouterStrategy.Embedding:
+                    var config = configuration.GetSection(SemanticRouterConfig.SectionName).Get<SemanticRouterConfig>()
+                                 ?? new SemanticRouterConfig();
                     services.AddEmbeddingRouter(configuration, config);
                     break;
 
@@ -50,15 +87,9 @@ namespace RAG.Extension.DependencyInjection
                     break;
 
                 default:
-                    services.AddSingleton<IRouteUtteranceAdmin, DisabledRouteUtteranceAdmin>();
+                    services.TryAddSingleton<IRouteUtteranceAdmin, DisabledRouteUtteranceAdmin>();
                     break;
             }
-
-            // CHỈ đăng ký phần phụ thuộc của chiến lược đang chọn. Đăng ký sẵn tất cả để "đổi cho
-            // nhanh" sẽ kéo theo warm-up của router embedding chạy nền và đốt hạn mức Gemini ngay
-            // cả khi đang chạy chiến lược LLM, và bắt khai key TypeSafe ngay cả khi không dùng Jev.
-            services.AddSingleton<ISemanticRouter>(sp => sp.GetRequiredKeyedService<ISemanticRouter>(strategy));
-            services.AddSingleton<IRouteExplainer>(sp => sp.GetRequiredKeyedService<IRouteExplainer>(strategy));
 
             return services;
         }
@@ -73,9 +104,14 @@ namespace RAG.Extension.DependencyInjection
             // đường trả lời không hề dùng, đúng cái bẫy đã ghi trong comment ở AddQueryCache.
             services.AddSingleton<LlmSemanticRouter>();
 
+            // TimedRouteClassifier nằm GIỮA cache và router thật: chỉ đo khi thật sự gọi LLM, và
+            // cùng một lớp đo với router Jev nên hai con số so được với nhau.
             services.AddKeyedSingleton<ISemanticRouter>(SemanticRouterStrategy.Llm, (sp, _) =>
                 new CachingSemanticRouter(
-                    sp.GetRequiredService<LlmSemanticRouter>(),
+                    new TimedRouteClassifier(
+                        sp.GetRequiredService<LlmSemanticRouter>(),
+                        sp.GetRequiredService<ILatencyTracker>(),
+                        LatencyStages.RouteLlm),
                     sp.GetRequiredService<IRouteDecisionCache>(),
                     sp.GetRequiredService<ILogger<CachingSemanticRouter>>()));
 
@@ -86,7 +122,7 @@ namespace RAG.Extension.DependencyInjection
 
             // Chiến lược này không nhận diện route bằng vector, nên câu mẫu thêm lúc chạy không đi
             // tới đâu. Trả về mã NotSupported thay vì im lặng nhận rồi bỏ qua.
-            services.AddSingleton<IRouteUtteranceAdmin, UnsupportedRouteUtteranceAdmin>();
+            services.TryAddSingleton<IRouteUtteranceAdmin, UnsupportedRouteUtteranceAdmin>();
 
             return services;
         }
@@ -105,7 +141,10 @@ namespace RAG.Extension.DependencyInjection
             // Câu chào / cảm ơn lặp lại rất nhiều: cache quyết định giúp chúng không tốn lượt gọi Jev nào.
             services.AddKeyedSingleton<ISemanticRouter>(SemanticRouterStrategy.Jev, (sp, _) =>
                 new CachingSemanticRouter(
-                    sp.GetRequiredService<JevSemanticRouter>(),
+                    new TimedRouteClassifier(
+                        sp.GetRequiredService<JevSemanticRouter>(),
+                        sp.GetRequiredService<ILatencyTracker>(),
+                        LatencyStages.RouteJev),
                     sp.GetRequiredService<IRouteDecisionCache>(),
                     sp.GetRequiredService<ILogger<CachingSemanticRouter>>()));
 
@@ -114,7 +153,7 @@ namespace RAG.Extension.DependencyInjection
                 (sp, _) => sp.GetRequiredService<JevSemanticRouter>());
 
             // Jev không nhận diện route bằng vector, nên câu mẫu thêm lúc chạy không đi tới đâu.
-            services.AddSingleton<IRouteUtteranceAdmin, UnsupportedRouteUtteranceAdmin>();
+            services.TryAddSingleton<IRouteUtteranceAdmin, UnsupportedRouteUtteranceAdmin>();
 
             return services;
         }
@@ -145,7 +184,7 @@ namespace RAG.Extension.DependencyInjection
             services.AddSingleton<IRouteScorer, MaxSimilarityScorer>();
 
             services.AddSingleton<RouteUtteranceAdmin>();
-            services.AddSingleton<IRouteUtteranceAdmin>(sp => sp.GetRequiredService<RouteUtteranceAdmin>());
+            services.TryAddSingleton<IRouteUtteranceAdmin>(sp => sp.GetRequiredService<RouteUtteranceAdmin>());
 
             services.AddSingleton<EmbeddingSemanticRouter>();
             services.AddKeyedSingleton<ISemanticRouter>(SemanticRouterStrategy.Embedding,

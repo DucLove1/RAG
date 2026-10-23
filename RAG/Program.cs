@@ -13,6 +13,15 @@ builder.Configuration.AddSplitJsonFiles(builder.Environment);
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddControllers();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 // Đăng ký bộ mã hóa mở rộng (giúp đọc được các file mã hóa ANSI/Windows cũ)
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
@@ -34,6 +43,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowAll");
 
 app.UseAuthorization();
 

@@ -42,9 +42,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi(pattern: app.Services.GetRequiredService<IOptions<OpenApiConfig>>().Value.RoutePattern);
 }
 
-app.UseHttpsRedirection();
-
 app.UseCors("AllowAll");
+
+app.UseHttpsRedirection();
 
 app.UseAuthorization();
 

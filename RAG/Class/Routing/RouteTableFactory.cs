@@ -10,7 +10,8 @@ namespace RAG.Class.Routing
         double Threshold,
         string SystemPromptTemplate,
         string UserPromptTemplate,
-        IReadOnlyList<string> Utterances);
+        IReadOnlyList<string> Utterances,
+        string? FixedReply = null);
 
     /// <summary>
     /// Luật "route nào dùng được, và prompt của nó là gì" — dùng chung cho mọi chiến lược định tuyến.
@@ -60,7 +61,8 @@ namespace RAG.Class.Routing
                     route.SimilarityThreshold ?? config.Embedding.SimilarityThreshold,
                     systemTemplate,
                     route.UserPromptTemplate,
-                    utterances));
+                    utterances,
+                    string.IsNullOrWhiteSpace(route.FixedReply) ? null : route.FixedReply));
             }
 
             return resolved;

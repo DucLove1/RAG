@@ -80,6 +80,11 @@ namespace RAG.Class.Answering
             // "không trúng". Vì vậy nhánh này thoát sớm, không đụng tới bộ phát hiện.
             if (route is not null)
             {
+                // Route có lời đáp cố định (vd. câu ngoài thế giới game → "không biết") thì trả
+                // nguyên văn, không qua LLM để nó không có cơ hội lỡ trả lời.
+                if (route.FixedReply is not null)
+                    return new AskResult(route.FixedReply, WeakPointHit: false);
+
                 var routedAnswer = await AnswerWithoutRetrievalAsync(
                     npcName, npcSystem, normalizedQuestion, history, route, lengthInstruction, cancellationToken);
 

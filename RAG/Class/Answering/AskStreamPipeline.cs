@@ -88,6 +88,13 @@ namespace RAG.Class.Answering
             {
                 yield return new AskStreamMetaEvent(WeakPointHit: false);
 
+                // Lời đáp cố định phát nguyên cục, cùng lý do với nhánh điểm yếu bên dưới.
+                if (route.FixedReply is not null)
+                {
+                    yield return new AskStreamTokenEvent(route.FixedReply);
+                    yield break;
+                }
+
                 var routedStream = _llmStreamProvider.AskStreamAsync(
                     route.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
                     _conversationFormatter.PrependToAnswerPrompt(history, route.BuildUserPrompt(normalizedQuestion)),

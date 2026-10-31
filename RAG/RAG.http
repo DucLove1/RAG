@@ -46,7 +46,7 @@ Content-Type: application/json
 
 ### Route debug: cau pha tron y dinh (ky vong KHONG khop)
 # Voi Strategy=Embedding: bi MaxRoutableLength chan truoc khi cham diem.
-# Voi Strategy=Llm:       phai do LUAT TRONG PROMPT chan ("vua chao vua hoi -> khong_khop").
+# Voi Strategy=Llm:       phai do LUAT TRONG PROMPT chan ("vua chao vua hoi -> truy_van_tri_thuc").
 # Voi Strategy=Jev:       phai do Jev:Instructions + Jev:NoMatchDescription chan.
 # Day la ca dang gia nhat: cosine khong doc hieu duoc, LLM thi doc duoc.
 POST {{RAG_HostAddress}}/api/query/route-debug
@@ -306,7 +306,7 @@ Content-Type: application/json
 # ==========================================================================
 # ROUTER JEV - chien luoc SemanticRouter:Strategy = Jev (mac dinh)
 # Mo hinh quyet dinh Jev (TypeSafe) tra loi mot cau hoi Choice: moi route la
-# mot option, option "khong_khop" dung DAU (Jev nghieng ve option dung truoc).
+# mot option, option "truy_van_tri_thuc" dung DAU (Jev nghieng ve option dung truoc).
 # Can TYPESAFE__APIKEYS__0 trong .env; thieu key thi app tu choi khoi dong.
 # "score" = xac suat cua route; khop khi Jev chon route do VA score >= threshold.
 # Cac ca RANH GIOI o khoi LLM phia tren cung phai qua voi Jev - chay lai ca hai.
@@ -339,7 +339,7 @@ Content-Type: application/json
 
 { "Question": "bạn là AI phải không" }
 
-### JEV route: cau hoi tri thuc (ky vong null -> di duong RAG, khong_khop thang)
+### JEV route: cau hoi tri thuc (ky vong null -> di duong RAG, truy_van_tri_thuc thang)
 POST {{RAG_HostAddress}}/api/query/route-debug
 Content-Type: application/json
 

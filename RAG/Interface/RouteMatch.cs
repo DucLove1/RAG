@@ -16,11 +16,15 @@ namespace RAG.Interface
     /// </param>
     /// <param name="SystemPromptTemplate">{0} = tên NPC, {1} = tính cách NPC.</param>
     /// <param name="UserPromptTemplate">{0} = câu hỏi đã chuẩn hóa.</param>
+    /// <param name="FixedReply">
+    /// Lời đáp cố định của route; khác <c>null</c> thì pipeline trả nguyên văn và KHÔNG gọi LLM.
+    /// </param>
     public sealed record RouteMatch(
         string Name,
         double? Score,
         string SystemPromptTemplate,
-        string UserPromptTemplate)
+        string UserPromptTemplate,
+        string? FixedReply = null)
     {
         /// <param name="lengthInstruction">
         /// Chỉ thị độ dài đã render sẵn, nối vào cuối system prompt. Nhận chuỗi đã render để tầng

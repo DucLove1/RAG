@@ -243,6 +243,14 @@ namespace RAG.Class.Config
 
         /// <summary>Template user prompt cho câu trả lời không truy hồi; {0} = câu hỏi đã chuẩn hóa.</summary>
         public string UserPromptTemplate { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Lời đáp cố định. Có giá trị thì route khớp sẽ trả NGUYÊN VĂN chuỗi này, không gọi LLM —
+        /// dùng cho route cần câu trả lời xác định như "không biết" cho câu ngoài thế giới game, vì
+        /// để LLM diễn đạt thì nó vẫn có thể lỡ trả lời câu hỏi. Bỏ trống thì LLM sinh câu trả lời
+        /// theo <see cref="SystemPromptTemplate"/>.
+        /// </summary>
+        public string? FixedReply { get; set; }
     }
 
     /// <summary>
@@ -343,7 +351,7 @@ namespace RAG.Class.Config
         /// Nhận được nhãn này nghĩa là mô hình đã QUYẾT ĐỊNH đi đường RAG, khác với việc
         /// không phân tích được đầu ra (cũng đi RAG, nhưng là fail-open).
         /// </summary>
-        public string NoMatchLabel { get; set; } = "khong_khop";
+        public string NoMatchLabel { get; set; } = "truy_van_tri_thuc";
 
         /// <summary>System prompt phân loại; {0} = danh mục route đã dựng, {1} = nhãn không khớp.</summary>
         public string SystemPromptTemplate { get; set; } = string.Empty;
@@ -389,7 +397,7 @@ namespace RAG.Class.Config
         public string Instructions { get; set; } = string.Empty;
 
         /// <summary>Khóa option "không route nào khớp → đi RAG". Phải khác mọi tên route.</summary>
-        public string NoMatchLabel { get; set; } = "khong_khop";
+        public string NoMatchLabel { get; set; } = "truy_van_tri_thuc";
 
         /// <summary>Mô tả option "không khớp" — khi nào câu hỏi cần tra cứu tri thức.</summary>
         public string NoMatchDescription { get; set; } = string.Empty;

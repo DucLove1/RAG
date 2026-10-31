@@ -49,7 +49,7 @@ namespace RAG.Class.Routing
 
             _matches = routes.ToDictionary(
                 route => route.Name,
-                route => new RouteMatch(route.Name, Score: null, route.SystemPromptTemplate, route.UserPromptTemplate),
+                route => new RouteMatch(route.Name, Score: null, route.SystemPromptTemplate, route.UserPromptTemplate, route.FixedReply),
                 StringComparer.Ordinal);
 
             _routeNames = routes.Select(route => route.Name).ToList();

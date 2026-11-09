@@ -2,6 +2,7 @@ using Microsoft.Extensions.Options;
 using RAG.Class.Caching;
 using RAG.Class.Config;
 using RAG.Class.Constants;
+using RAG.Class.Dto;
 using RAG.Interface;
 
 namespace RAG.Class.Answering
@@ -19,6 +20,7 @@ namespace RAG.Class.Answering
     public sealed class AskPipeline : IAskService
     {
         private readonly ILLMProvider _llmProvider;
+        private readonly ILlmProviderResolver _llmProviderResolver;
         private readonly IEmbeddingProvider _embeddingProvider;
         private readonly IAskContextBuilder _contextBuilder;
         private readonly IQueryNormalizer _queryNormalizer;
@@ -29,6 +31,7 @@ namespace RAG.Class.Answering
         private readonly PromptConfig _promptConfig;
 
         public AskPipeline(ILLMProvider llmProvider,
+                           ILlmProviderResolver llmProviderResolver,
                            IEmbeddingProvider embeddingProvider,
                            IAskContextBuilder contextBuilder,
                            IQueryNormalizer queryNormalizer,
@@ -39,6 +42,7 @@ namespace RAG.Class.Answering
                            IOptions<PromptConfig> promptConfig)
         {
             _llmProvider = llmProvider;
+            _llmProviderResolver = llmProviderResolver;
             _embeddingProvider = embeddingProvider;
             _contextBuilder = contextBuilder;
             _queryNormalizer = queryNormalizer;
@@ -110,6 +114,11 @@ namespace RAG.Class.Answering
         /// <summary>
         /// Nhánh tán gẫu: vẫn để LLM sinh câu trả lời theo đúng persona của NPC,
         /// chỉ khác là không kèm ngữ cảnh truy hồi nào nên không chạm tới kho vector.
+        /// <para>
+        /// Route tự khai <see cref="RouteMatch.Provider"/> / <see cref="RouteMatch.Model"/> thì
+        /// dùng đúng provider/model đó thay cho provider mặc định của pipeline — cùng cách
+        /// <c>LlmRouterConfig.Provider</c> tách provider phân loại khỏi provider trả lời.
+        /// </para>
         /// </summary>
         private Task<string> AnswerWithoutRetrievalAsync(string npcName,
                                                          string npcSystem,
@@ -117,11 +126,17 @@ namespace RAG.Class.Answering
                                                          ConversationHistory history,
                                                          RouteMatch route,
                                                          string lengthInstruction,
-                                                         CancellationToken cancellationToken) =>
-            _llmProvider.AskAsync(
+                                                         CancellationToken cancellationToken)
+        {
+            var provider = route.Provider is { } key ? _llmProviderResolver.Resolve(key) : _llmProvider;
+            var options = route.Model is null ? null : new LlmRequestOptions(route.Model);
+
+            return provider.AskAsync(
                 route.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
                 _conversationFormatter.PrependToAnswerPrompt(history, route.BuildUserPrompt(question)),
-                cancellationToken: cancellationToken);
+                options,
+                cancellationToken);
+        }
 
         /// <summary>
         /// Nhánh RAG mặc định: nhúng câu hỏi, tìm ngữ cảnh trong kho vector rồi mới sinh câu trả lời.

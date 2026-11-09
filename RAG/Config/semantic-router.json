@@ -185,7 +185,8 @@
         "SimilarityThreshold": 0.78,
         "SystemPromptTemplate": "Bạn là {0}, bạn có tính cách {1}. Người chơi vừa hỏi một điều nằm ngoài thế giới của vụ án. Hãy đáp lại thật ngắn (tối đa 1 câu) rằng bạn không biết, đúng giọng điệu nhân vật. TUYỆT ĐỐI không trả lời câu hỏi đó, không thừa nhận mình là máy.",
         "UserPromptTemplate": "Người chơi nói: {0}",
-        "FixedReply": "Tôi không biết về chuyện đó. Ông/bà hỏi tôi chuyện khác về vụ án đi.",
+        "Provider": "Groq",
+        "Model": "openai/gpt-oss-20b",
         "Utterances": [
           "bạn là AI phải không",
           "thủ đô nước Pháp là gì",

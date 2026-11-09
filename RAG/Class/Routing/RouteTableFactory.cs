@@ -1,9 +1,12 @@
 using RAG.Class.Config;
+using RAG.Class.Constants;
 
 namespace RAG.Class.Routing
 {
     /// <summary>Một route đã qua kiểm tra và đã giải xong template, chưa gắn cách nhận diện nào.</summary>
     /// <param name="Threshold">Ngưỡng cosine đã giải; chiến lược không chấm điểm thì bỏ qua.</param>
+    /// <param name="Provider">Provider riêng cho câu trả lời không truy hồi; <c>null</c> thì dùng provider mặc định của pipeline.</param>
+    /// <param name="Model">Model riêng cho câu trả lời không truy hồi; <c>null</c> thì dùng model mặc định của provider đã chọn.</param>
     public sealed record ResolvedRoute(
         string Name,
         string Description,
@@ -11,7 +14,9 @@ namespace RAG.Class.Routing
         string SystemPromptTemplate,
         string UserPromptTemplate,
         IReadOnlyList<string> Utterances,
-        string? FixedReply = null);
+        string? FixedReply = null,
+        LlmProviderKey? Provider = null,
+        string? Model = null);
 
     /// <summary>
     /// Luật "route nào dùng được, và prompt của nó là gì" — dùng chung cho mọi chiến lược định tuyến.
@@ -62,7 +67,9 @@ namespace RAG.Class.Routing
                     systemTemplate,
                     route.UserPromptTemplate,
                     utterances,
-                    string.IsNullOrWhiteSpace(route.FixedReply) ? null : route.FixedReply));
+                    string.IsNullOrWhiteSpace(route.FixedReply) ? null : route.FixedReply,
+                    route.Provider,
+                    string.IsNullOrWhiteSpace(route.Model) ? null : route.Model));
             }
 
             return resolved;

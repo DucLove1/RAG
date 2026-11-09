@@ -1,3 +1,5 @@
+using RAG.Class.Constants;
+
 namespace RAG.Interface
 {
     /// <summary>
@@ -19,12 +21,22 @@ namespace RAG.Interface
     /// <param name="FixedReply">
     /// Lời đáp cố định của route; khác <c>null</c> thì pipeline trả nguyên văn và KHÔNG gọi LLM.
     /// </param>
+    /// <param name="Provider">
+    /// Provider riêng cho câu trả lời không truy hồi của route này; <c>null</c> thì pipeline dùng
+    /// provider mặc định của nó (<c>LLM:Provider</c>).
+    /// </param>
+    /// <param name="Model">
+    /// Model riêng cho câu trả lời không truy hồi của route này; <c>null</c> thì dùng model mặc
+    /// định của <see cref="Provider"/> đã chọn (hoặc của provider mặc định nếu cả hai đều bỏ trống).
+    /// </param>
     public sealed record RouteMatch(
         string Name,
         double? Score,
         string SystemPromptTemplate,
         string UserPromptTemplate,
-        string? FixedReply = null)
+        string? FixedReply = null,
+        LlmProviderKey? Provider = null,
+        string? Model = null)
     {
         /// <param name="lengthInstruction">
         /// Chỉ thị độ dài đã render sẵn, nối vào cuối system prompt. Nhận chuỗi đã render để tầng

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using RAG.Class.Caching;
 using RAG.Class.Config;
 using RAG.Class.Constants;
+using RAG.Class.Dto;
 using RAG.Interface;
 
 namespace RAG.Class.Answering
@@ -28,6 +29,7 @@ namespace RAG.Class.Answering
     {
         private readonly ILLMProvider _llmProvider;
         private readonly ILLMStreamProvider _llmStreamProvider;
+        private readonly ILlmProviderResolver _llmProviderResolver;
         private readonly IEmbeddingProvider _embeddingProvider;
         private readonly IAskContextBuilder _contextBuilder;
         private readonly IQueryNormalizer _queryNormalizer;
@@ -47,6 +49,7 @@ namespace RAG.Class.Answering
         /// </param>
         public AskStreamPipeline(ILLMProvider llmProvider,
                                  ILLMStreamProvider llmStreamProvider,
+                                 ILlmProviderResolver llmProviderResolver,
                                  IEmbeddingProvider embeddingProvider,
                                  IAskContextBuilder contextBuilder,
                                  IQueryNormalizer queryNormalizer,
@@ -59,6 +62,7 @@ namespace RAG.Class.Answering
             _conversationFormatter = conversationFormatter;
             _llmProvider = llmProvider;
             _llmStreamProvider = llmStreamProvider;
+            _llmProviderResolver = llmProviderResolver;
             _embeddingProvider = embeddingProvider;
             _contextBuilder = contextBuilder;
             _queryNormalizer = queryNormalizer;
@@ -95,10 +99,18 @@ namespace RAG.Class.Answering
                     yield break;
                 }
 
-                var routedStream = _llmStreamProvider.AskStreamAsync(
+                // Route tự khai Provider/Model thì dùng đúng provider/model đó thay cho provider
+                // mặc định của pipeline — cùng cách AskPipeline.AnswerWithoutRetrievalAsync làm.
+                var routedStreamProvider = route.Provider is { } key
+                    ? _llmProviderResolver.ResolveStream(key)
+                    : _llmStreamProvider;
+                var routedOptions = route.Model is null ? null : new LlmRequestOptions(route.Model);
+
+                var routedStream = routedStreamProvider.AskStreamAsync(
                     route.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
                     _conversationFormatter.PrependToAnswerPrompt(history, route.BuildUserPrompt(normalizedQuestion)),
-                    cancellationToken: cancellationToken);
+                    routedOptions,
+                    cancellationToken);
 
                 await foreach (var chunk in routedStream.WithCancellation(cancellationToken))
                     yield return new AskStreamTokenEvent(chunk);

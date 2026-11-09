@@ -251,6 +251,20 @@ namespace RAG.Class.Config
         /// theo <see cref="SystemPromptTemplate"/>.
         /// </summary>
         public string? FixedReply { get; set; }
+
+        /// <summary>
+        /// Provider riêng cho câu trả lời không truy hồi của route này, độc lập với provider mặc
+        /// định của đường trả lời (<c>LLM:Provider</c>) — cùng cách <see cref="LlmRouterConfig.Provider"/>
+        /// chọn provider riêng cho bước phân loại. Bỏ trống thì dùng provider mặc định của pipeline.
+        /// </summary>
+        public LlmProviderKey? Provider { get; set; }
+
+        /// <summary>
+        /// Model riêng cho route này. Bỏ trống thì dùng model mặc định của provider đã chọn ở
+        /// <see cref="Provider"/> (hoặc của provider mặc định của pipeline nếu <see cref="Provider"/>
+        /// cũng bỏ trống).
+        /// </summary>
+        public string? Model { get; set; }
     }
 
     /// <summary>

@@ -61,7 +61,8 @@ namespace RAG.Class.Routing
 
             _matches = routes.ToDictionary(
                 route => route.Name,
-                route => new RouteMatch(route.Name, Score: null, route.SystemPromptTemplate, route.UserPromptTemplate, route.FixedReply),
+                route => new RouteMatch(route.Name, Score: null, route.SystemPromptTemplate, route.UserPromptTemplate,
+                    route.FixedReply, route.Provider, route.Model),
                 StringComparer.Ordinal);
 
             _routeNames = routes.Select(route => route.Name).ToList();

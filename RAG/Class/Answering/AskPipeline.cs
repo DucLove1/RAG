@@ -7,14 +7,7 @@ using RAG.Interface;
 namespace RAG.Class.Answering
 {
     /// <summary>
-    /// Lõi của đường trả lời: chuẩn hóa → định tuyến → (điểm yếu → truy hồi) → sinh câu trả lời.
-    /// <para>
-    /// Bộ phát hiện điểm yếu CHỈ chạy trên nhánh nội dung game (không route nào khớp). Điều đó an
-    /// toàn vì câu chốt bắt bài hung thủ luôn nói về vụ án, mà mọi route hiện có đều là những thứ
-    /// KHÔNG phải nội dung game: chào hỏi, cảm ơn, tạm biệt, ngoài phạm vi. Thêm một route mang
-    /// nội dung game vào <c>SemanticRouter:Routes</c> sẽ âm thầm che mất bộ phát hiện trên nhánh
-    /// đó — kiểm bằng <c>route-debug</c> rằng câu chốt vẫn không khớp route nào.
-    /// </para>
+    /// Lõi của đường trả lời: chuẩn hóa → định tuyến → truy hồi → sinh câu trả lời.
     /// </summary>
     public sealed class AskPipeline : IAskService
     {
@@ -24,7 +17,6 @@ namespace RAG.Class.Answering
         private readonly IAskContextBuilder _contextBuilder;
         private readonly IQueryNormalizer _queryNormalizer;
         private readonly ISemanticRouter _semanticRouter;
-        private readonly IWeakPointDetector _weakPointDetector;
         private readonly IConversationFormatter _conversationFormatter;
         private readonly PromptConfig _promptConfig;
 
@@ -34,7 +26,6 @@ namespace RAG.Class.Answering
                            IAskContextBuilder contextBuilder,
                            IQueryNormalizer queryNormalizer,
                            ISemanticRouter semanticRouter,
-                           IWeakPointDetector weakPointDetector,
                            IConversationFormatter conversationFormatter,
                            IOptions<PromptConfig> promptConfig)
         {
@@ -44,7 +35,6 @@ namespace RAG.Class.Answering
             _contextBuilder = contextBuilder;
             _queryNormalizer = queryNormalizer;
             _semanticRouter = semanticRouter;
-            _weakPointDetector = weakPointDetector;
             _conversationFormatter = conversationFormatter;
             _promptConfig = promptConfig.Value;
         }
@@ -62,7 +52,7 @@ namespace RAG.Class.Answering
 
             // Node chuẩn hóa: mở rộng từ viết tắt / sửa chính tả trước khi định tuyến và dựng prompt.
             // Có lịch sử thì nó còn viết lại câu nối tiếp thành câu độc lập, nên mọi node phía sau
-            // (định tuyến, điểm yếu, nhúng, truy hồi) chỉ cần nhìn câu đã chuẩn hóa.
+            // (định tuyến, nhúng, truy hồi) chỉ cần nhìn câu đã chuẩn hóa.
             var normalizedQuestion = await _queryNormalizer.NormalizeAsync(question, history, cancellationToken);
 
             // Node định tuyến chạy TRƯỚC bước nhúng: câu tán gẫu được trả lời thẳng và không tốn
@@ -76,9 +66,7 @@ namespace RAG.Class.Answering
             var lengthInstruction = _promptConfig.BuildLengthInstruction(_llmProvider.MaxOutputTokens);
 
             // Khớp route nghĩa là câu này KHÔNG hỏi nội dung game (chào hỏi, cảm ơn, tạm biệt, ngoài
-            // phạm vi). Câu chốt bắt bài hung thủ thì luôn nói về vụ án, nên nó không bao giờ khớp
-            // route — và chạy node điểm yếu ở đây chỉ là đốt một lượt gọi LLM để luôn nhận về
-            // "không trúng". Vì vậy nhánh này thoát sớm, không đụng tới bộ phát hiện.
+            // phạm vi), nên trả lời mà không truy hồi.
             if (route is not null)
             {
                 // Route có lời đáp cố định (vd. câu ngoài thế giới game → "không biết") thì trả
@@ -92,16 +80,7 @@ namespace RAG.Class.Answering
                 return new AskResult(routedAnswer, WeakPointHit: false);
             }
 
-            // Từ đây trở xuống là đường nội dung game. Bộ phát hiện tự thoát ở phép tra từ điển khi
-            // NPC không có mục trong WeakPoint:Targets, nên chi phí thực tế là một lượt gọi cho các
-            // câu hỏi vụ án gửi tới ĐÚNG những NPC có điểm yếu.
-            var weakPoint = await _weakPointDetector.DetectAsync(npcName, normalizedQuestion, stage, cancellationToken);
-
-            // Trúng thì KHÔNG truy hồi và KHÔNG gọi LLM trả lời: câu NPC nói lúc bị bắt bài là một
-            // nhịp kịch bản, để LLM diễn đạt lại thì mỗi lần chơi ra một kiểu và mất tính xác định.
-            if (weakPoint is not null)
-                return new AskResult(weakPoint.Reply, WeakPointHit: true);
-
+            // Từ đây trở xuống là đường nội dung game.
             var answer = await AnswerWithRetrievalAsync(
                 npcName, npcSystem, normalizedQuestion, history, topK, stage, lengthInstruction, cancellationToken);
 

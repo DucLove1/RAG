@@ -64,7 +64,7 @@ Người dùng có yêu cầu rõ ràng, đã áp dụng nhất quán trong toà
 2. Định tuyến ngữ nghĩa      (ISemanticRouter, bất đồng bộ, fail-open)
    ├─ khớp route  → AnswerWithoutRetrievalAsync  (BỎ QUA Qdrant, KHÔNG nhúng gì cả)
    │                KHÔNG chạy bước 3 — xem bên dưới
-   └─ null        → 3. Đối chiếu điểm yếu  (IWeakPointDetector, fail-open — xem mục 4c)
+   └─ null        → 3. Đối chiếu điểm yếu  (ĐÃ GỠ — xem ghi chú ở mục 4c; luôn đi tiếp xuống truy hồi)
                     ├─ TRÚNG       → câu kịch bản trong config + weakPointHit = true
                     │                (KHÔNG truy hồi, KHÔNG gọi LLM trả lời)
                     └─ không trúng → AnswerWithRetrievalAsync
@@ -240,6 +240,10 @@ từ đĩa, câu cũ trúng cache ngay ở request đầu tiên.
 ---
 
 ## 4c. Node đối chiếu điểm yếu (`IWeakPointDetector`)
+
+> **ĐÃ GỠ KHỎI PIPELINE.** `AskPipeline` và `AskStreamPipeline` không còn gọi bộ phát hiện này; `weakPointHit`
+> trong response luôn là `false` (giữ lại để client cũ không vỡ). Các lớp `WeakPoint*`, cấu hình
+> `WeakPoint:*` và `Config/weak-point.json` còn nguyên nhưng không được dùng. Mục này mô tả hành vi CŨ.
 
 Khi người chơi hỏi trúng **câu chốt** của hung thủ, pipeline thoát ngay và trả về cờ `weakPointHit`
 để client chạy nhịp kịch bản của mình.

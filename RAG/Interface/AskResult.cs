@@ -6,9 +6,8 @@ namespace RAG.Interface
     /// rỗng.
     /// </summary>
     /// <param name="WeakPointHit">
-    /// <c>true</c> nghĩa là câu hỏi trúng điểm yếu của NPC. Khi đó <paramref name="Answer"/> là câu
-    /// kịch bản lấy từ cấu hình chứ không phải câu do LLM sinh ra, và pipeline đã KHÔNG truy hồi,
-    /// KHÔNG gọi LLM trả lời lần nào.
+    /// Luôn <c>false</c>. Node phát hiện điểm yếu đã bị gỡ khỏi pipeline; trường này được giữ lại chỉ
+    /// để client cũ đang đọc nó không bị vỡ.
     /// </param>
     public sealed record AskResult(string Answer, bool WeakPointHit);
 }

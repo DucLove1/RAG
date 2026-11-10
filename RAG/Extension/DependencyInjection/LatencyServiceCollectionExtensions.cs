@@ -24,7 +24,7 @@ namespace RAG.Extension.DependencyInjection
 
             services.AddValidatedOptions<LatencyConfig>(configuration, LatencyConfig.SectionName);
 
-            // Đọc eager để CHỌN cài đặt, đúng cách AddQueryCache và AddSemanticAnswerCache đang làm.
+            // Đọc eager để CHỌN cài đặt, đúng cách AddQueryCache đang làm.
             // Section vắng mặt thì Get<T>() trả null, nên rơi về mặc định của chính config class.
             var config = section.Get<LatencyConfig>() ?? new LatencyConfig();
 
@@ -35,7 +35,7 @@ namespace RAG.Extension.DependencyInjection
 
             // Một instance duy nhất đứng sau hai interface: phiên đo và nơi ghi số liệu BẮT BUỘC
             // phải là cùng một object, nếu không thì decorator sẽ ghi vào một AsyncLocal khác với
-            // cái mà phiên vừa mở. Cùng idiom với MemoryQueryCache và RedisSemanticAnswerCache.
+            // cái mà phiên vừa mở. Cùng idiom với MemoryQueryCache.
             services.AddSingleton<AsyncLocalLatencyTracker>();
             services.AddSingleton<ILatencyTracker>(sp => sp.GetRequiredService<AsyncLocalLatencyTracker>());
             services.AddSingleton<ILatencySessionFactory>(sp => sp.GetRequiredService<AsyncLocalLatencyTracker>());
@@ -91,13 +91,7 @@ namespace RAG.Extension.DependencyInjection
             // routeJev / routeLlm KHÔNG bọc ở đây: router thật nằm bên trong CachingSemanticRouter,
             // được dựng trong factory của AddJevRouter / AddLlmRouter — xem TimedRouteClassifier.
 
-            services.Decorate<IWeakPointDetector>((inner, sp) => new TimedWeakPointDetector(
-                inner, sp.GetRequiredService<ILatencyTracker>()));
-
             services.Decorate<IEmbeddingProvider>((inner, sp) => new TimedEmbeddingProvider(
-                inner, sp.GetRequiredService<ILatencyTracker>()));
-
-            services.Decorate<ISemanticAnswerCache>((inner, sp) => new TimedSemanticAnswerCache(
                 inner, sp.GetRequiredService<ILatencyTracker>()));
 
             // Dựng ngữ cảnh: nhánh vector ở trên và ba dòng đồ thị dưới đây chạy SONG SONG bên trong

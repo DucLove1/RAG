@@ -11,12 +11,8 @@ namespace RAG.Class.Constants
     public static class AskStreamEventNames
     {
         /// <summary>
-        /// Siêu dữ liệu của lượt trả lời, mang <c>weakPointHit</c>. Luôn là sự kiện ĐẦU TIÊN.
-        /// <para>
-        /// Phát trước token chứ không phải sau cùng vì cờ này là một SỰ KIỆN CỐT TRUYỆN: client cần
-        /// biết nhịp bắt bài đã kích hoạt TRƯỚC khi vẽ chữ, để còn đổi nhạc nền hay biểu cảm NPC
-        /// cùng lúc với câu thoại chứ không phải sau khi câu thoại đã chạy xong.
-        /// </para>
+        /// Siêu dữ liệu của lượt trả lời, mang <c>weakPointHit</c> (luôn false, giữ lại để client cũ
+        /// không vỡ). Luôn là sự kiện ĐẦU TIÊN.
         /// </summary>
         public const string Meta = "meta";
 

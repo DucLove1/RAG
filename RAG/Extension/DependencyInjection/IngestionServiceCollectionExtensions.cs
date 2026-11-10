@@ -39,7 +39,7 @@ namespace RAG.Extension.DependencyInjection
             services.AddSingleton<IAccessPolicy, FrontMatterAccessPolicy>();
 
             // switch chứ không phải Keyed Services: chỉ đúng MỘT chiến lược tồn tại tại một thời
-            // điểm, cùng lý do với AddSemanticAnswerCache. Xem ChunkingStrategyKind.
+            // điểm. Xem ChunkingStrategyKind.
             var chunking = configuration.GetSection(ChunkingConfig.SectionName)
                                         .Get<ChunkingConfig>() ?? new ChunkingConfig();
 

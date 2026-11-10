@@ -9,7 +9,7 @@ namespace RAG.Class.Diagnostics.Timing
     /// <para>
     /// CHỈ bọc đăng ký <see cref="ILLMProvider"/> KHÔNG KHÓA — cái mà <c>AskPipeline</c> nhận. Các
     /// provider keyed (<c>LlmProviderKey.Groq</c> / <c>.Gemini</c>) mà bộ chuẩn hóa, bộ định tuyến
-    /// và bộ phát hiện điểm yếu lấy qua <c>ILlmProviderResolver</c> thì CỐ TÌNH không bọc: bọc cả
+    /// lấy qua <c>ILlmProviderResolver</c> thì CỐ TÌNH không bọc: bọc cả
     /// hai chỗ thì lượt gọi của bộ chuẩn hóa bị tính hai lần — một lần dưới stage <c>normalize</c>,
     /// một lần nữa dưới <c>llmAnswer</c> — và tổng các stage sẽ vượt quá cả thời gian thật của
     /// request. Thời gian của chúng đã nằm trong stage riêng của chính chúng.

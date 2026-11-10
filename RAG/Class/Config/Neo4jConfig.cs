@@ -12,7 +12,7 @@ namespace RAG.Class.Config
     /// <para>
     /// Options của lớp này CHỈ được đăng ký khi <c>Graph:Enabled = true</c>. Đăng ký vô điều kiện
     /// thì <c>[Required] Password</c> cộng với <c>ValidateOnStart</c> sẽ chặn khởi động của mọi máy
-    /// không có Neo4j — đúng cái bẫy đã mô tả trong <see cref="SemanticAnswerCacheRedisConfig"/>.
+    /// không có Neo4j.
     /// </para>
     /// </summary>
     public class Neo4jConfig
@@ -48,8 +48,7 @@ namespace RAG.Class.Config
         /// <para>
         /// Phải có RIÊNG bên cạnh <see cref="TransactionTimeoutMs"/> vì hai thứ chặn hai đoạn khác
         /// nhau: timeout giao dịch chỉ bắt đầu đếm khi câu lệnh đã tới được server, nên nó không với
-        /// tới DNS hỏng, bắt tay TLS treo, hay pool kết nối đã cạn. Cùng lý do với cặp
-        /// OperationTimeoutMs/ServerQueryTimeoutMs của provider Redis.
+        /// tới DNS hỏng, bắt tay TLS treo, hay pool kết nối đã cạn.
         /// </para>
         /// </summary>
         [Range(100, 60000)]
@@ -71,8 +70,7 @@ namespace RAG.Class.Config
         public int MaxConnectionPoolSize { get; set; } = 20;
 
         /// <summary>
-        /// Số lần hỏng liên tiếp trước khi ngắt mạch. Cùng con số với provider Redis, và cùng lý do:
-        /// ba lần đủ để phân biệt một trục trặc thoáng qua với một sự cố thật.
+        /// Số lần hỏng liên tiếp trước khi ngắt mạch: ba lần đủ để phân biệt một trục trặc thoáng qua với một sự cố thật.
         /// </summary>
         [Range(1, 100)]
         public int MaxConsecutiveFailures { get; set; } = 3;

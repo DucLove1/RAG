@@ -38,14 +38,6 @@ namespace RAG.Extension.DependencyInjection
             // đăng ký mãi dưới AddIngestion mà không sao.
             services.AddGraph(configuration, environment);
 
-            // Cache câu trả lời theo ngữ nghĩa (FAISS trong tiến trình, hoặc Redis + RediSearch —
-            // chọn bằng SemanticAnswerCache:Provider). KHÔNG phải decorator — khác AddQueryCache ở
-            // trên vốn phải đứng trước thứ nó bọc. Ràng buộc thứ tự duy nhất ở đây là phải nằm
-            // TRƯỚC AddRagPipeline, vì AskPipeline nhận ISemanticAnswerCache qua constructor.
-            // Provider FAISS còn đọc GeminiEmbeddingModelConfig để chốt số chiều, nên AddEmbeddingModel
-            // ở trên cũng là một ràng buộc thứ tự thật.
-            services.AddSemanticAnswerCache(configuration);
-
             // Lịch sử hội thoại do client gửi kèm (dựng thành văn bản) + endpoint compact. Phải sau
             // AddLLM (compactor cần ILlmProviderResolver) và trước AddLatencyTracking (bị bọc ở đó).
             // Đặt trước AddQueryNormalization chỉ để đọc theo thứ tự phụ thuộc: bộ chuẩn hóa dùng
@@ -62,11 +54,6 @@ namespace RAG.Extension.DependencyInjection
             // Benchmark so sánh chiến lược định tuyến (chỉ Development). PHẢI ngay SAU AddSemanticRouter:
             // chiến lược đang chạy đăng ký trước thì mới thắng TryAdd của IRouteUtteranceAdmin.
             services.AddRouteBenchmark(configuration, environment);
-
-            // Node phát hiện "trúng điểm yếu": chạy SAU định tuyến, và trúng thì THẮNG route vì nó
-            // là sự kiện cốt truyện chứ không phải một tối ưu chi phí. Phải sau AddLLM (cần
-            // ILlmProviderResolver) và trước AddRagPipeline (AskPipeline nhận IWeakPointDetector).
-            services.AddWeakPoint(configuration);
 
             // Đường nạp tri thức: bộ đọc theo định dạng + chiến lược cắt đoạn.
             services.AddIngestion(configuration);

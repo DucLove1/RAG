@@ -12,8 +12,7 @@ namespace RAG.Extension.Sse
     /// Đưa một luồng <see cref="AskStreamEvent"/> ra dây dưới dạng Server-Sent Events.
     /// <para>
     /// Đây là file DUY NHẤT trong repo chạm <c>Response.Body</c>, header SSE và <c>FlushAsync</c> —
-    /// cùng luật cô lập mà <c>QdrantVectorStore</c> áp cho Qdrant, <c>RedisSemanticAnswerCache</c>
-    /// áp cho Redis và <c>FaissSemanticAnswerCache</c> áp cho FAISS. Muốn đổi sang một giao thức
+    /// cùng luật cô lập mà <c>QdrantVectorStore</c> áp cho Qdrant. Muốn đổi sang một giao thức
     /// khác (NDJSON, WebSocket) thì chỉ phải viết một lớp song song với lớp này.
     /// </para>
     /// <para>

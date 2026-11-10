@@ -68,7 +68,7 @@ namespace RAG.Class.Diagnostics.Timing
 
                     // Ngay sau yield return là ĐẦU của lần MoveNextAsync kế tiếp, và phiên hiện
                     // hành vừa biến mất cùng ExecutionContext của lần trước. Không có dòng này thì
-                    // mọi stage sinh ra từ đây trở đi — llmFirstToken, llmAnswer, answerCacheSet —
+                    // mọi stage sinh ra từ đây trở đi — llmFirstToken, llmAnswer —
                     // rơi khỏi báo cáo, mà dòng log VẪN xuất hiện với tổng thời gian đúng nên
                     // trông y như những stage đó chạy tức thì. Xem ILatencySession.Activate.
                     session.Activate();

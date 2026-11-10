@@ -8,7 +8,7 @@ using RAG.Interface;
 namespace RAG.Controllers
 {
     /// <summary>
-    /// Đường vận hành: chẩn đoán định tuyến, thêm câu mẫu lúc chạy, và số liệu cache.
+    /// Đường vận hành: chẩn đoán định tuyến, thêm câu mẫu lúc chạy, và số liệu cache (chuẩn hóa, embedding, route).
     /// Không nằm trong luồng trả lời của người chơi.
     /// </summary>
     [Route("api/query")]
@@ -18,22 +18,16 @@ namespace RAG.Controllers
         private readonly IRouteDiagnostics _diagnostics;
         private readonly IRouteAdmin _routeAdmin;
         private readonly IQueryCacheStatistics _statistics;
-        private readonly ISemanticAnswerCacheStatistics _answerCacheStatistics;
-        private readonly ISemanticAnswerCacheAdmin _answerCacheAdmin;
         private readonly RouteMessagesConfig _messages;
 
         public RouteController(IRouteDiagnostics diagnostics,
                                IRouteAdmin routeAdmin,
                                IQueryCacheStatistics statistics,
-                               ISemanticAnswerCacheStatistics answerCacheStatistics,
-                               ISemanticAnswerCacheAdmin answerCacheAdmin,
                                IOptions<RouteMessagesConfig> messages)
         {
             _diagnostics = diagnostics;
             _routeAdmin = routeAdmin;
             _statistics = statistics;
-            _answerCacheStatistics = answerCacheStatistics;
-            _answerCacheAdmin = answerCacheAdmin;
             _messages = messages.Value;
         }
 
@@ -98,7 +92,6 @@ namespace RAG.Controllers
         public IActionResult GetCacheStats()
         {
             var stats = _statistics.GetStats();
-            var answerStats = _answerCacheStatistics.GetStats();
 
             return Ok(new
             {
@@ -121,48 +114,8 @@ namespace RAG.Controllers
                     hits = stats.RouteHits,
                     misses = stats.RouteMisses,
                     hitRate = Math.Round(stats.RouteHitRate, 3)
-                },
-                // Tầng duy nhất cắt được cả truy hồi lẫn lượt gọi LLM trả lời, nên cũng là tầng
-                // đáng theo dõi nhất. `errors` không có ở ba tầng trên vì chúng nằm trong RAM và
-                // không hỏng được; tầng này đi qua mạng và fail-open, tức là mọi lỗi đều BỊ NUỐT —
-                // không đếm ở đây thì một Redis chết cả tuần trông y hệt một cache còn nguội.
-                semanticAnswer = new
-                {
-                    hits = answerStats.Hits,
-                    misses = answerStats.Misses,
-                    writes = answerStats.Writes,
-                    errors = answerStats.Errors,
-                    hitRate = Math.Round(answerStats.HitRate, 3)
                 }
             });
-        }
-
-        /// <summary>
-        /// Xoá mọi câu trả lời đã nhớ của một NPC.
-        /// <para>
-        /// Tồn tại vì sẽ có lúc một câu NPC bị nhớ sai — ngưỡng tương đồng đặt hơi thấp, hoặc LLM
-        /// sinh ra một câu hỏng đúng lúc được ghi lại. Không có endpoint này thì cách chữa duy
-        /// nhất là đợi entry hết hạn hoặc FLUSHALL cả Redis.
-        /// </para>
-        /// <para>
-        /// Phải truyền cả <paramref name="npcSystem"/> vì phân vùng cache tính theo (tên NPC + mô
-        /// tả tính cách): cùng một NPC với hai persona khác nhau là hai phân vùng khác nhau.
-        /// </para>
-        /// <para>
-        /// <paramref name="stage"/> cũng vậy: mỗi stage là một phân vùng riêng, và bỏ trống là phân
-        /// vùng của request không gửi stage. Xoá hết của một NPC thì gọi một lần cho mỗi stage.
-        /// </para>
-        /// </summary>
-        [HttpDelete("answer-cache")]
-        public async Task<IActionResult> PurgeAnswerCache([FromQuery] string npcName,
-                                                          [FromQuery] string npcSystem = "",
-                                                          [FromQuery] int? stage = null,
-                                                          CancellationToken cancellationToken = default)
-        {
-            var removed = await _answerCacheAdmin.PurgeAsync(
-                npcName, npcSystem, StageCatalog.Resolve(stage), cancellationToken);
-
-            return Ok(new { npcName, stage, removed });
         }
 
         /// <summary>

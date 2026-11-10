@@ -20,9 +20,7 @@ namespace RAG.Class.Constants
         /// <summary>Router LLM: từ lúc gửi câu hỏi tới lúc parse xong nhãn route. Cùng cửa sổ với <see cref="RouteJev"/>.</summary>
         public const string RouteLlm = "routeLlm";
 
-        public const string WeakPoint = "weakPoint";
         public const string Embedding = "embedding";
-        public const string AnswerCacheGet = "answerCacheGet";
         public const string VectorSearch = "vectorSearch";
 
         /// <summary>
@@ -62,8 +60,6 @@ namespace RAG.Class.Constants
         /// </para>
         /// </summary>
         public const string LlmFirstToken = "llmFirstToken";
-
-        public const string AnswerCacheSet = "answerCacheSet";
 
         // Đường nạp dữ liệu.
         public const string EmbeddingBatch = "embeddingBatch";

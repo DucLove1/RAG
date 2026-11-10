@@ -33,8 +33,8 @@ namespace RAG.Extension.DependencyInjection
             services.Remove(descriptor);
 
             // Giữ NGUYÊN Lifetime của bản gốc. Nâng một singleton lên thành transient ở đây sẽ dựng
-            // lại cả cây phụ thuộc bên dưới cho mỗi lần resolve — với QdrantVectorStore hay
-            // RedisSemanticAnswerCache thì đó là một kết nối mới mỗi request.
+            // lại cả cây phụ thuộc bên dưới cho mỗi lần resolve — với QdrantVectorStore
+            // thì đó là một kết nối mới mỗi request.
             services.Add(ServiceDescriptor.Describe(
                 typeof(TService),
                 serviceProvider => decorator(CreateInner<TService>(serviceProvider, descriptor), serviceProvider),

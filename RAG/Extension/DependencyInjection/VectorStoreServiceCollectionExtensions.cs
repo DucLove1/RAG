@@ -15,8 +15,7 @@ namespace RAG.Extension.DependencyInjection
             services.AddValidatedOptions<QDrantConfig>(configuration, QDrantConfig.SectionName);
             // Đăng ký lớp cụ thể MỘT lần rồi trỏ từng interface về đúng instance đó. Đăng ký rời
             // (AddSingleton<IVectorStore, QdrantVectorStore>() và tương tự cho IChunkTextLookup) sẽ
-            // dựng HAI instance độc lập, mỗi cái một cờ _ensured riêng — cùng cái bẫy mà
-            // AddSemanticAnswerCache đã ghi lại, và ở đây nó còn nghĩa là hai QdrantClient.
+            // dựng HAI instance độc lập, mỗi cái một cờ _ensured riêng — và còn nghĩa là hai QdrantClient.
             services.AddSingleton<QdrantVectorStore>();
             services.AddSingleton<IVectorStore>(sp => sp.GetRequiredService<QdrantVectorStore>());
             services.AddSingleton<IChunkTextLookup>(sp => sp.GetRequiredService<QdrantVectorStore>());

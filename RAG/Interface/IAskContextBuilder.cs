@@ -18,9 +18,6 @@ namespace RAG.Interface
     {
         /// <summary>Có gì để trả lời dựa vào không — cùng nghĩa với <c>hits.Count &gt; 0</c> của bản trước.</summary>
         public bool HasContext => HitCount > 0 || RelationCount > 0;
-
-        /// <summary>Được phép ghi câu trả lời dựng trên ngữ cảnh này vào cache hay không.</summary>
-        public bool Cacheable => HasContext && !GraphDegraded;
     }
 
     /// <summary>
@@ -31,8 +28,8 @@ namespace RAG.Interface
     /// </para>
     /// <para>
     /// Tồn tại để khối truy hồi không bị chép ở cả <c>AskPipeline</c> lẫn <c>AskStreamPipeline</c>.
-    /// Bước NHÚNG và bước TRA CACHE cố ý ở lại trong từng pipeline: vị trí của chúng so với nhánh
-    /// định tuyến và nhánh điểm yếu là một bất biến của pipeline, không phải của việc dựng ngữ cảnh.
+    /// Bước NHÚNG cố ý ở lại trong từng pipeline: vị trí của nó so với nhánh định tuyến là một
+    /// bất biến của pipeline, không phải của việc dựng ngữ cảnh.
     /// </para>
     /// </summary>
     public interface IAskContextBuilder

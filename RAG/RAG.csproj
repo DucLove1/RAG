@@ -34,33 +34,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- FAISS cho provider Faiss cua cache ngu nghia (SemanticAnswerCache:Provider = Faiss).
-
-         Tham chieu 3 package le thay vi meta-package Faiss.NET.Native: meta-package keo them ca
-         Faiss.NET.Native.MacOS (~4 MB) ma khong moi truong nao cua du an nay chay macOS.
-
-         PHAI pin bang NGOAC VUONG [1.0.0-preview.4], khong phai "1.0.0-preview.4". Khong co ngoac
-         vuong thi luat cua NuGet la ">= 1.0.0-preview.4", va chi can mot cu nhich la restore roi
-         vao preview.5. Nupkg Windows cua preview.5 chi nang 17.855 byte va KHONG chua mot file
-         native .dll nao (preview.4 nang 17.383.915 byte — da mo zip kiem tra). Trieu chung khong
-         phai loi build ma la DllNotFoundException luc CHAY, va CHI tren Windows: nupkg Linux cua
-         preview.5 van du file, nen CI/Docker se bao "xanh" trong khi may dev chet.
-
-         Binding dang o trang thai ALPHA (repo tao 03/2026, v1.0 du kien 11/2026): ten namespace va
-         chu ky method co the doi giua hai preview — preview.4 dat IndexFlatIP o Faiss.Cpu.Indexes
-         trong khi nhanh master da doi sang Faiss.Cpu.Indexes.Flat. Nang version la mot viec CO CHU
-         DICH, phai chay lai spike xac minh API truoc (xem khoi comment dau
-         Class/Caching/Faiss/FaissSemanticAnswerCache.cs). -->
-    <PackageReference Include="Faiss.NET.Interop" Version="[1.0.0-preview.4]" />
-    <PackageReference Include="Faiss.NET.Native.Windows" Version="[1.0.0-preview.4]" />
-    <PackageReference Include="Faiss.NET.Native.Linux" Version="[1.0.0-preview.4]" />
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
     <!-- Driver chinh thuc cua Neo4j, dung cho tang do thi tri thuc (Graph:Enabled).
          Bolt chu khong phai HTTP Query API: Bolt co connection pool san, va Aura dam phan
          phien ban giao thuc ngay o buoc bat tay nen nang version la mot viec CO CHU DICH. -->
     <PackageReference Include="Neo4j.Driver" Version="6.3.0" />
-    <PackageReference Include="NRedisStack" Version="1.7.4" />
     <PackageReference Include="OpenAI" Version="2.10.0" />
     <PackageReference Include="Qdrant.Client" Version="1.18.1" />
   </ItemGroup>

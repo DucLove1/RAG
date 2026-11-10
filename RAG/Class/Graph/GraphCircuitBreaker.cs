@@ -3,11 +3,8 @@ namespace RAG.Class.Graph
     /// <summary>
     /// Bộ ngắt mạch cho tầng đồ thị.
     /// <para>
-    /// Là bản tách không dính driver của cơ chế đã có trong <c>RedisConnectionProvider</c>. Chép
-    /// logic thay vì dùng lại lớp kia là có chủ đích: lớp kia gắn chặt với vòng đời
-    /// <c>ConnectionMultiplexer</c> của StackExchange.Redis, còn ở đây kết nối do
-    /// <c>Neo4j.Driver</c> tự quản. Thứ đáng dùng chung là ba quyết định bên dưới, không phải đoạn
-    /// mã kết nối.
+    /// Không dính driver: kết nối do <c>Neo4j.Driver</c> tự quản, lớp này chỉ giữ ba quyết định bên
+    /// dưới.
     /// </para>
     /// <para>
     /// Ba quyết định đó: mạch hở thì về NGAY không chạm mạng (nếu không, một Neo4j chết thành khoản

@@ -5,8 +5,8 @@ namespace RAG.Class.Constants
     /// và không sai chính tả được, cùng mẫu với <see cref="SemanticRouterStrategy"/>.
     /// <para>
     /// Chọn bằng một <c>switch</c> trong composition root chứ không phải Keyed Services: chỉ đúng
-    /// MỘT chiến lược tồn tại tại một thời điểm, giống <see cref="AnswerCacheProvider"/> và khác
-    /// <see cref="LlmProviderKey"/> (nơi hai provider sống cùng lúc).
+    /// MỘT chiến lược tồn tại tại một thời điểm, khác <see cref="LlmProviderKey"/> (nơi hai provider
+    /// sống cùng lúc).
     /// </para>
     /// </summary>
     public enum ChunkingStrategyKind

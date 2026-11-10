@@ -21,8 +21,8 @@ namespace RAG.Interface
     /// <summary>
     /// Sinh câu trả lời theo LUỒNG, từng mảnh một.
     /// <para>
-    /// Tách khỏi <see cref="ILLMProvider"/> theo ISP. Ba consumer còn lại của tầng LLM — bộ chuẩn
-    /// hóa, bộ định tuyến, bộ phát hiện điểm yếu — đều đưa output vào một parser rồi mới dùng, nên
+    /// Tách khỏi <see cref="ILLMProvider"/> theo ISP. Các consumer còn lại của tầng LLM — bộ chuẩn
+    /// hóa, bộ định tuyến — đều đưa output vào một parser rồi mới dùng, nên
     /// chúng cần chuỗi NGUYÊN KHỐI và sẽ không bao giờ gọi tới đây. Gộp vào một interface là bắt
     /// chúng nhìn thấy một method vô nghĩa với mình, và bắt mọi provider tương lai phải cài nó.
     /// </para>

@@ -20,9 +20,8 @@ namespace RAG.Interface
     /// Siêu dữ liệu của lượt trả lời. Luôn đi TRƯỚC mọi <see cref="AskStreamTokenEvent"/>.
     /// </summary>
     /// <param name="WeakPointHit">
-    /// Câu hỏi có trúng điểm yếu của NPC hay không. Cùng ngữ nghĩa với trường cùng tên của
-    /// <see cref="AskResult"/>, và cố tình giữ nguyên tên để client chuyển từ <c>ask</c> sang
-    /// <c>ask-stream</c> không phải đổi cách hiểu.
+    /// Luôn <c>false</c>, cùng ý nghĩa với trường cùng tên của <see cref="AskResult"/>: giữ lại chỉ để
+    /// client cũ không vỡ.
     /// </param>
     public sealed record AskStreamMetaEvent(bool WeakPointHit) : AskStreamEvent;
 

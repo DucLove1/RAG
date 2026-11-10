@@ -5,8 +5,7 @@ namespace RAG.Class.Graph
     /// <summary>
     /// Null Object cho tầng đồ thị: luôn trả ngữ cảnh rỗng, không chạm Neo4j, không cần một biến
     /// môi trường nào. Được đăng ký khi <c>Graph:Enabled = false</c>, nhờ đó tầng dựng ngữ cảnh
-    /// không cần một dòng <c>if</c> nào cho cờ bật/tắt — cùng vai trò với
-    /// <see cref="Caching.NullSemanticAnswerCache"/>.
+    /// không cần một dòng <c>if</c> nào cho cờ bật/tắt.
     /// <para>
     /// Trả <see cref="GraphContext.Empty"/> chứ KHÔNG phải <c>DegradedEmpty</c>, và khác biệt đó có
     /// hệ quả thật: tắt đồ thị là một lựa chọn, không phải một sự cố, nên câu trả lời sinh ra lúc

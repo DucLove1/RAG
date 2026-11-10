@@ -3,6 +3,15 @@
 Tài liệu này để một phiên làm việc mới nắm được bối cảnh mà không phải đọc lại toàn bộ code.
 Chi tiết đầy đủ kèm số liệu đo: [docs/semantic-router-plan.md](docs/semantic-router-plan.md).
 
+> **Cập nhật 11/2026 — đã GỠ HẲN khỏi dự án:** node đối chiếu điểm yếu (`IWeakPointDetector`, cấu hình
+> `WeakPoint:*`, `Config/weak-point.json`) và cache câu trả lời theo ngữ nghĩa (`ISemanticAnswerCache`,
+> provider FAISS/Redis, cấu hình `SemanticAnswerCache:*`, endpoint `DELETE api/query/answer-cache`, gói
+> `Faiss.NET.*` và `NRedisStack`, `docker-compose.yml`). Trường `weakPointHit` vẫn còn trong response của
+> `ask` / `ask-stream` nhưng LUÔN là `false`, giữ lại để client cũ không vỡ. Các mục 4c, 5.13, 5.14, 6b
+> (phần Redis) và mọi chỗ nhắc hai node này bên dưới mô tả hành vi CŨ, giữ lại làm lịch sử.
+> Thêm vào đó: tri thức có **stage** (`[stage:n]` trong corpus, field `Stage` trong request), lọc TÍCH LŨY
+> (ở stage n biết dòng stage ≤ n) ở cả nhánh vector lẫn nhánh đồ thị — xem HUONG_DAN.md.
+
 ---
 
 ## 1. Dự án là gì
@@ -23,10 +32,9 @@ Mọi prompt phải giữ nguyên tắc này.
 | LLM chuẩn hóa | **Gemini** (`gemini-3.1-flash-lite`) qua HttpClient |
 | Embedding | **Gemini** (`models/gemini-embedding-2`), 768 chiều |
 | Vector store | **Qdrant Cloud** qua gRPC |
-| Cache câu trả lời | **Redis 8** + RediSearch (KNN cosine, FLAT) — tùy chọn, mặc định tắt |
 | Test | **Không có** (chưa có test project) |
 
-Chỉ 5 NuGet package: `DotNetEnv`, `Microsoft.AspNetCore.OpenApi`, `OpenAI`, `Qdrant.Client`, `NRedisStack`.
+Chỉ 5 NuGet package: `DotNetEnv`, `Microsoft.AspNetCore.OpenApi`, `Neo4j.Driver`, `OpenAI`, `Qdrant.Client`.
 
 ---
 
@@ -63,36 +71,13 @@ Người dùng có yêu cầu rõ ràng, đã áp dụng nhất quán trong toà
 1. Chuẩn hóa câu hỏi        (IQueryNormalizer, Gemini flash-lite, fail-open)
 2. Định tuyến ngữ nghĩa      (ISemanticRouter, bất đồng bộ, fail-open)
    ├─ khớp route  → AnswerWithoutRetrievalAsync  (BỎ QUA Qdrant, KHÔNG nhúng gì cả)
-   │                KHÔNG chạy bước 3 — xem bên dưới
-   └─ null        → 3. Đối chiếu điểm yếu  (ĐÃ GỠ — xem ghi chú ở mục 4c; luôn đi tiếp xuống truy hồi)
-                    ├─ TRÚNG       → câu kịch bản trong config + weakPointHit = true
-                    │                (KHÔNG truy hồi, KHÔNG gọi LLM trả lời)
-                    └─ không trúng → AnswerWithRetrievalAsync
-                                     (Embedding → CACHE NGỮ NGHĨA → Search → LLM → ghi cache)
+   └─ null        → AnswerWithRetrievalAsync
+                    (Embedding → dựng ngữ cảnh: Qdrant ‖ đồ thị song song → LLM)
 ```
 
-**Cache ngữ nghĩa nằm ĐÚNG SAU bước nhúng và TRƯỚC Qdrant.** Vector đã có sẵn ở đó nên tra cứu
-không tốn thêm lượt gọi API nào, và một lần trúng cắt bỏ cả truy hồi lẫn lượt gọi LLM trả lời.
-
-Đặt ở đầu pipeline thì tiết kiệm thêm được bước nhúng, nhưng nó sẽ nuốt luôn nhánh định tuyến và
-nhánh điểm yếu. Nhánh điểm yếu là chỗ chết người: cache khớp GẦN ĐÚNG, nên một câu chỉ hao hao câu
-chốt sẽ kích hoạt nhịp bắt bài cho người chơi chưa hề suy luận ra — mà kết quả lấy từ cache lại
-mang `weakPointHit = false`, nên game cũng không ghi nhận đó là sự kiện cốt truyện.
-
-Hệ quả đo được: với NPC **không có** mục trong `WeakPoint:Targets`, một lần trúng cache rút thời
-gian phản hồi từ ~5,3s xuống ~1,0s. Với Johny thì chỉ còn ~2x, vì lượt LLM đối chiếu điểm yếu chạy
-TRƯỚC seam cache nên không cắt được.
-
-**Bước 3 chỉ chạy trên nhánh nội dung game.** Khớp route nghĩa là câu này không hỏi nội dung game —
-mọi route hiện có (`chitchat`, `farewell`, `thanks`, `out_of_scope`) đều là thứ khác. Câu chốt bắt
-bài hung thủ thì luôn nói về vụ án, nên nó rơi vào nhánh `null`; chạy bộ phát hiện ở nhánh kia chỉ
-là đốt một lượt gọi LLM để luôn nhận về "không trúng". Đã đo: 4 câu khớp route (chào hỏi, cảm ơn,
-tạm biệt, ngoài phạm vi) gửi tới đúng NPC có điểm yếu → **0** lượt gọi bộ phát hiện.
-
-**Điều kiện an toàn của tối ưu này:** câu chốt phải không khớp route nào. Đã kiểm bằng `route-debug`
-— cả bản nguyên văn lẫn bản diễn đạt lại đều trả `matchedRoute: null`. Thêm một route mang **nội
-dung game** vào `SemanticRouter:Routes` sẽ âm thầm che mất bộ phát hiện trên nhánh đó; kiểm lại
-`route-debug` với câu chốt mỗi khi sửa bảng route.
+Khớp route nghĩa là câu này không hỏi nội dung game (`chitchat`, `farewell`, `thanks`, `out_of_scope`),
+nên trả lời mà không truy hồi. Không route nào khớp thì đi đường truy hồi. (Trước đây có thêm bước
+"đối chiếu điểm yếu" và "cache ngữ nghĩa" trên đường này — cả hai đã bị gỡ.)
 
 Cả ba bước đều đi qua **decorator cache** (`CachingQueryNormalizer`, `CachingSemanticRouter`,
 `CachingEmbeddingProvider`), nên câu lặp lại tốn 0 lần gọi Gemini: đo được 5.30s → 0.36s. Xem mục 4b.
@@ -119,8 +104,7 @@ nhánh truy hồi là cache hit, tổng vẫn đúng 1 lượt gọi API. **Đá
 | POST | `api/query/create-collection` | Tạo collection Qdrant |
 | POST | `api/query/route-debug` | **Chẩn đoán định tuyến** — trả đánh giá mọi route + `strategy`. Không chạm Qdrant; CÓ gọi LLM khi `Strategy = Llm` |
 | POST | `api/query/route-utterances` | **Thêm câu mẫu lúc chạy** (text hoặc vector), hiệu lực ngay |
-| GET | `api/query/cache-stats` | **Tỉ lệ trúng cache** hỏi đáp — gồm cả khối `semanticAnswer` (có thêm `errors`, vì tầng đó fail-open nên mọi lỗi đều bị nuốt) |
-| DELETE | `api/query/answer-cache` | **Xoá câu trả lời đã nhớ** của một NPC. Phải truyền cả `npcName` lẫn `npcSystem` — phân vùng cache tính theo cả hai |
+| GET | `api/query/cache-stats` | **Tỉ lệ trúng cache** hỏi đáp (chuẩn hóa, embedding, route) |
 | GET | `api/query/check-health` | Health check |
 
 `route-debug` là công cụ chính để tinh chỉnh route. Cố tình **không** đi qua cache định tuyến:
@@ -241,9 +225,8 @@ từ đĩa, câu cũ trúng cache ngay ở request đầu tiên.
 
 ## 4c. Node đối chiếu điểm yếu (`IWeakPointDetector`)
 
-> **ĐÃ GỠ KHỎI PIPELINE.** `AskPipeline` và `AskStreamPipeline` không còn gọi bộ phát hiện này; `weakPointHit`
-> trong response luôn là `false` (giữ lại để client cũ không vỡ). Các lớp `WeakPoint*`, cấu hình
-> `WeakPoint:*` và `Config/weak-point.json` còn nguyên nhưng không được dùng. Mục này mô tả hành vi CŨ.
+> **ĐÃ GỠ HẲN.** Các lớp `WeakPoint*`, `WeakPointConfig`, `Config/weak-point.json` và đăng ký DI đã bị xóa;
+> `weakPointHit` trong response luôn là `false` (giữ lại để client cũ không vỡ). Mục này mô tả hành vi CŨ.
 
 Khi người chơi hỏi trúng **câu chốt** của hung thủ, pipeline thoát ngay và trả về cờ `weakPointHit`
 để client chạy nhịp kịch bản của mình.
@@ -396,8 +379,6 @@ sau gửi `summary` + `history`. **Client tự quyết định khi nào compact.
   Lịch sử rỗng → prompt giống hệt bản cũ từng byte.
 - **Cache bị bỏ qua khi có lịch sử** — khóa của chúng chỉ là câu hỏi:
   - cache chuẩn hóa (`CachingQueryNormalizer`): cùng câu "hắn ở đâu?" khác lịch sử phải ra câu khác;
-  - cache câu trả lời ngữ nghĩa (pipeline dùng `NullSemanticAnswerCache` cho request đó): nếu
-    không, người chơi B nhận câu sinh cho mạch chuyện của người chơi A.
   - Cache định tuyến và cache embedding vẫn dùng bình thường — khóa là câu ĐÃ viết lại.
 - `Conversation:MaxTurns` (12): ask chỉ giữ N lượt cuối, **cắt chứ không báo lỗi** — client quên
   compact thì NPC chỉ quên bớt chuyện cũ.
@@ -589,9 +570,7 @@ RAG/
   Design game.docx                  thiết kế game — đọc khi cần hiểu domain
   Interface/
     IRagPipeline.cs                 IAskService / IIngestionService / IRouteDiagnostics / IRouteAdmin
-    AskResult.cs                    Answer + WeakPointHit; trả thẳng ra controller như IngestionResult
-    IWeakPointDetector.cs           DetectAsync() — node điểm yếu, xem §4c
-    WeakPointMatch.cs               lời thoại kịch bản khi bị bắt bài (không mang lại NpcName)
+    AskResult.cs                    Answer + WeakPointHit (luôn false); trả thẳng ra controller như IngestionResult
     IVectorStore.cs                 + VectorRecord, VectorHit, VectorSearchFilter (KHÔNG có kiểu Qdrant)
     ISemanticRouter.cs              RouteAsync() — KHÔNG nhận float[] (xem §3)
     IRouteExplainer.cs              ExplainAsync() — tách khỏi ISemanticRouter theo ISP
@@ -636,9 +615,6 @@ RAG/
       SemanticRouterWarmupService.cs
       FileRouteVectorCache.cs / NullRouteVectorCache.cs
       FileRouteUtteranceStore.cs / NullRouteUtteranceStore.cs
-    WeakPoint/
-      LlmWeakPointDetector.cs       LLM so ngữ nghĩa câu hỏi với câu chốt trong config — xem §4c
-      PassthroughWeakPointDetector.cs  Null Object khi tắt hoặc không có target
     Caching/
       MemoryQueryCache.cs           cache RAM có chặn trần / NullQueryCache.cs
       CachingQueryNormalizer.cs     decorator
@@ -688,6 +664,8 @@ Bốn ràng buộc của Render Disk (đã tra tài liệu):
 - Disk **chặn scale nhiều instance** → loại bỏ hẳn rủi ro nhiều container ghi đè cùng một file.
 
 ### Redis của cache ngữ nghĩa trên Render
+
+> **ĐÃ GỠ** cùng với cache câu trả lời ngữ nghĩa. Giữ lại phần dưới làm lịch sử.
 
 Tầng cache câu trả lời nằm NGOÀI tiến trình nên **không liên quan gì tới Disk** — nó gỡ luôn ba
 trong bốn ràng buộc ở trên: sống qua deploy mà không cần gói trả phí, và không chặn scale nhiều

@@ -15,15 +15,10 @@ namespace RAG.Class.Diagnostics.Timing
     internal static class AskBranchResolver
     {
         /// <summary>
-        /// Thứ tự kiểm PHẢI khớp thứ tự thoát sớm của pipeline: khớp route thì thoát ngay và bộ
-        /// phát hiện điểm yếu KHÔNG chạy, nên nhãn điểm yếu lúc đó VẮNG MẶT chứ không phải bằng
-        /// false. Đảo hai nhánh này thì một câu tán gẫu sẽ bị gán nhầm là truy hồi.
+        /// Khớp route thì pipeline thoát ngay và không truy hồi; còn lại là nhánh truy hồi.
         /// </summary>
         public static string Resolve(ILatencyTracker latency)
         {
-            if (latency.GetTag(LatencyTags.WeakPointHit) == LatencyTagValues.True)
-                return LatencyTagValues.BranchWeakPoint;
-
             var route = latency.GetTag(LatencyTags.Route);
 
             if (route is not null && route != LatencyTagValues.None)

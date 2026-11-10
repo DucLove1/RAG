@@ -3,8 +3,7 @@ using RAG.Interface;
 namespace RAG.Class.Diagnostics
 {
     /// <summary>
-    /// Null Object cho khi <c>Latency:Enabled = false</c>, cùng vai trò với <c>NullQueryCache</c> và
-    /// <c>NullSemanticAnswerCache</c>.
+    /// Null Object cho khi <c>Latency:Enabled = false</c>, cùng vai trò với <c>NullQueryCache</c>.
     /// <para>
     /// Thực tế nó gần như không bao giờ được gọi tới: khi tính năng tắt, DI không bọc decorator đo
     /// giờ nào cả nên không ai gọi. Nó tồn tại để phần đăng ký luôn thỏa được

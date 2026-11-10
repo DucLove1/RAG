@@ -26,7 +26,7 @@ namespace RAG.Extension.DependencyInjection
 
             // Options của Neo4j CHỈ đăng ký trong nhánh này. Đưa lên trên lời gọi Enabled thì
             // [Required] Password cộng ValidateOnStart sẽ chặn khởi động của mọi máy không có
-            // Neo4j — cùng cái bẫy mà AddSemanticAnswerCache đã ghi lại.
+            // Neo4j.
             services.AddValidatedOptions<Neo4jConfig>(configuration, Neo4jConfig.SectionName);
             services.AddValidatedOptions<GraphLoaderConfig>(configuration, GraphLoaderConfig.SectionName);
             services.AddValidatedOptions<GraphSchemaConfig>(configuration, GraphSchemaConfig.SectionName);

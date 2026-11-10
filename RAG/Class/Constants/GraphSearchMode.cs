@@ -7,8 +7,8 @@ namespace RAG.Class.Constants
     /// Hiện chỉ có một giá trị, và trường <c>Graph:Mode</c> vẫn tồn tại là CÓ CHỦ ĐÍCH: nó giữ sẵn
     /// chỗ cho global search. Khi giá trị thứ hai xuất hiện, hai cài đặt của <c>IGraphSearch</c> sẽ
     /// SỐNG CÙNG LÚC (chế độ tự động chạy local rồi lùi về global khi rỗng), nên lúc đó đây trở
-    /// thành khóa của Keyed Services — khác hẳn <see cref="AnswerCacheProvider"/>, nơi chỉ đúng một
-    /// provider tồn tại nên việc chọn nằm ở một <c>switch</c>.
+    /// thành khóa của Keyed Services — khác với <see cref="ChunkingStrategyKind"/>, nơi chỉ đúng một
+    /// chiến lược tồn tại nên việc chọn nằm ở một <c>switch</c>.
     /// </para>
     /// </summary>
     public enum GraphSearchMode

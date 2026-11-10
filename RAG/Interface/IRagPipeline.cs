@@ -7,8 +7,7 @@ namespace RAG.Interface
     {
         /// <param name="topK">Số đoạn ngữ cảnh lấy về khi đi đường truy hồi.</param>
         /// <returns>
-        /// Câu trả lời kèm cờ <c>WeakPointHit</c>. Cờ bật nghĩa là câu hỏi trúng điểm yếu của NPC
-        /// và pipeline đã thoát sớm: không truy hồi, không gọi LLM trả lời lần nào.
+        /// Câu trả lời kèm cờ <c>WeakPointHit</c> (luôn false, giữ lại để client cũ không vỡ).
         /// </returns>
         /// <param name="history">Lịch sử hội thoại client gửi kèm; <see cref="ConversationHistory.Empty"/> khi không có.</param>
         /// <param name="stage">
@@ -33,14 +32,8 @@ namespace RAG.Interface
     /// </para>
     /// <para>
     /// BẤT BIẾN của chuỗi sự kiện: đúng MỘT <see cref="AskStreamMetaEvent"/> luôn đi TRƯỚC mọi
-    /// <see cref="AskStreamTokenEvent"/>. Điều này khả thi ở cả ba nhánh vì thứ quyết định
-    /// <c>WeakPointHit</c> (bộ phát hiện điểm yếu, hoặc việc route đã khớp) luôn chạy xong trước
-    /// khi tồn tại token nào. ĐỪNG "tối ưu" bằng cách chạy bộ phát hiện song song với LLM: làm thế
-    /// là phá đúng bất biến này, và triệu chứng sẽ là client đôi khi vẽ xong câu thoại rồi mới biết
-    /// đó là nhịp bắt bài.
-    /// </para>
-    /// <para>
-    /// Số token có thể bằng 0 — lời thoại điểm yếu được phép để trống trong cấu hình.
+    /// <see cref="AskStreamTokenEvent"/>. Sự kiện này được phát sau bước nhúng chứ không sớm hơn, để
+    /// lỗi nhúng vẫn còn biến được thành mã HTTP đúng thay vì một sự kiện lỗi trong response 200.
     /// </para>
     /// <para>
     /// KHÔNG sinh sự kiện <see cref="AskStreamDoneEvent"/> hay <see cref="AskStreamErrorEvent"/>:

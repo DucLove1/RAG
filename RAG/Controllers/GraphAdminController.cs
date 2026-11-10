@@ -118,7 +118,6 @@ namespace RAG.Controllers
                 context.ExtraTextCount,
                 context.RelationCount,
                 context.GraphDegraded,
-                context.Cacheable,
                 TextChars = context.Text.Length,
                 GraphChars = context.Graph.Length,
                 UserPrompt = _prompts.BuildUserPrompt(request.NpcName, context.Text, context.Graph, request.Question)

@@ -40,7 +40,7 @@ namespace RAG.Controllers
         /// <summary>
         /// THAY ĐỔI CÓ THỂ PHÁ CLIENT: trước đây endpoint này trả về câu trả lời dưới dạng chuỗi
         /// trần (text/plain với client không gửi Accept: application/json). Nay nó trả về object
-        /// <c>{ "answer": "...", "weakPointHit": false }</c> để client đọc được cờ trúng điểm yếu.
+        /// <c>{ "answer": "...", "weakPointHit": false }</c> (weakPointHit luôn false, giữ lại để client cũ không vỡ).
         /// Client cũ đọc thẳng body làm lời NPC sẽ hiển thị nguyên cục JSON chứ không báo lỗi.
         /// </summary>
         [HttpPost("ask")]

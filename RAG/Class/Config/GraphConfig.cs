@@ -123,6 +123,18 @@ namespace RAG.Class.Config
         /// </para>
         /// </summary>
         public bool AllowShareSpillover { get; set; } = false;
+
+        /// <summary>
+        /// Giữ bảng "mã chunk → stage" trong RAM bao nhiêu phút trước khi đọc lại corpus.
+        /// <para>
+        /// Bảng này quyết định dòng nào của màn sau bị giấu khỏi đồ thị. Nó chỉ đổi khi sửa corpus,
+        /// mà sửa corpus thì đằng nào cũng phải nạp lại Qdrant và đồ thị — nên đây là độ trễ tối đa
+        /// giữa lúc sửa file và lúc bộ lọc stage của đồ thị thấy thay đổi, cùng vai trò với
+        /// <c>Graph:Extraction:CatalogCacheMinutes</c>.
+        /// </para>
+        /// </summary>
+        [Range(1, 1440)]
+        public int StageIndexCacheMinutes { get; set; } = 30;
     }
 
     /// <summary>Núm của đường NẠP dữ liệu vào Neo4j. Toàn bộ là thao tác quản trị, không phải đường trả lời.</summary>

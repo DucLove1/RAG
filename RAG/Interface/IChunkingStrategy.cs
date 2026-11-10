@@ -12,7 +12,13 @@ namespace RAG.Interface
     /// dòng.
     /// </para>
     /// </param>
-    public sealed record TextSegment(string Text, int? Ordinal);
+    /// <param name="Stage">
+    /// Giai đoạn mạch chuyện mà dòng này chỉ nên hiển thị khi khớp, lấy từ tiền tố
+    /// <c>[stage:...]</c> ở đầu dòng gốc (xem <see cref="RAG.Class.Ingestion.LineChunker"/>).
+    /// <c>null</c> khi dòng không có tiền tố — nghĩa là luôn hiển thị, bất kể request có gửi
+    /// stage gì.
+    /// </param>
+    public sealed record TextSegment(string Text, int? Ordinal, string? Stage = null);
 
     /// <summary>
     /// Cắt một văn bản dài thành các đoạn để nhúng.

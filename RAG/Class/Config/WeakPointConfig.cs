@@ -12,6 +12,16 @@ namespace RAG.Class.Config
         public string NpcName { get; set; } = string.Empty;
 
         /// <summary>
+        /// Giai đoạn mạch chuyện mà điểm yếu này chỉ áp dụng. Để trống thì áp dụng ở MỌI giai
+        /// đoạn — đây cũng là hành vi duy nhất trước khi tính năng stage tồn tại, nên cấu hình cũ
+        /// không phải sửa gì. Có giá trị thì <see cref="RAG.Class.WeakPoint.LlmWeakPointDetector"/>
+        /// chỉ dùng target này khi request khai ĐÚNG stage đó, và một target khác của cùng
+        /// <see cref="NpcName"/> nhưng để trống <see cref="Stage"/> vẫn có thể tồn tại song song
+        /// làm phương án lùi cho các stage chưa khai riêng.
+        /// </summary>
+        public string? Stage { get; set; }
+
+        /// <summary>
         /// Câu chốt viết ở dạng ĐÃ CHUẨN HÓA (đủ dấu, không viết tắt) vì node nhận câu hỏi đã qua
         /// bước chuẩn hóa. Đây là các câu MẪU đưa cho LLM tự so ngữ nghĩa, không phải chuỗi đem đi
         /// so bằng: người chơi diễn đạt kiểu khác hẳn vẫn phải trúng.
@@ -172,20 +182,23 @@ namespace RAG.Class.Config
                     new[] { nameof(UserPromptTemplate) });
             }
 
-            // Trùng tên NPC là lỗi câm giống hệt trùng tên route: từ điển của node âm thầm nuốt mất
-            // một mục, và không có gì báo rằng danh sách câu chốt thứ hai không bao giờ được dùng.
+            // Trùng cặp (NpcName, Stage) là lỗi câm giống hệt trùng tên route: từ điển của node âm
+            // thầm nuốt mất một mục, và không có gì báo rằng danh sách câu chốt thứ hai không bao
+            // giờ được dùng. So theo CẶP chứ không theo NpcName đơn: từ khi có Stage, hai target
+            // CÙNG NpcName nhưng KHÁC Stage là hợp lệ — đó chính là cách khai một điểm yếu riêng
+            // cho một giai đoạn cụ thể cạnh target áp dụng mọi giai đoạn còn lại.
             var duplicates = Targets
-                .Select(target => target.NpcName)
-                .Where(name => !string.IsNullOrWhiteSpace(name))
-                .GroupBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .Where(target => !string.IsNullOrWhiteSpace(target.NpcName))
+                .Select(target => $"{target.NpcName}\u0001{target.Stage ?? string.Empty}")
+                .GroupBy(key => key, StringComparer.OrdinalIgnoreCase)
                 .Where(group => group.Count() > 1)
-                .Select(group => group.Key)
+                .Select(group => group.Key.Split('\u0001')[0])
                 .ToList();
 
             if (duplicates.Count > 0)
             {
                 yield return new ValidationResult(
-                    $"WeakPoint:Targets có NpcName trùng (không phân biệt hoa thường): {string.Join(", ", duplicates)}.",
+                    $"WeakPoint:Targets có cặp (NpcName, Stage) trùng (không phân biệt hoa thường): {string.Join(", ", duplicates)}.",
                     new[] { nameof(Targets) });
             }
         }

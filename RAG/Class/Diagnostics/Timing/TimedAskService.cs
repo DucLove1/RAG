@@ -29,6 +29,7 @@ namespace RAG.Class.Diagnostics.Timing
                                               string question,
                                               ConversationHistory history,
                                               int topK,
+                                              string? stage = null,
                                               CancellationToken cancellationToken = default)
         {
             using var session = _sessions.Begin(LatencyOperations.Ask);
@@ -42,7 +43,7 @@ namespace RAG.Class.Diagnostics.Timing
             // không thì đúng những request đáng điều tra nhất lại là những request thiếu thông tin nhất.
             try
             {
-                return await _inner.AskAsync(npcName, npcSystem, question, history, topK, cancellationToken);
+                return await _inner.AskAsync(npcName, npcSystem, question, history, topK, stage, cancellationToken);
             }
             finally
             {

@@ -25,8 +25,14 @@ namespace RAG.Interface
         /// Câu hỏi ĐÃ CHUẨN HÓA — cùng lý do với <see cref="ISemanticRouter"/>, và các câu chốt
         /// trong cấu hình cũng được viết ở dạng chuẩn.
         /// </param>
+        /// <param name="stage">
+        /// Giai đoạn mạch chuyện hiện tại, do client gửi lên. Ưu tiên target khai đúng
+        /// <c>Stage</c> này; không có thì lùi về target không khai <c>Stage</c> (áp dụng mọi giai
+        /// đoạn) — xem <see cref="RAG.Class.Config.WeakPointTargetConfig.Stage"/>.
+        /// </param>
         Task<WeakPointMatch?> DetectAsync(string npcName,
                                           string question,
+                                          string? stage = null,
                                           CancellationToken cancellationToken = default);
     }
 }

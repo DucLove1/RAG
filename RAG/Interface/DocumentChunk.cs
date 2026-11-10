@@ -16,9 +16,15 @@ namespace RAG.Interface
     /// được. Đây là khóa ghép với đồ thị tri thức.
     /// </param>
     /// <param name="Metadata">Siêu dữ liệu của tài liệu chứa đoạn này, đi thẳng vào payload.</param>
+    /// <param name="Stage">
+    /// Giai đoạn mạch chuyện riêng của ĐOẠN này (từ <see cref="TextSegment.Stage"/>), KHÔNG lấy
+    /// từ <paramref name="Metadata"/> của cả file — đây là lý do nó là tham số riêng chứ không
+    /// nằm trong front matter. <c>null</c> nghĩa là đoạn luôn hiển thị.
+    /// </param>
     public sealed record DocumentChunk(string NpcNames,
                                        string Text,
                                        string? Source,
                                        string? ChunkCode,
-                                       IReadOnlyDictionary<string, string> Metadata);
+                                       IReadOnlyDictionary<string, string> Metadata,
+                                       string? Stage = null);
 }

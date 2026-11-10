@@ -10,7 +10,7 @@ namespace RAG.Class.Graph
     {
         private static readonly Task<NpcEntityCatalog> Nothing = Task.FromResult(NpcEntityCatalog.Empty);
 
-        public Task<NpcEntityCatalog> GetAsync(string npcName, CancellationToken cancellationToken = default) =>
+        public Task<NpcEntityCatalog> GetAsync(GraphScope scope, CancellationToken cancellationToken = default) =>
             Nothing;
     }
 }

@@ -44,13 +44,14 @@ namespace RAG.Interface
         public static GraphStoreResult<T> Unavailable { get; } = new(Array.Empty<T>(), Failed: true);
     }
 
+    /// <param name="Scope">NPC đang được hỏi và những dòng chưa được hé lộ ở stage hiện tại.</param>
     /// <param name="EntityNames">
     /// Tên CHUẨN của thực thể hạt giống, theo thứ tự trọng tâm. Thứ tự này là thứ hạng nhóm khi chia
     /// lượt cạnh, nên không được sắp lại.
     /// </param>
     /// <param name="IntentRelationTypes">Loại quan hệ câu hỏi muốn biết. Chỉ để ƯU TIÊN cạnh, không lọc.</param>
     /// <param name="ReasoningOnly">Chỉ giữ quan hệ mang lập luận. Xem <c>Graph:Search:ReasoningRelationsOnly</c>.</param>
-    public sealed record GraphExpansionRequest(string NpcName,
+    public sealed record GraphExpansionRequest(GraphScope Scope,
                                                IReadOnlyList<string> EntityNames,
                                                IReadOnlyList<string> IntentRelationTypes,
                                                bool ReasoningOnly,
@@ -75,10 +76,10 @@ namespace RAG.Interface
                                                       CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Danh mục thực thể NPC được biết, chịu cùng bộ lọc quyền với truy vấn mở rộng. NPC không
-        /// tồn tại thì trả danh sách rỗng, không phải lỗi.
+        /// Danh mục thực thể NPC được biết, chịu cùng bộ lọc quyền VÀ bộ lọc stage với truy vấn mở
+        /// rộng. NPC không tồn tại thì trả danh sách rỗng, không phải lỗi.
         /// </summary>
-        Task<GraphStoreResult<GraphCatalogEntry>> ListKnownEntitiesAsync(string npcName,
+        Task<GraphStoreResult<GraphCatalogEntry>> ListKnownEntitiesAsync(GraphScope scope,
                                                                          CancellationToken cancellationToken = default);
     }
 

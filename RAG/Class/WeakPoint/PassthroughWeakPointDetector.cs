@@ -11,6 +11,7 @@ namespace RAG.Class.WeakPoint
     {
         public Task<WeakPointMatch?> DetectAsync(string npcName,
                                                  string question,
+                                                 string? stage = null,
                                                  CancellationToken cancellationToken = default) =>
             Task.FromResult<WeakPointMatch?>(null);
     }

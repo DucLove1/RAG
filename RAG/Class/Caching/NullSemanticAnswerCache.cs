@@ -23,7 +23,10 @@ namespace RAG.Class.Caching
         public Task SetAsync(SemanticAnswerQuery query, string answer, bool hasContext, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
-        public Task<long> PurgeAsync(string npcName, string npcPersona, CancellationToken cancellationToken = default) =>
+        public Task<long> PurgeAsync(string npcName,
+                                     string npcPersona,
+                                     string? stage = null,
+                                     CancellationToken cancellationToken = default) =>
             Task.FromResult(0L);
 
         public SemanticAnswerCacheStats GetStats() => new(0, 0, 0, 0);

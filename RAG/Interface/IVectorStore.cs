@@ -16,14 +16,35 @@ namespace RAG.Interface
     public sealed record PayloadMatchCondition(string Field, string Value);
 
     /// <summary>
-    /// Bộ lọc payload đi kèm truy vấn. Mọi điều kiện phải cùng đúng (AND).
+    /// Bộ lọc payload đi kèm truy vấn. Mọi điều kiện trong <see cref="Must"/> phải cùng đúng
+    /// (AND); <see cref="StageField"/>/<see cref="StageValues"/> thêm đúng MỘT điều kiện kiểu khác:
+    /// trường đó phải RỖNG (không gắn) HOẶC khớp MỘT TRONG các giá trị — xem <see cref="WithStage"/>.
     /// </summary>
-    public sealed record VectorSearchFilter(IReadOnlyList<PayloadMatchCondition> Must)
+    public sealed record VectorSearchFilter(IReadOnlyList<PayloadMatchCondition> Must,
+                                            string? StageField = null,
+                                            IReadOnlyList<string>? StageValues = null)
     {
         public static VectorSearchFilter None { get; } = new(Array.Empty<PayloadMatchCondition>());
 
         public static VectorSearchFilter Match(string field, string value) =>
             new(new[] { new PayloadMatchCondition(field, value) });
+
+        /// <summary>
+        /// Thêm điều kiện "trường <paramref name="field"/> rỗng HOẶC khớp một trong
+        /// <paramref name="values"/>", giữ nguyên mọi điều kiện <see cref="Must"/> đã có.
+        /// <para>
+        /// "Rỗng" ở đây nghĩa là payload không có khóa đó — đúng hệt những chunk không bao giờ
+        /// gắn tiền tố <c>[stage:...]</c>. Nhờ vậy một NPC không dùng tính năng stage không bị
+        /// ảnh hưởng gì khi filter này được áp lên: toàn bộ chunk của NPC đó rỗng trường stage,
+        /// nên nhánh "rỗng" của OR luôn đúng.
+        /// </para>
+        /// <para>
+        /// Nhận DANH SÁCH giá trị để diễn đạt luật tích lũy: ở stage 3 truyền <c>["1","2","3"]</c>.
+        /// Danh sách rỗng là hợp lệ và nghĩa là chỉ còn các dòng không gắn stage.
+        /// </para>
+        /// </summary>
+        public VectorSearchFilter WithStage(string field, IReadOnlyList<string> values) =>
+            this with { StageField = field, StageValues = values };
     }
 
     /// <summary>

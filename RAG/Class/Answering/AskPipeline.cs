@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using RAG.Class.Caching;
 using RAG.Class.Config;
 using RAG.Class.Constants;
 using RAG.Class.Dto;
@@ -26,7 +25,6 @@ namespace RAG.Class.Answering
         private readonly IQueryNormalizer _queryNormalizer;
         private readonly ISemanticRouter _semanticRouter;
         private readonly IWeakPointDetector _weakPointDetector;
-        private readonly ISemanticAnswerCache _answerCache;
         private readonly IConversationFormatter _conversationFormatter;
         private readonly PromptConfig _promptConfig;
 
@@ -37,7 +35,6 @@ namespace RAG.Class.Answering
                            IQueryNormalizer queryNormalizer,
                            ISemanticRouter semanticRouter,
                            IWeakPointDetector weakPointDetector,
-                           ISemanticAnswerCache answerCache,
                            IConversationFormatter conversationFormatter,
                            IOptions<PromptConfig> promptConfig)
         {
@@ -48,7 +45,6 @@ namespace RAG.Class.Answering
             _queryNormalizer = queryNormalizer;
             _semanticRouter = semanticRouter;
             _weakPointDetector = weakPointDetector;
-            _answerCache = answerCache;
             _conversationFormatter = conversationFormatter;
             _promptConfig = promptConfig.Value;
         }
@@ -58,6 +54,7 @@ namespace RAG.Class.Answering
                                               string question,
                                               ConversationHistory history,
                                               int topK,
+                                              string? stage = null,
                                               CancellationToken cancellationToken = default)
         {
             // Client quên compact thì NPC chỉ quên bớt chuyện cũ, prompt không phình vô hạn.
@@ -98,7 +95,7 @@ namespace RAG.Class.Answering
             // Từ đây trở xuống là đường nội dung game. Bộ phát hiện tự thoát ở phép tra từ điển khi
             // NPC không có mục trong WeakPoint:Targets, nên chi phí thực tế là một lượt gọi cho các
             // câu hỏi vụ án gửi tới ĐÚNG những NPC có điểm yếu.
-            var weakPoint = await _weakPointDetector.DetectAsync(npcName, normalizedQuestion, cancellationToken);
+            var weakPoint = await _weakPointDetector.DetectAsync(npcName, normalizedQuestion, stage, cancellationToken);
 
             // Trúng thì KHÔNG truy hồi và KHÔNG gọi LLM trả lời: câu NPC nói lúc bị bắt bài là một
             // nhịp kịch bản, để LLM diễn đạt lại thì mỗi lần chơi ra một kiểu và mất tính xác định.
@@ -106,7 +103,7 @@ namespace RAG.Class.Answering
                 return new AskResult(weakPoint.Reply, WeakPointHit: true);
 
             var answer = await AnswerWithRetrievalAsync(
-                npcName, npcSystem, normalizedQuestion, history, topK, lengthInstruction, cancellationToken);
+                npcName, npcSystem, normalizedQuestion, history, topK, stage, lengthInstruction, cancellationToken);
 
             return new AskResult(answer, WeakPointHit: false);
         }
@@ -151,56 +148,20 @@ namespace RAG.Class.Answering
                                                             string question,
                                                             ConversationHistory history,
                                                             int topK,
+                                                            string? stage,
                                                             string lengthInstruction,
                                                             CancellationToken cancellationToken)
         {
             var questionEmbedding = await _embeddingProvider.GetEmbeddingsAsync(question, cancellationToken);
 
-            // Cache ngữ nghĩa nằm ĐÚNG SAU bước nhúng và TRƯỚC Qdrant: vector vừa có ở dòng trên,
-            // nên một lần trúng cache cắt bỏ đúng hai thứ đắt nhất còn lại của request — truy hồi
-            // và lượt gọi LLM — mà không phát sinh thêm lời gọi API nào.
-            //
-            // Đặt ở đầu AskAsync thì tiết kiệm thêm được cả bước nhúng, nhưng lúc đó chưa có
-            // vector, và quan trọng hơn là nó sẽ nuốt luôn nhánh định tuyến lẫn nhánh điểm yếu.
-            // Nhánh điểm yếu là chỗ chết người: cache khớp GẦN ĐÚNG, nên một câu chỉ hao hao câu
-            // chốt sẽ kích hoạt nhịp bắt bài cho người chơi chưa hề suy luận ra — mà AskResult trả
-            // về từ cache lại mang WeakPointHit = false, nên game cũng không ghi nhận đó là sự
-            // kiện cốt truyện. Nó còn đóng băng cả câu tán gẫu, vốn phải đổi giọng mỗi lần gặp.
-            var cacheQuery = new SemanticAnswerQuery(npcName, npcSystem, question, questionEmbedding);
-            var answerCache = AnswerCacheFor(history);
+            var context = await _contextBuilder.BuildAsync(
+                npcName, question, questionEmbedding, topK, stage, cancellationToken);
 
-            var cached = await answerCache.TryGetAsync(cacheQuery, cancellationToken);
-            if (cached is not null)
-                return cached.Answer;
-
-            var context = await _contextBuilder.BuildAsync(npcName, question, questionEmbedding, topK, cancellationToken);
-
-            var answer = await _llmProvider.AskAsync(
+            return await _llmProvider.AskAsync(
                 _promptConfig.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
                 _conversationFormatter.PrependToAnswerPrompt(
                     history, _promptConfig.BuildUserPrompt(npcName, context.Text, context.Graph, question)),
                 cancellationToken: cancellationToken);
-
-            // Cờ hasContext để cache tự quyết định có ghi hay không: caller biết truy hồi có ra gì
-            // không, cache thì không. Cùng kiểu chia việc với tham số unchanged của
-            // INormalizationCache. Câu trả lời dựng trên ngữ cảnh rỗng gần như luôn là "tôi không
-            // biết", ghi lại là đóng băng một lần Qdrant hụt thành câu trả lời chính thức. Cacheable
-            // còn loại cả câu trả lời dựng lúc đồ thị hỏng: nó sẽ được phục vụ tiếp sau khi đồ thị
-            // đã sống lại.
-            await answerCache.SetAsync(cacheQuery, answer, hasContext: context.Cacheable, cancellationToken);
-
-            return answer;
         }
-
-        /// <summary>
-        /// Có lịch sử hội thoại thì KHÔNG đọc cũng KHÔNG ghi cache ngữ nghĩa. Cache khớp theo câu hỏi
-        /// trong phân vùng NPC + persona, nhưng câu trả lời giờ phụ thuộc cả mạch chuyện: đọc thì người
-        /// chơi B nhận câu sinh cho mạch chuyện của người chơi A, ghi thì đóng băng một câu nối tiếp
-        /// thành câu trả lời chính thức cho người hỏi lần đầu.
-        /// </summary>
-        private ISemanticAnswerCache AnswerCacheFor(ConversationHistory history) =>
-            history.IsEmpty ? _answerCache : ConversationBypassCache;
-
-        private static readonly ISemanticAnswerCache ConversationBypassCache = new NullSemanticAnswerCache();
     }
 }

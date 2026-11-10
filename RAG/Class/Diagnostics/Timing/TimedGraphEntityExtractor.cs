@@ -23,12 +23,12 @@ namespace RAG.Class.Diagnostics.Timing
             _latency = latency;
         }
 
-        public async Task<GraphExtraction> ExtractAsync(string npcName,
+        public async Task<GraphExtraction> ExtractAsync(GraphScope scope,
                                                         string question,
                                                         CancellationToken cancellationToken = default)
         {
             var extraction = await _latency.TrackAsync(
-                LatencyStages.GraphExtract, () => _inner.ExtractAsync(npcName, question, cancellationToken));
+                LatencyStages.GraphExtract, () => _inner.ExtractAsync(scope, question, cancellationToken));
 
             // Chỉ ghi SỐ LƯỢNG, không ghi tên thực thể: tên là nội dung vụ án, và log của server game
             // thường được nhiều người xem hơn là người chơi.

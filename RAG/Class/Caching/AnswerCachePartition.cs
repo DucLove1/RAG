@@ -26,7 +26,16 @@ namespace RAG.Class.Caching
         /// đường đọc và đường ghi.
         /// </para>
         /// </summary>
-        public static string Tag(string npcName, string npcPersona) => Hash(npcName + ' ' + npcPersona);
+        /// <param name="stage">
+        /// Stage của request. <c>null</c> cho ra ĐÚNG giá trị băm của bản trước khi có tính năng stage,
+        /// nên mọi entry đã lưu cho request không gửi stage vẫn trúng. Có stage thì nối sau một ký tự
+        /// ngăn không thể gõ được (<see cref="AnswerCacheFields.StageSeparator"/>): ngăn bằng khoảng
+        /// trắng thì persona "x 1" không stage và persona "x" ở stage "1" băm ra cùng một phân vùng.
+        /// </param>
+        public static string Tag(string npcName, string npcPersona, string? stage = null) =>
+            Hash(stage is null
+                ? npcName + ' ' + npcPersona
+                : npcName + ' ' + npcPersona + AnswerCacheFields.StageSeparator + stage);
 
         /// <summary>
         /// Danh tính của một câu hỏi TRONG một phân vùng. Đây là thứ làm cho việc hỏi lại ĐÚNG câu

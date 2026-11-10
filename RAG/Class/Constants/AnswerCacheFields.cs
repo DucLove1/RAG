@@ -40,6 +40,14 @@ namespace RAG.Class.Constants
         public const int TagLength = 32;
 
         /// <summary>
+        /// Ký tự ngăn stage khỏi (tên NPC + persona) trước khi băm tag phân vùng. Là ký tự điều khiển
+        /// UNIT SEPARATOR: không client nào gõ được nó vào persona, nên không có cặp (persona, stage)
+        /// nào nối ra trùng chuỗi với một cặp khác. Đổi giá trị này là đổi mọi tag có stage — toàn bộ
+        /// entry có stage sẽ thành mồ côi.
+        /// </summary>
+        public const char StageSeparator = '\u001F';
+
+        /// <summary>
         /// DIALECT của truy vấn. Cú pháp KNN kèm bộ lọc trước ("(filter)=>[KNN ...]") CHỈ tồn tại
         /// từ dialect 2; chạy ở dialect 1 thì RediSearch coi cả chuỗi là văn bản cần tìm và trả về
         /// rỗng, không báo lỗi.

@@ -37,10 +37,16 @@ namespace RAG.Interface
     /// </summary>
     public interface IAskContextBuilder
     {
+        /// <param name="stage">
+        /// Giai đoạn mạch chuyện hiện tại của NPC, do client tự xác định và gửi lên; <c>null</c>
+        /// hoặc rỗng thì KHÔNG lọc theo stage — trả về như trước khi có tính năng này. Có giá trị
+        /// thì chỉ lấy những chunk không gắn stage HOẶC gắn đúng stage đó.
+        /// </param>
         Task<AskContext> BuildAsync(string npcName,
                                     string question,
                                     float[] questionEmbedding,
                                     int topK,
+                                    string? stage = null,
                                     CancellationToken cancellationToken = default);
     }
 }

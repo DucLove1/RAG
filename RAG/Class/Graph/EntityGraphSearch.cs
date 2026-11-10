@@ -21,26 +21,42 @@ namespace RAG.Class.Graph
     /// xếp nằm trong MỘT câu Cypher (<see cref="GraphCypher.ExpandTemplate"/>) chứ không rải ra đây,
     /// vì làm ở đây nghĩa là kéo về ứng dụng những cạnh mà NPC không được phép nhìn thấy rồi mới bỏ đi.
     /// </para>
+    /// <para>
+    /// STAGE: <see cref="GraphScope"/> dựng MỘT lần ở đầu lượt tra rồi đi qua cả ba chỗ lọc — danh
+    /// mục trích thực thể, truy vấn mở rộng, và mã dòng gửi đi tra nguyên văn. Chỗ cuối là việc của
+    /// lớp này: dòng liền kề tính bằng số học nên Cypher không bao giờ thấy chúng, và <c>L8</c> liền
+    /// kề một dòng hợp lệ hoàn toàn có thể là dòng của màn sau.
+    /// </para>
     /// </summary>
     public sealed class EntityGraphSearch : IGraphSearch
     {
         private readonly IGraphEntityExtractor _extractor;
         private readonly IGraphStore _store;
+        private readonly IGraphScopeResolver _scopeResolver;
         private readonly GraphSearchConfig _config;
 
         public EntityGraphSearch(IGraphEntityExtractor extractor,
                                  IGraphStore store,
+                                 IGraphScopeResolver scopeResolver,
                                  IOptions<GraphSearchConfig> config)
         {
             _extractor = extractor;
             _store = store;
+            _scopeResolver = scopeResolver;
             _config = config.Value;
         }
 
         public async Task<GraphContext> SearchAsync(GraphSearchQuery query,
                                                     CancellationToken cancellationToken = default)
         {
-            var extraction = await _extractor.ExtractAsync(query.NpcName, query.Question, cancellationToken);
+            var scope = await _scopeResolver.ResolveAsync(query.NpcName, query.Stage, cancellationToken);
+
+            // Không biết dòng nào thuộc stage nào thì KHÔNG tra không lọc: suy biến về RAG thuần, và cờ
+            // Degraded chặn câu trả lời lúc này khỏi bị ghi vào cache.
+            if (scope is null)
+                return GraphContext.DegradedEmpty;
+
+            var extraction = await _extractor.ExtractAsync(scope, query.Question, cancellationToken);
 
             // Suy biến phải đi lên tới tầng cache: "không trích được" và "câu hỏi không nhắc thực thể
             // nào" cùng cho ra 0 cạnh, nhưng câu trả lời của trường hợp đầu không được phép vào cache.
@@ -54,7 +70,7 @@ namespace RAG.Class.Graph
             var budget = query.RelationBudget > 0 ? query.RelationBudget : _config.MaxRelations;
 
             var expansion = await _store.ExpandAsync(
-                new GraphExpansionRequest(query.NpcName,
+                new GraphExpansionRequest(scope,
                                           extraction.Entities,
                                           extraction.RelationTypes,
                                           _config.ReasoningRelationsOnly,
@@ -88,7 +104,9 @@ namespace RAG.Class.Graph
 
                 foreach (var code in edge.ChunkCodes)
                 {
-                    if (codes.Add(code))
+                    // Cypher đã bỏ dòng của stage sau khỏi ma_chunk; lọc lại ở đây vì cùng lý do mà
+                    // bước tra nguyên văn lọc lại quyền NPC — mã do đồ thị chọn không được tin suông.
+                    if (!scope.IsHidden(code) && codes.Add(code))
                         supporting.Add(code);
 
                     // Dòng liền kề tính bằng SỐ HỌC ngay ở đây, không hỏi đồ thị. Đồ thị không chứa
@@ -96,7 +114,7 @@ namespace RAG.Class.Graph
                     // tồn tại và bước tra văn bản chỉ đơn giản không tìm thấy.
                     foreach (var neighbour in ChunkCodes.Neighbours(code, _config.AdjacentLineRadius))
                     {
-                        if (codes.Add(neighbour))
+                        if (!scope.IsHidden(neighbour) && codes.Add(neighbour))
                             supporting.Add(neighbour);
                     }
                 }

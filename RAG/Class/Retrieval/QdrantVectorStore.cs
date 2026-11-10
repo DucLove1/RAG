@@ -62,6 +62,8 @@ namespace RAG.Class.Retrieval
 
                 if (!collections.Contains(_config.Collection))
                     await CreateCollectionAsync(dimension, cancellationToken);
+                else
+                    await EnsureStageIndexAsync(cancellationToken);
 
                 _ensured = true;
             }
@@ -142,6 +144,33 @@ namespace RAG.Class.Retrieval
             return results;
         }
 
+        /// <summary>
+        /// Bổ sung index <c>stage</c> cho collection ĐÃ CÓ.
+        /// <para>
+        /// Index chỉ được tạo cùng lúc tạo collection, nên một collection dựng trước khi có tính năng
+        /// stage không bao giờ có nó — và Qdrant từ chối mọi truy vấn lọc theo trường chưa có index
+        /// (<c>Index required but not found for "stage"</c>), tức là MỌI request có gửi Stage chết bằng
+        /// 500 dù nạp lại corpus bao nhiêu lần. Chỉ kiểm đúng index này: các index cũ đã tồn tại từ
+        /// trước tính năng, và tạo lại một index Text với tham số khác có thể ghi đè cấu hình của nó.
+        /// </para>
+        /// </summary>
+        private async Task EnsureStageIndexAsync(CancellationToken cancellationToken)
+        {
+            var info = await _client.GetCollectionInfoAsync(_config.Collection, cancellationToken);
+
+            if (info.PayloadSchema.ContainsKey(PayloadFields.Stage))
+                return;
+
+            _logger.LogInformation("Collection {Collection} chưa có index '{Field}', đang tạo.",
+                _config.Collection, PayloadFields.Stage);
+
+            await _client.CreatePayloadIndexAsync(
+                collectionName: _config.Collection,
+                fieldName: PayloadFields.Stage,
+                schemaType: PayloadSchemaType.Keyword,
+                cancellationToken: cancellationToken);
+        }
+
         public async Task CreateCollectionAsync(ulong dimension, CancellationToken cancellationToken = default)
         {
             await _client.CreateCollectionAsync(_config.Collection, new VectorParams
@@ -162,6 +191,14 @@ namespace RAG.Class.Retrieval
             await _client.CreatePayloadIndexAsync(
                 collectionName: _config.Collection,
                 fieldName: PayloadFields.DocId,
+                schemaType: PayloadSchemaType.Keyword,
+                cancellationToken: cancellationToken);
+
+            // Keyword, cùng lý do với ChunkCode/DocId: stage là định danh so khớp nguyên chuỗi,
+            // không phải văn bản cần tách token.
+            await _client.CreatePayloadIndexAsync(
+                collectionName: _config.Collection,
+                fieldName: PayloadFields.Stage,
                 schemaType: PayloadSchemaType.Keyword,
                 cancellationToken: cancellationToken);
 
@@ -201,6 +238,7 @@ namespace RAG.Class.Retrieval
         public async Task<IReadOnlyDictionary<string, ChunkText>> GetByCodesAsync(
             string npcName,
             IReadOnlyCollection<string> codes,
+            string? stage = null,
             CancellationToken cancellationToken = default)
         {
             var found = new Dictionary<string, ChunkText>(StringComparer.Ordinal);
@@ -211,6 +249,10 @@ namespace RAG.Class.Retrieval
             var filter = new Filter();
             filter.Must.Add(Conditions.Match(PayloadFields.ChunkCode, codes.ToList()));
             filter.Must.Add(Translate(PayloadFields.NpcNames, npcName));
+
+            // Cùng luật tích lũy với truy hồi KNN: dùng chung AddStage để hai đường không lệch nhau.
+            if (!string.IsNullOrWhiteSpace(stage))
+                AddStage(filter, VectorSearchFilter.None.WithStage(PayloadFields.Stage, StageCatalog.RevealedAt(stage)));
 
             var points = await _client.ScrollAsync(
                 collectionName: _config.Collection,
@@ -251,7 +293,7 @@ namespace RAG.Class.Retrieval
         /// </summary>
         private Filter? Translate(VectorSearchFilter filter)
         {
-            if (filter.Must.Count == 0)
+            if (filter.Must.Count == 0 && filter.StageField is null)
                 return null;
 
             var translated = new Filter();
@@ -259,7 +301,41 @@ namespace RAG.Class.Retrieval
             foreach (var condition in filter.Must)
                 translated.Must.Add(Translate(condition.Field, condition.Value));
 
+            AddStage(translated, filter);
+
             return translated;
+        }
+
+        /// <summary>
+        /// Thêm điều kiện stage vào <paramref name="target"/> ở dạng "rỗng HOẶC khớp một trong các
+        /// giá trị".
+        /// <para>
+        /// "Should" cạnh "Must" trong Qdrant nghĩa là AND: điểm phải khớp HẾT Must, VÀ khớp ÍT NHẤT
+        /// MỘT điều kiện trong Should. Các điều kiện Should dưới đây — "trường rỗng" và "trường khớp
+        /// một trong các giá trị" — vì vậy diễn đúng thành "rỗng HOẶC khớp" mà
+        /// <see cref="VectorSearchFilter.WithStage"/> mô tả.
+        /// </para>
+        /// <para>
+        /// Khớp theo DANH SÁCH (<c>MatchKeywords</c>) chứ không so sánh thứ tự: payload chỉ lưu tên
+        /// stage, không lưu thứ tự, nên "≤ n" phải được trải thành tập tên ở phía gọi. Danh sách rỗng
+        /// thì bỏ điều kiện khớp — một <c>MatchKeywords</c> rỗng không khớp gì cả, còn nhánh "rỗng" vẫn
+        /// giữ các dòng không gắn stage.
+        /// </para>
+        /// <para>
+        /// Keyword cố định, KHÔNG đi qua <c>_config.FilterMode</c>: giá trị stage là một định danh,
+        /// phải so khớp nguyên chuỗi. FilterMode là núm chỉnh riêng cho cách khớp tên NPC
+        /// (phrase/text/keyword) — dùng chung cho stage là sai chỗ.
+        /// </para>
+        /// </summary>
+        private static void AddStage(Filter target, VectorSearchFilter filter)
+        {
+            if (filter.StageField is null || filter.StageValues is null)
+                return;
+
+            target.Should.Add(new Condition { IsEmpty = new IsEmptyCondition { Key = filter.StageField } });
+
+            if (filter.StageValues.Count > 0)
+                target.Should.Add(Conditions.Match(filter.StageField, filter.StageValues.ToList()));
         }
 
         /// <summary>Một điều kiện khớp, theo kiểu khớp đang chọn trong cấu hình.</summary>

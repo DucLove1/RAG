@@ -36,6 +36,16 @@ namespace RAG.Class.Constants
         /// </summary>
         public const string Scene = "scene";
 
+        /// <summary>
+        /// Giai đoạn trong mạch chuyện của một NPC (ví dụ <c>home_with_evidence</c>).
+        /// <para>
+        /// Khác <see cref="Scene"/>: field này gắn ở cấp TỪNG DÒNG (qua tiền tố <c>[stage:...]</c>
+        /// trong corpus, xem <see cref="Ingestion.LineChunker"/>), không phải cấp cả file. Chunk
+        /// không gắn stage thì không có trường này trong payload — nghĩa là "luôn hiển thị".
+        /// </para>
+        /// </summary>
+        public const string Stage = "stage";
+
         public const string Title = "tieu_de";
     }
 }

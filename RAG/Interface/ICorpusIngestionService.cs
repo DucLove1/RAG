@@ -1,7 +1,12 @@
 namespace RAG.Interface
 {
     /// <summary>Một đoạn đã cắt kèm mã chunk, dùng để đối chiếu với file nguồn.</summary>
-    public sealed record CorpusChunkPreview(string ChunkCode, string Text);
+    /// <param name="Stage">
+    /// Tên stage lấy từ tiền tố <c>[stage:...]</c> của dòng gốc; <c>null</c> khi dòng không gắn stage.
+    /// Đây là nguồn mà nhánh đồ thị dùng để biết dòng nào chưa được hé lộ — đồ thị chỉ lưu mã chunk,
+    /// không lưu stage.
+    /// </param>
+    public sealed record CorpusChunkPreview(string ChunkCode, string Text, string? Stage = null);
 
     /// <summary>Toàn bộ đoạn cắt ra từ một tài liệu, chưa nhúng và chưa ghi.</summary>
     public sealed record CorpusDocumentPreview(string DocId,

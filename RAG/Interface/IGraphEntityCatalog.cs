@@ -126,6 +126,10 @@ namespace RAG.Interface
     /// </summary>
     public interface IGraphEntityCatalog
     {
-        Task<NpcEntityCatalog> GetAsync(string npcName, CancellationToken cancellationToken = default);
+        /// <param name="scope">
+        /// NPC và stage. Danh mục phụ thuộc CẢ HAI: ở stage 1, Johny chưa được biết tới tấm ảnh có
+        /// đồng hồ, và tên của nó trong thực đơn trích thực thể cũng đã là rò tri thức.
+        /// </param>
+        Task<NpcEntityCatalog> GetAsync(GraphScope scope, CancellationToken cancellationToken = default);
     }
 }

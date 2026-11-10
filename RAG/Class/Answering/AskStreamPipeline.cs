@@ -1,7 +1,5 @@
 using System.Runtime.CompilerServices;
-using System.Text;
 using Microsoft.Extensions.Options;
-using RAG.Class.Caching;
 using RAG.Class.Config;
 using RAG.Class.Constants;
 using RAG.Class.Dto;
@@ -35,12 +33,8 @@ namespace RAG.Class.Answering
         private readonly IQueryNormalizer _queryNormalizer;
         private readonly ISemanticRouter _semanticRouter;
         private readonly IWeakPointDetector _weakPointDetector;
-        private readonly ISemanticAnswerCache _answerCache;
         private readonly IConversationFormatter _conversationFormatter;
         private readonly PromptConfig _promptConfig;
-
-        /// <summary>Cùng lý do với <c>AskPipeline.AnswerCacheFor</c>: có lịch sử thì không đọc, không ghi cache.</summary>
-        private static readonly ISemanticAnswerCache ConversationBypassCache = new NullSemanticAnswerCache();
 
         /// <param name="llmProvider">
         /// CHỈ để đọc <see cref="ILLMProvider.MaxOutputTokens"/>. Ngân sách token là thuộc tính của
@@ -55,7 +49,6 @@ namespace RAG.Class.Answering
                                  IQueryNormalizer queryNormalizer,
                                  ISemanticRouter semanticRouter,
                                  IWeakPointDetector weakPointDetector,
-                                 ISemanticAnswerCache answerCache,
                                  IConversationFormatter conversationFormatter,
                                  IOptions<PromptConfig> promptConfig)
         {
@@ -68,7 +61,6 @@ namespace RAG.Class.Answering
             _queryNormalizer = queryNormalizer;
             _semanticRouter = semanticRouter;
             _weakPointDetector = weakPointDetector;
-            _answerCache = answerCache;
             _promptConfig = promptConfig.Value;
         }
 
@@ -78,6 +70,7 @@ namespace RAG.Class.Answering
             string question,
             ConversationHistory history,
             int topK,
+            string? stage = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             history = _conversationFormatter.Trim(history);
@@ -118,7 +111,7 @@ namespace RAG.Class.Answering
                 yield break;
             }
 
-            var weakPoint = await _weakPointDetector.DetectAsync(npcName, normalizedQuestion, cancellationToken);
+            var weakPoint = await _weakPointDetector.DetectAsync(npcName, normalizedQuestion, stage, cancellationToken);
 
             // NHÁNH 2 — điểm yếu. Lời thoại lấy NGUYÊN VĂN từ cấu hình, không qua LLM, nên không có
             // gì để stream. Phát nguyên cục thay vì băm nhỏ giả lập: hiệu ứng gõ máy chữ là quyết
@@ -142,25 +135,12 @@ namespace RAG.Class.Answering
             // NHÁNH 3 — truy hồi.
             var questionEmbedding = await _embeddingProvider.GetEmbeddingsAsync(normalizedQuestion, cancellationToken);
 
-            var cacheQuery = new SemanticAnswerQuery(npcName, npcSystem, normalizedQuestion, questionEmbedding);
-            var answerCache = history.IsEmpty ? _answerCache : ConversationBypassCache;
-
-            var cached = await answerCache.TryGetAsync(cacheQuery, cancellationToken);
-            if (cached is not null)
-            {
-                // Câu trả lời đã có sẵn trọn vẹn, không có gì để stream. Cùng lý do với nhánh điểm
-                // yếu ở trên: phát một mảnh duy nhất.
-                yield return new AskStreamMetaEvent(WeakPointHit: false);
-                yield return new AskStreamTokenEvent(cached.Answer);
-                yield break;
-            }
-
             var context = await _contextBuilder.BuildAsync(
-                npcName, normalizedQuestion, questionEmbedding, topK, cancellationToken);
+                npcName, normalizedQuestion, questionEmbedding, topK, stage, cancellationToken);
 
             // Sự kiện ĐẦU TIÊN của nhánh này phát ở ĐÂY chứ không sớm hơn, và đó là quyết định có
             // chủ đích. Tầng ghi ra dây không gửi một byte nào — kể cả header — trước khi sự kiện
-            // đầu về tay nó; nên mọi thứ nằm phía trên dòng này (nhúng, tra cache, tìm vector) vẫn
+            // đầu về tay nó; nên mọi thứ nằm phía trên dòng này (nhúng, tìm vector) vẫn
             // còn biến được thành 429/503/500 kèm ProblemDetails y hệt api/query/ask.
             //
             // Phát meta ngay sau bước định tuyến thì header bay đi TRƯỚC bước nhúng, và từ giây đó
@@ -169,8 +149,6 @@ namespace RAG.Class.Answering
             // để tránh. Client không mất gì: weakPointHit chỉ có ích khi đã có chữ để vẽ.
             yield return new AskStreamMetaEvent(WeakPointHit: false);
 
-            var builder = new StringBuilder();
-
             var answerStream = _llmStreamProvider.AskStreamAsync(
                 _promptConfig.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
                 _conversationFormatter.PrependToAnswerPrompt(
@@ -178,19 +156,7 @@ namespace RAG.Class.Answering
                 cancellationToken: cancellationToken);
 
             await foreach (var chunk in answerStream.WithCancellation(cancellationToken))
-            {
-                builder.Append(chunk);
                 yield return new AskStreamTokenEvent(chunk);
-            }
-
-            // Dòng này CHỈ chạy khi vòng lặp trên kết thúc bình thường. Người chơi ngắt giữa chừng
-            // thì consumer dispose enumerator ngay tại một yield return, và thân iterator không bao
-            // giờ chạy tới đây — nghĩa là câu trả lời CỤT không được ghi cache. Đó là hành vi mong
-            // muốn chứ không phải thiếu sót: một câu cụt đóng băng vào cache sẽ được phục vụ nguyên
-            // văn cho mọi câu hỏi gần nghĩa cho tới khi hết hạn, đúng loại lỗi mà cờ
-            // CacheAnswersWithoutContext sinh ra để tránh. Ngữ nghĩa dispose của iterator cho ta
-            // điều đó mà không cần một dòng if nào.
-            await answerCache.SetAsync(cacheQuery, builder.ToString(), hasContext: context.Cacheable, cancellationToken);
         }
     }
 }

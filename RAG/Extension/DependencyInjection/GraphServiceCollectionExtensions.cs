@@ -66,6 +66,9 @@ namespace RAG.Extension.DependencyInjection
             services.AddSingleton<IGraphEntityCatalog, CachedGraphEntityCatalog>();
             services.AddSingleton<IGraphEntityExtractor, LlmGraphEntityExtractor>();
 
+            // Stage → tập dòng chưa hé lộ, đọc từ chính đường cắt dòng mà Qdrant được nạp theo.
+            services.AddSingleton<IGraphScopeResolver, CorpusGraphScopeResolver>();
+
             services.AddSingleton<IGraphSearch, EntityGraphSearch>();
             services.AddSingleton<IGraphContextRenderer, OntologyGraphContextRenderer>();
 
@@ -90,6 +93,7 @@ namespace RAG.Extension.DependencyInjection
             // thiếu một trong hai là 500 ở controller hoặc chết lúc khởi động ở Decorate.
             services.AddSingleton<IGraphEntityCatalog, NullGraphEntityCatalog>();
             services.AddSingleton<IGraphEntityExtractor, NullGraphEntityExtractor>();
+            services.AddSingleton<IGraphScopeResolver, NullGraphScopeResolver>();
 
             return services.AddDisabledGraphAdmin();
         }

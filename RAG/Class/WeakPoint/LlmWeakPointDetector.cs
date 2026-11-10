@@ -28,7 +28,11 @@ namespace RAG.Class.WeakPoint
         private readonly ILogger<LlmWeakPointDetector> _logger;
         private readonly RouteLabelParser _parser;
 
-        /// <summary>Tên NPC → prompt và lời thoại dựng sẵn; mỗi request chỉ còn một phép tra.</summary>
+        /// <summary>
+        /// Khóa <c>"{NpcName}\u0001{Stage}"</c> (Stage rỗng khi target không khai stage) → prompt
+        /// và lời thoại dựng sẵn. Khóa ghép chứ không chỉ NpcName: từ khi có Stage, một NPC có thể
+        /// có nhiều target song song — xem <see cref="BuildTargets"/> và <see cref="ResolveTarget"/>.
+        /// </summary>
         private readonly IReadOnlyDictionary<string, ResolvedWeakPoint> _targets;
 
         public LlmWeakPointDetector(ILlmProviderResolver llmProviderResolver,
@@ -54,18 +58,30 @@ namespace RAG.Class.WeakPoint
             _targets = BuildTargets();
 
             if (_targets.Count == 0)
+            {
                 _logger.LogWarning("Không có NPC nào có điểm yếu dùng được; mọi câu hỏi sẽ đi đường thường.");
+            }
             else
-                _logger.LogInformation("Đã nạp điểm yếu cho NPC: {Npcs}.", string.Join(", ", _targets.Keys));
+            {
+                // Khóa nội bộ ghép NpcName\u0001Stage — đổi lại thành "Npc[/stage]" cho log đọc được.
+                var readable = _targets.Keys.Select(key =>
+                {
+                    var parts = key.Split('\u0001');
+                    return parts.Length > 1 && parts[1].Length > 0 ? $"{parts[0]}/{parts[1]}" : parts[0];
+                });
+
+                _logger.LogInformation("Đã nạp điểm yếu cho NPC: {Npcs}.", string.Join(", ", readable));
+            }
         }
 
         public async Task<WeakPointMatch?> DetectAsync(string npcName,
                                                        string question,
+                                                       string? stage = null,
                                                        CancellationToken cancellationToken = default)
         {
             // NPC không phải mục tiêu thì thoát TRƯỚC khi tốn bất kỳ lượt gọi nào. Đây là thứ giữ
             // chi phí của node ở mức "một lượt LLM cho MỘT NPC" chứ không phải cho mọi câu hỏi.
-            if (string.IsNullOrWhiteSpace(npcName) || !_targets.TryGetValue(npcName, out var target))
+            if (string.IsNullOrWhiteSpace(npcName) || ResolveTarget(npcName, stage) is not { } target)
                 return null;
 
             if (!ShouldDetect(question))
@@ -114,6 +130,24 @@ namespace RAG.Class.WeakPoint
             !string.IsNullOrWhiteSpace(question) && question.Length <= _config.MaxInputLength;
 
         /// <summary>
+        /// Ưu tiên target khai ĐÚNG <paramref name="stage"/> đang được yêu cầu; không có thì lùi
+        /// về target không khai stage nào (áp dụng mọi giai đoạn) — đúng hành vi của cấu hình cũ
+        /// trước khi tính năng này tồn tại. Không bao giờ trộn câu chốt của hai target: mỗi lượt
+        /// phát hiện chỉ dùng ĐÚNG MỘT target, giữ nguyên chi phí "một lượt LLM cho một NPC".
+        /// </summary>
+        private ResolvedWeakPoint? ResolveTarget(string npcName, string? stage)
+        {
+            if (!string.IsNullOrWhiteSpace(stage) &&
+                _targets.TryGetValue(BuildKey(npcName, stage), out var staged))
+                return staged;
+
+            return _targets.TryGetValue(BuildKey(npcName, null), out var general) ? general : null;
+        }
+
+        private static string BuildKey(string npcName, string? stage) =>
+            $"{npcName}\u0001{stage ?? string.Empty}";
+
+        /// <summary>
         /// Bỏ target không dùng được kèm cảnh báo thay vì chặn khởi động — cùng chính sách với
         /// <see cref="RouteTableFactory"/>: một mục cấu hình hỏng không đáng để cả API không lên.
         /// </summary>
@@ -152,7 +186,7 @@ namespace RAG.Class.WeakPoint
                     _config.TriggerSeparator,
                     triggers.Select(trigger => string.Format(_config.TriggerBlockTemplate, trigger)));
 
-                resolved[target.NpcName] = new ResolvedWeakPoint(
+                resolved[BuildKey(target.NpcName, target.Stage)] = new ResolvedWeakPoint(
                     _config.BuildSystemPrompt(triggerBlock, target.NpcName),
                     new WeakPointMatch(target.Reply));
             }

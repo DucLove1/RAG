@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using RAG.Class.Constants;
 using RAG.Interface;
 
@@ -31,6 +32,18 @@ namespace RAG.Class.Ingestion
     /// </summary>
     public sealed class LineChunker : IChunkingStrategy
     {
+        /// <summary>
+        /// Tiền tố <c>[stage:ten_stage]</c> ở ĐẦU dòng, tách riêng khỏi nội dung trước khi nhúng.
+        /// <para>
+        /// Đây là cú pháp GIAO THỨC với corpus, cùng loại với công thức sinh mã chunk: lệch cú
+        /// pháp ở đây là một dòng lặng lẽ giữ nguyên tiền tố trong nội dung nhúng, không ném lỗi
+        /// nào cả. <c>ten_stage</c> chỉ nhận chữ, số, gạch dưới — đúng kiểu định danh mà
+        /// <c>RequestDto.Stage</c> mong đợi.
+        /// </para>
+        /// </summary>
+        private static readonly Regex StagePrefix = new(@"^\[stage:([a-zA-Z0-9_]+)\]\s*",
+                                                         RegexOptions.Compiled);
+
         public IEnumerable<TextSegment> Chunk(string text)
         {
             if (string.IsNullOrEmpty(text))
@@ -47,7 +60,16 @@ namespace RAG.Class.Ingestion
                 if (line.Length == 0)
                     continue;
 
-                yield return new TextSegment(line, ordinal);
+                string? stage = null;
+                var match = StagePrefix.Match(line);
+
+                if (match.Success)
+                {
+                    stage = match.Groups[1].Value;
+                    line = line[match.Length..];
+                }
+
+                yield return new TextSegment(line, ordinal, stage);
                 ordinal++;
             }
         }

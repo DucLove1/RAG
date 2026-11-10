@@ -137,7 +137,8 @@ namespace RAG.Class.Ingestion
                         segment.Text,
                         file.FileName,
                         segment.Ordinal is { } ordinal ? ChunkCodes.Build(docId, ordinal) : null,
-                        metadata));
+                        metadata,
+                        segment.Stage));
                 }
 
                 _logger.LogInformation("Đã cắt {Count} đoạn từ {File} ({DocId}) cho {Npc}.",
@@ -220,6 +221,12 @@ namespace RAG.Class.Ingestion
                 payload[PayloadFields.ChunkCode] = chunk.ChunkCode;
                 payload[PayloadFields.DocId] = ChunkCodes.DocId(chunk.ChunkCode);
             }
+
+            // Lấy từ ĐOẠN (tiền tố [stage:...] của riêng dòng này), không phải từ front matter của
+            // cả file — xem DocumentChunk.Stage. Không ghi khi null: một trường rỗng mà bộ lọc
+            // VectorSearchFilter.WithStage khớp nhầm còn tệ hơn là không ghi gì cả.
+            if (!string.IsNullOrEmpty(chunk.Stage))
+                payload[PayloadFields.Stage] = chunk.Stage;
 
             Copy(chunk.Metadata, FrontMatterFields.Kind, payload, PayloadFields.Kind);
             Copy(chunk.Metadata, FrontMatterFields.Scene, payload, PayloadFields.Scene);

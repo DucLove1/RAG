@@ -67,11 +67,18 @@ namespace RAG.Class.Answering
                                                  string question,
                                                  float[] questionEmbedding,
                                                  int topK,
+                                                 string? stage = null,
                                                  CancellationToken cancellationToken = default)
         {
             // Không gọi EnsureCollectionExistsAsync ở đây: đường trả lời chỉ ĐỌC, và collection đã
             // được đảm bảo ở đường nạp dữ liệu.
             var filter = VectorSearchFilter.Match(PayloadFields.NpcNames, npcName);
+
+            // Không gửi stage thì không lọc gì thêm — hành vi y hệt trước khi có tính năng này.
+            // Có stage thì TÍCH LŨY: dòng không gắn stage, hoặc gắn một stage ≤ stage hiện tại. Cùng
+            // luật với nhánh đồ thị (StageCatalog.IsRevealedAt) nên hai nhánh không thể biết khác nhau.
+            if (!string.IsNullOrWhiteSpace(stage))
+                filter = filter.WithStage(PayloadFields.Stage, StageCatalog.RevealedAt(stage));
 
             // Token riêng cho nhánh đồ thị để hủy được nó khi nhánh vector hỏng.
             using var graphCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -82,7 +89,7 @@ namespace RAG.Class.Answering
             // và tới Qdrant gần như cùng lúc; từ đây hai nhánh cùng chờ mạng song song. Không cần
             // Task.Run: đây là việc chờ I/O, không phải việc nặng CPU. Nhánh đồ thị khởi động trước vì
             // nó là nhánh chậm (một lượt LLM, rồi Neo4j, rồi Qdrant).
-            var graphTask = SearchGraphBranchAsync(npcName, question, graphCancellation.Token);
+            var graphTask = SearchGraphBranchAsync(npcName, question, stage, graphCancellation.Token);
             var vectorTask = _vectorStore.SearchAsync(questionEmbedding, filter, topK, cancellationToken);
 
             // ===== NHẬN KẾT QUẢ =====
@@ -143,13 +150,18 @@ namespace RAG.Class.Answering
         /// nguyên văn lỗi thì vẫn giữ các quan hệ nhưng đánh dấu suy biến, để câu trả lời thiếu phần
         /// dẫn chứng không bị đóng băng vào cache.
         /// </para>
+        /// <para>
+        /// Luật stage giống hệt nhánh vector: tri thức TÍCH LŨY (mọi dòng không gắn stage hoặc có
+        /// stage ≤ hiện tại).
+        /// </para>
         /// </summary>
         private async Task<GraphBranch> SearchGraphBranchAsync(string npcName,
                                                                string question,
+                                                               string? stage,
                                                                CancellationToken cancellationToken)
         {
             var graph = await _graphSearch.SearchAsync(
-                new GraphSearchQuery(npcName, question, RelationBudget: 0), cancellationToken);
+                new GraphSearchQuery(npcName, question, RelationBudget: 0, stage), cancellationToken);
 
             if (graph.SupportingChunkCodes.Count == 0)
                 return new GraphBranch(graph, NoTexts);
@@ -158,7 +170,8 @@ namespace RAG.Class.Answering
             {
                 // Tra qua IChunkTextLookup nghĩa là lọc quyền NPC lần nữa — mã do đồ thị chọn không
                 // được tin mà không lọc lại.
-                var texts = await _chunkTextLookup.GetByCodesAsync(npcName, graph.SupportingChunkCodes, cancellationToken);
+                var texts = await _chunkTextLookup.GetByCodesAsync(
+                    npcName, graph.SupportingChunkCodes, stage, cancellationToken);
                 return new GraphBranch(graph, texts);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

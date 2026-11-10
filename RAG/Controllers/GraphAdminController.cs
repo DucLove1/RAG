@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using RAG.Class.Constants;
 using RAG.Class.Config;
 using RAG.Interface;
 
@@ -22,6 +23,7 @@ namespace RAG.Controllers
         private readonly IGraphSearch _graphSearch;
         private readonly IGraphStatistics _statistics;
         private readonly IGraphEntityCatalog _catalog;
+        private readonly IGraphScopeResolver _scopeResolver;
         private readonly IEmbeddingProvider _embeddingProvider;
         private readonly IAskContextBuilder _contextBuilder;
         private readonly PromptConfig _prompts;
@@ -32,6 +34,7 @@ namespace RAG.Controllers
                                     IGraphSearch graphSearch,
                                     IGraphStatistics statistics,
                                     IGraphEntityCatalog catalog,
+                                    IGraphScopeResolver scopeResolver,
                                     IEmbeddingProvider embeddingProvider,
                                     IAskContextBuilder contextBuilder,
                                     IOptions<PromptConfig> prompts,
@@ -42,6 +45,7 @@ namespace RAG.Controllers
             _graphSearch = graphSearch;
             _statistics = statistics;
             _catalog = catalog;
+            _scopeResolver = scopeResolver;
             _embeddingProvider = embeddingProvider;
             _contextBuilder = contextBuilder;
             _prompts = prompts.Value;
@@ -82,7 +86,8 @@ namespace RAG.Controllers
                                                               CancellationToken cancellationToken = default)
         {
             var context = await _graphSearch.SearchAsync(
-                new GraphSearchQuery(request.NpcName, request.Question, request.Limit ?? 0),
+                new GraphSearchQuery(request.NpcName, request.Question, request.Limit ?? 0,
+                                     StageCatalog.Resolve(request.Stage)),
                 cancellationToken);
 
             return Ok(context);
@@ -104,7 +109,8 @@ namespace RAG.Controllers
             var embedding = await _embeddingProvider.GetEmbeddingsAsync(request.Question, cancellationToken);
 
             var context = await _contextBuilder.BuildAsync(
-                request.NpcName, request.Question, embedding, request.TopK ?? _rag.TopK, cancellationToken);
+                request.NpcName, request.Question, embedding, request.TopK ?? _rag.TopK,
+                StageCatalog.Resolve(request.Stage), cancellationToken);
 
             return Ok(new
             {
@@ -128,12 +134,21 @@ namespace RAG.Controllers
         /// Dùng để kiểm phân quyền bằng mắt: danh mục của Jack không được có thực thể nào chỉ xuất
         /// thân từ hồ sơ pháp y. Không gọi LLM; đọc qua cache danh mục nên lần gọi thứ hai không chạm Neo4j.
         /// </para>
+        /// <para>
+        /// <paramref name="stage"/> tùy chọn: danh mục của Johny ở stage 1 không được có "Tấm ảnh có
+        /// đồng hồ của Johny", ở stage 3 thì phải có.
+        /// </para>
         /// </summary>
         [HttpGet("catalog-debug")]
         public async Task<IActionResult> GetCatalogDebug([FromQuery] string npcName,
+                                                         [FromQuery] int? stage = null,
                                                          CancellationToken cancellationToken = default)
         {
-            var catalog = await _catalog.GetAsync(npcName, cancellationToken);
+            var scope = await _scopeResolver.ResolveAsync(npcName, StageCatalog.Resolve(stage), cancellationToken);
+
+            var catalog = scope is null
+                ? NpcEntityCatalog.Unavailable
+                : await _catalog.GetAsync(scope, cancellationToken);
 
             return Ok(new
             {
@@ -146,13 +161,15 @@ namespace RAG.Controllers
         }
     }
 
-    public sealed record ContextDebugRequest(string NpcName, string Question, int? TopK);
+    public sealed record ContextDebugRequest(string NpcName, string Question, int? TopK, int? Stage = null);
 
     /// <param name="Question">
     /// Bắt buộc: hạt giống giờ là thực thể mà LLM trích từ câu hỏi, không còn đường nhập mã chunk.
     /// </param>
     /// <param name="Limit">Số cạnh tối đa; để trống thì dùng <c>Graph:Search:MaxRelations</c>.</param>
+    /// <param name="Stage">Mã số stage như <c>RequestDto.Stage</c>; để trống thì không lọc theo stage.</param>
     public sealed record GraphDebugRequest(string NpcName,
                                            string Question,
-                                           int? Limit);
+                                           int? Limit,
+                                           int? Stage = null);
 }

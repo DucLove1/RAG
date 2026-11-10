@@ -26,6 +26,7 @@ namespace RAG.Class.Constants
             public const string StatusPriority = "uuTienTrangThai";
             public const string ReasoningOnly = "chiLapLuan";
             public const string Limit = "gioiHan";
+            public const string HiddenChunks = "chunkAn";
             public const string Rows = "rows";
         }
 
@@ -60,12 +61,18 @@ namespace RAG.Class.Constants
         /// NPC không đọc thì thiếu vế này là mất hạt giống. <c>ban_than</c> đánh dấu dòng đó để lấy
         /// TÊN CHUẨN điền vào prompt, kể cả khi endpoint được gọi bằng bí danh.
         /// </para>
+        /// <para>
+        /// <c>$chunkAn</c> là những dòng thuộc stage SAU stage hiện tại (xem <c>GraphScope</c>). Một
+        /// dòng "được biết" phải vừa thuộc tài liệu NPC đọc được, vừa không nằm trong tập đó — nên
+        /// một thực thể chỉ xuất thân từ dòng của màn sau không lọt vào thực đơn, tên của nó cũng là
+        /// tri thức của màn sau.
+        /// </para>
         /// </summary>
         public const string KnownEntitiesTemplate = """
             MATCH (npc:{0}) WHERE npc.ten = $npc OR $npc IN coalesce(npc.bi_danh, [])
             MATCH (e:{1})
             WHERE e = npc
-               OR any(m IN e.nguon_chunk WHERE split(m, '#')[0] IN npc.duoc_biet)
+               OR any(m IN e.nguon_chunk WHERE split(m, '#')[0] IN npc.duoc_biet AND NOT m IN $chunkAn)
             RETURN DISTINCT e.ten                   AS ten,
                             coalesce(e.bi_danh, []) AS bi_danh,
                             labels(e)               AS nhan,
@@ -151,19 +158,27 @@ namespace RAG.Class.Constants
         /// ra 0 cạnh. Ngoặc nhọn của map thuộc tính viết <c>{{ }}</c> vì chuỗi này đi qua
         /// <c>string.Format</c>: một ngoặc đơn bị đọc thành placeholder và app không khởi động được.
         /// </para>
+        /// <para>
+        /// LỌC STAGE đi chung với lọc quyền chứ không thành mệnh đề thứ năm: một dòng chỉ "được biết"
+        /// khi vừa thuộc tài liệu NPC đọc được VỪA không nằm trong <c>$chunkAn</c> (những dòng của
+        /// stage sau). Nhờ vậy luật <c>all</c>/<c>any</c> tự áp cho stage: cạnh lập luận bắc giữa
+        /// một dòng stage 2 và một dòng stage 3 chỉ hiện từ stage 3, vì ở stage 2 NPC mới có một nửa
+        /// tiền đề. <c>ma_chunk</c> cũng bỏ các dòng đó — mã trả về là thứ nhánh RAG sẽ tra nguyên
+        /// văn, và nguyên văn của màn sau không được lọt vào prompt qua một cạnh hợp lệ.
+        /// </para>
         /// </summary>
         public const string ExpandTemplate = """
             MATCH (npc:{0}) WHERE npc.ten = $npc OR $npc IN coalesce(npc.bi_danh, [])
             UNWIND range(0, size($thucThe) - 1) AS hang
             MATCH (e:{1} {{ ten: $thucThe[hang] }})
             WHERE e = npc
-               OR any(m IN e.nguon_chunk WHERE split(m, '#')[0] IN npc.duoc_biet)
+               OR any(m IN e.nguon_chunk WHERE split(m, '#')[0] IN npc.duoc_biet AND NOT m IN $chunkAn)
             MATCH (e)-[r]-(lc:{1})
             WHERE r.trang_thai IN $trangThaiChoPhep
-              AND any(m IN lc.nguon_chunk WHERE split(m, '#')[0] IN npc.duoc_biet)
+              AND any(m IN lc.nguon_chunk WHERE split(m, '#')[0] IN npc.duoc_biet AND NOT m IN $chunkAn)
               AND (CASE WHEN type(r) IN $loaiLapLuan
-                        THEN all(m IN r.nguon_chunk WHERE split(m, '#')[0] IN npc.duoc_biet)
-                        ELSE any(m IN r.nguon_chunk WHERE split(m, '#')[0] IN npc.duoc_biet) END)
+                        THEN all(m IN r.nguon_chunk WHERE split(m, '#')[0] IN npc.duoc_biet AND NOT m IN $chunkAn)
+                        ELSE any(m IN r.nguon_chunk WHERE split(m, '#')[0] IN npc.duoc_biet AND NOT m IN $chunkAn) END)
               AND NOT (type(r) IN $loaiDoiXung AND startNode(r).ten > endNode(r).ten)
               AND (NOT $chiLapLuan OR type(r) IN $loaiLapLuan)
             WITH r, min(hang) AS hang
@@ -186,7 +201,7 @@ namespace RAG.Class.Constants
                    x.dich                        AS dich,
                    x.r.trang_thai                AS trang_thai,
                    coalesce(x.r.phu_dinh, false) AS phu_dinh,
-                   x.r.nguon_chunk               AS ma_chunk,
+                   [m IN x.r.nguon_chunk WHERE NOT m IN $chunkAn] AS ma_chunk,
                    x.uu_tien                     AS uu_tien,
                    x.lap_luan                    AS lap_luan
             ORDER BY vong, hang

@@ -11,10 +11,18 @@ namespace RAG.Interface
     /// hai persona khác nhau là hai câu trả lời khác nhau. Phân vùng chỉ theo tên NPC sẽ trả câu
     /// trả lời sinh theo persona này cho một request khai persona kia.
     /// </param>
+    /// <param name="Stage">
+    /// Tên stage của request. PHẢI nằm trong phân vùng vì cùng lý do với persona: cùng NPC, cùng câu
+    /// hỏi nhưng ở hai stage là hai tập tri thức khác nhau. Thiếu nó thì câu trả lời sinh ở stage 3
+    /// được phục vụ nguyên văn cho người chơi ở stage 1 — bộ lọc stage của cả hai nhánh truy hồi
+    /// thành vô nghĩa ở mọi câu hỏi lặp lại. <c>null</c> cho ra đúng phân vùng của bản trước khi có
+    /// tính năng stage.
+    /// </param>
     public sealed record SemanticAnswerQuery(string NpcName,
                                              string NpcPersona,
                                              string Question,
-                                             float[] QuestionVector);
+                                             float[] QuestionVector,
+                                             string? Stage = null);
 
     /// <param name="CachedQuestion">
     /// Câu hỏi đã được lưu trước đó, tức là câu mà lần này khớp vào. Có mặt để ghi log: in mỗi
@@ -99,6 +107,8 @@ namespace RAG.Interface
     public interface ISemanticAnswerCacheAdmin
     {
         /// <summary>Xoá mọi entry của một phân vùng. Trả về số entry đã xoá.</summary>
-        Task<long> PurgeAsync(string npcName, string npcPersona, CancellationToken cancellationToken = default);
+        /// <param name="stage">Tên stage của phân vùng; <c>null</c> là phân vùng của request không gửi stage.</param>
+        Task<long> PurgeAsync(string npcName, string npcPersona, string? stage = null,
+                              CancellationToken cancellationToken = default);
     }
 }

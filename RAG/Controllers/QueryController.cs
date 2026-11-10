@@ -48,7 +48,7 @@ namespace RAG.Controllers
         {
             var result = await _askService.AskAsync(
                 request.NpcName, request.NpcSystem, request.Question, request.ToConversationHistory(),
-                _config.TopK, cancellationToken);
+                _config.TopK, request.StageName, cancellationToken);
 
             return Ok(result);
         }
@@ -78,7 +78,7 @@ namespace RAG.Controllers
         {
             var events = _askStreamService.AskStreamAsync(
                 request.NpcName, request.NpcSystem, request.Question, request.ToConversationHistory(),
-                _config.TopK, cancellationToken);
+                _config.TopK, request.StageName, cancellationToken);
 
             return new AskStreamSseResult(events, _errorMapper, _logger);
         }

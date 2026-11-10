@@ -82,12 +82,14 @@ namespace RAG.Class.Graph
 
             // Danh sách hạt giống phải KHÁC RỖNG: rỗng thì ExpandAsync trả ngay mà không chạm Neo4j,
             // và lượt làm nóng thành vô nghĩa.
+            var scope = GraphScope.Unrestricted(WarmupName);
+
             var expansion = await ExpandAsync(
-                new GraphExpansionRequest(WarmupName, new[] { WarmupName }, Array.Empty<string>(),
+                new GraphExpansionRequest(scope, new[] { WarmupName }, Array.Empty<string>(),
                                           ReasoningOnly: false, Limit: 1),
                 cancellationToken);
 
-            var catalog = await ListKnownEntitiesAsync(WarmupName, cancellationToken);
+            var catalog = await ListKnownEntitiesAsync(scope, cancellationToken);
 
             return !expansion.Failed && !catalog.Failed;
         }
@@ -108,7 +110,8 @@ namespace RAG.Class.Graph
 
             var parameters = new Dictionary<string, object>
             {
-                [GraphCypher.Parameters.Npc] = request.NpcName,
+                [GraphCypher.Parameters.Npc] = request.Scope.NpcName,
+                [GraphCypher.Parameters.HiddenChunks] = request.Scope.HiddenChunkCodes.ToList(),
                 [GraphCypher.Parameters.Entities] = request.EntityNames.ToList(),
                 [GraphCypher.Parameters.IntentTypes] = request.IntentRelationTypes.ToList(),
                 [GraphCypher.Parameters.AllowedStatuses] = _ontology.AllowedStatuses.ToList(),
@@ -133,10 +136,10 @@ namespace RAG.Class.Graph
             return GraphStoreResult<GraphEdge>.Ok(records.Select(ToEdge).ToList());
         }
 
-        public async Task<GraphStoreResult<GraphCatalogEntry>> ListKnownEntitiesAsync(string npcName,
+        public async Task<GraphStoreResult<GraphCatalogEntry>> ListKnownEntitiesAsync(GraphScope scope,
                                                                                       CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(npcName))
+            if (string.IsNullOrWhiteSpace(scope.NpcName))
                 return GraphStoreResult<GraphCatalogEntry>.None;
 
             if (_breaker.IsOpen())
@@ -144,7 +147,8 @@ namespace RAG.Class.Graph
 
             var records = await RunAsync(_knownEntitiesQuery, new Dictionary<string, object>
             {
-                [GraphCypher.Parameters.Npc] = npcName
+                [GraphCypher.Parameters.Npc] = scope.NpcName,
+                [GraphCypher.Parameters.HiddenChunks] = scope.HiddenChunkCodes.ToList()
             }, cancellationToken);
 
             if (records is null)

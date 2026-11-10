@@ -18,9 +18,15 @@ namespace RAG.Interface
         /// đây là dữ liệu do ĐỒ THỊ chọn — tin nó mà không lọc lại là mở một đường vòng qua bộ lọc
         /// NPC. Lọc hai lần rẻ hơn nhiều so với việc phải chứng minh đường vòng đó không tồn tại.
         /// </param>
+        /// <param name="stage">
+        /// Tên stage hiện tại; chỉ trả các dòng không gắn stage hoặc gắn stage ≤ stage này. Đồ thị đã
+        /// bỏ mã của stage sau khỏi danh sách gửi tới đây, nhưng cùng lý do với bộ lọc quyền ở trên:
+        /// mã đi qua nhiều tầng không được tin suông. <c>null</c> thì không lọc.
+        /// </param>
         /// <returns>Chỉ chứa những mã tìm thấy. Mã không có trong kho đơn giản là vắng mặt.</returns>
         Task<IReadOnlyDictionary<string, ChunkText>> GetByCodesAsync(string npcName,
                                                                      IReadOnlyCollection<string> codes,
+                                                                     string? stage = null,
                                                                      CancellationToken cancellationToken = default);
     }
 }

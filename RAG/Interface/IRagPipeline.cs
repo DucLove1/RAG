@@ -11,11 +11,16 @@ namespace RAG.Interface
         /// và pipeline đã thoát sớm: không truy hồi, không gọi LLM trả lời lần nào.
         /// </returns>
         /// <param name="history">Lịch sử hội thoại client gửi kèm; <see cref="ConversationHistory.Empty"/> khi không có.</param>
+        /// <param name="stage">
+        /// Giai đoạn mạch chuyện hiện tại, do client gửi lên; <c>null</c> thì không lọc theo stage
+        /// — hành vi y hệt trước khi có tính năng này. Xem <c>RequestDto.Stage</c>.
+        /// </param>
         Task<AskResult> AskAsync(string npcName,
                                  string npcSystem,
                                  string question,
                                  ConversationHistory history,
                                  int topK,
+                                 string? stage = null,
                                  CancellationToken cancellationToken = default);
     }
 
@@ -49,6 +54,7 @@ namespace RAG.Interface
                                                         string question,
                                                         ConversationHistory history,
                                                         int topK,
+                                                        string? stage = null,
                                                         CancellationToken cancellationToken = default);
     }
 

@@ -58,17 +58,19 @@ namespace RAG.Class.Graph
                 relations.Select(name => _config.BuildRelationLine(name, ontology.DisplayRelation(name))));
         }
 
-        public async Task<GraphExtraction> ExtractAsync(string npcName,
+        public async Task<GraphExtraction> ExtractAsync(GraphScope scope,
                                                         string question,
                                                         CancellationToken cancellationToken = default)
         {
+            var npcName = scope.NpcName;
+
             if (string.IsNullOrWhiteSpace(question) || question.Length > _config.MaxInputLength)
             {
                 _logger.LogDebug("Bỏ qua trích thực thể: câu rỗng hoặc dài quá {Max} ký tự.", _config.MaxInputLength);
                 return GraphExtraction.Empty;
             }
 
-            var catalog = await _catalog.GetAsync(npcName, cancellationToken);
+            var catalog = await _catalog.GetAsync(scope, cancellationToken);
 
             if (catalog.Failed)
                 return GraphExtraction.FailedResult;

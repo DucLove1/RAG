@@ -21,8 +21,9 @@ namespace RAG.Class.Diagnostics.Timing
 
         public Task<IReadOnlyDictionary<string, ChunkText>> GetByCodesAsync(string npcName,
                                                                            IReadOnlyCollection<string> codes,
+                                                                           string? stage = null,
                                                                            CancellationToken cancellationToken = default) =>
             _latency.TrackAsync(
-                LatencyStages.ChunkResolve, () => _inner.GetByCodesAsync(npcName, codes, cancellationToken));
+                LatencyStages.ChunkResolve, () => _inner.GetByCodesAsync(npcName, codes, stage, cancellationToken));
     }
 }

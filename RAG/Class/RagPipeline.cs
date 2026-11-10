@@ -37,16 +37,18 @@ namespace RAG.Class
                                         string question,
                                         ConversationHistory history,
                                         int topK,
+                                        string? stage = null,
                                         CancellationToken cancellationToken = default) =>
-            _askService.AskAsync(npcName, npcSystem, question, history, topK, cancellationToken);
+            _askService.AskAsync(npcName, npcSystem, question, history, topK, stage, cancellationToken);
 
         public IAsyncEnumerable<AskStreamEvent> AskStreamAsync(string npcName,
                                                                string npcSystem,
                                                                string question,
                                                                ConversationHistory history,
                                                                int topK,
+                                                               string? stage = null,
                                                                CancellationToken cancellationToken = default) =>
-            _askStreamService.AskStreamAsync(npcName, npcSystem, question, history, topK, cancellationToken);
+            _askStreamService.AskStreamAsync(npcName, npcSystem, question, history, topK, stage, cancellationToken);
 
         public Task CreateCollectionAsync(CancellationToken cancellationToken = default) =>
             _ingestionService.CreateCollectionAsync(cancellationToken);

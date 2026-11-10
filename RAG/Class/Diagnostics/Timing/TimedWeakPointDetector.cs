@@ -24,10 +24,11 @@ namespace RAG.Class.Diagnostics.Timing
 
         public async Task<WeakPointMatch?> DetectAsync(string npcName,
                                                        string question,
+                                                       string? stage = null,
                                                        CancellationToken cancellationToken = default)
         {
             var match = await _latency.TrackAsync(
-                LatencyStages.WeakPoint, () => _inner.DetectAsync(npcName, question, cancellationToken));
+                LatencyStages.WeakPoint, () => _inner.DetectAsync(npcName, question, stage, cancellationToken));
 
             // KHÔNG ghi nội dung câu chốt hay lời thoại vào log: đó là nội dung cốt truyện, và log
             // của server game thì thường được xem bởi nhiều người hơn là người chơi.

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using RAG.Class;
 using RAG.Class.Config;
+using RAG.Class.Constants;
 using RAG.Interface;
 
 namespace RAG.Controllers
@@ -147,15 +148,21 @@ namespace RAG.Controllers
         /// Phải truyền cả <paramref name="npcSystem"/> vì phân vùng cache tính theo (tên NPC + mô
         /// tả tính cách): cùng một NPC với hai persona khác nhau là hai phân vùng khác nhau.
         /// </para>
+        /// <para>
+        /// <paramref name="stage"/> cũng vậy: mỗi stage là một phân vùng riêng, và bỏ trống là phân
+        /// vùng của request không gửi stage. Xoá hết của một NPC thì gọi một lần cho mỗi stage.
+        /// </para>
         /// </summary>
         [HttpDelete("answer-cache")]
         public async Task<IActionResult> PurgeAnswerCache([FromQuery] string npcName,
                                                           [FromQuery] string npcSystem = "",
+                                                          [FromQuery] int? stage = null,
                                                           CancellationToken cancellationToken = default)
         {
-            var removed = await _answerCacheAdmin.PurgeAsync(npcName, npcSystem, cancellationToken);
+            var removed = await _answerCacheAdmin.PurgeAsync(
+                npcName, npcSystem, StageCatalog.Resolve(stage), cancellationToken);
 
-            return Ok(new { npcName, removed });
+            return Ok(new { npcName, stage, removed });
         }
 
         /// <summary>

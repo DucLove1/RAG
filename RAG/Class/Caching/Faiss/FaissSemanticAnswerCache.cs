@@ -201,7 +201,7 @@ namespace RAG.Class.Caching.Faiss
                 return null;
             }
 
-            var tag = AnswerCachePartition.Tag(query.NpcName, query.NpcPersona);
+            var tag = AnswerCachePartition.Tag(query.NpcName, query.NpcPersona, query.Stage);
             var unit = VectorMath.L2Normalize(query.QuestionVector);
 
             _lock.EnterReadLock();
@@ -345,7 +345,7 @@ namespace RAG.Class.Caching.Faiss
                 return;
             }
 
-            var tag = AnswerCachePartition.Tag(query.NpcName, query.NpcPersona);
+            var tag = AnswerCachePartition.Tag(query.NpcName, query.NpcPersona, query.Stage);
             var questionHash = AnswerCachePartition.QuestionHash(query.Question);
             var unit = VectorMath.L2Normalize(query.QuestionVector);
 
@@ -456,11 +456,14 @@ namespace RAG.Class.Caching.Faiss
         /// ghi; muốn cửa sổ hẹp hơn thì hạ <c>SemanticAnswerCache:Faiss:FlushIntervalSeconds</c>.
         /// </para>
         /// </summary>
-        public Task<long> PurgeAsync(string npcName, string npcPersona, CancellationToken cancellationToken = default)
+        public Task<long> PurgeAsync(string npcName,
+                                     string npcPersona,
+                                     string? stage = null,
+                                     CancellationToken cancellationToken = default)
         {
             try
             {
-                var tag = AnswerCachePartition.Tag(npcName, npcPersona);
+                var tag = AnswerCachePartition.Tag(npcName, npcPersona, stage);
 
                 _lock.EnterWriteLock();
                 try

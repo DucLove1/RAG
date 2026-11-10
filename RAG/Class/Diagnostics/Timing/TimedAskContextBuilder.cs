@@ -23,9 +23,10 @@ namespace RAG.Class.Diagnostics.Timing
                                            string question,
                                            float[] questionEmbedding,
                                            int topK,
+                                           string? stage = null,
                                            CancellationToken cancellationToken = default) =>
             _latency.TrackAsync(
                 LatencyStages.ContextBuild,
-                () => _inner.BuildAsync(npcName, question, questionEmbedding, topK, cancellationToken));
+                () => _inner.BuildAsync(npcName, question, questionEmbedding, topK, stage, cancellationToken));
     }
 }

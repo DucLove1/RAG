@@ -45,6 +45,7 @@ namespace RAG.Class.Diagnostics.Timing
             string question,
             ConversationHistory history,
             int topK,
+            string? stage = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             using var session = _sessions.Begin(LatencyOperations.AskStream);
@@ -60,7 +61,7 @@ namespace RAG.Class.Diagnostics.Timing
             try
             {
                 await foreach (var streamEvent in _inner
-                    .AskStreamAsync(npcName, npcSystem, question, history, topK, cancellationToken)
+                    .AskStreamAsync(npcName, npcSystem, question, history, topK, stage, cancellationToken)
                     .WithCancellation(cancellationToken))
                 {
                     yield return streamEvent;

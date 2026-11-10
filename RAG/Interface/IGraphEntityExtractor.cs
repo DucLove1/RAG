@@ -35,6 +35,7 @@ namespace RAG.Interface
     /// </summary>
     public interface IGraphEntityExtractor
     {
-        Task<GraphExtraction> ExtractAsync(string npcName, string question, CancellationToken cancellationToken = default);
+        /// <param name="scope">NPC và stage: LLM chỉ được chọn trong danh mục của ĐÚNG phạm vi này.</param>
+        Task<GraphExtraction> ExtractAsync(GraphScope scope, string question, CancellationToken cancellationToken = default);
     }
 }

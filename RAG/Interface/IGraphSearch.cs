@@ -23,9 +23,14 @@ namespace RAG.Interface
     /// </para>
     /// </summary>
     /// <param name="RelationBudget">Số cạnh tối đa; 0 thì dùng <c>Graph:Search:MaxRelations</c>.</param>
+    /// <param name="Stage">
+    /// Tên stage hiện tại (<c>RequestDto.StageName</c>). Đồ thị trả tri thức của mọi stage ≤ stage
+    /// này. <c>null</c> thì không lọc — hành vi y hệt trước khi có tính năng stage.
+    /// </param>
     public sealed record GraphSearchQuery(string NpcName,
                                           string Question,
-                                          int RelationBudget);
+                                          int RelationBudget,
+                                          string? Stage = null);
 
     /// <summary>
     /// Kết quả một lượt truy hồi trên đồ thị.

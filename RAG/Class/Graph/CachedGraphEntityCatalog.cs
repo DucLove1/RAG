@@ -27,13 +27,20 @@ namespace RAG.Class.Graph
     /// 3. KHÔNG CACHE DANH MỤC RỖNG. Tên NPC do client gửi lên; cache cả tên lạ thì từ điển phình không
     /// giới hạn. Chỉ cache danh mục có nội dung thì số khóa bị chặn bởi số NPC thật và bí danh của họ.
     /// </para>
+    /// <para>
+    /// 4. KHÓA GỒM CẢ STAGE. Cùng một NPC ở hai stage là hai danh mục khác nhau; khóa chỉ theo tên thì
+    /// danh mục dựng ở stage 3 sẽ được phục vụ cho stage 1. Stage lấy từ bảng cố định của API nên
+    /// số khóa vẫn bị chặn.
+    /// </para>
     /// </summary>
     public sealed class CachedGraphEntityCatalog : IGraphEntityCatalog
     {
         private readonly IGraphStore _store;
         private readonly ILogger<CachedGraphEntityCatalog> _logger;
         private readonly long _ttlMilliseconds;
-        private readonly ConcurrentDictionary<string, CacheEntry> _entries = new(StringComparer.Ordinal);
+
+        /// <summary>Record so chuỗi bằng <c>EqualityComparer&lt;string&gt;.Default</c>, tức là phân biệt hoa thường.</summary>
+        private readonly ConcurrentDictionary<CacheKey, CacheEntry> _entries = new();
 
         public CachedGraphEntityCatalog(IGraphStore store,
                                         IOptions<GraphExtractionConfig> options,
@@ -44,19 +51,22 @@ namespace RAG.Class.Graph
             _ttlMilliseconds = (long)TimeSpan.FromMinutes(options.Value.CatalogCacheMinutes).TotalMilliseconds;
         }
 
-        public async Task<NpcEntityCatalog> GetAsync(string npcName, CancellationToken cancellationToken = default)
+        public async Task<NpcEntityCatalog> GetAsync(GraphScope scope, CancellationToken cancellationToken = default)
         {
+            var npcName = scope.NpcName;
+
             if (string.IsNullOrWhiteSpace(npcName))
                 return NpcEntityCatalog.Empty;
 
             // TickCount64 chứ không phải giờ hệ thống: đơn điệu, nên chỉnh đồng hồ máy không làm cả
             // loạt entry hết hạn cùng lúc hay sống mãi.
             var now = Environment.TickCount64;
+            var key = new CacheKey(npcName, scope.Stage);
 
-            if (_entries.TryGetValue(npcName, out var cached) && cached.ExpiresAt > now)
+            if (_entries.TryGetValue(key, out var cached) && cached.ExpiresAt > now)
                 return cached.Catalog;
 
-            var result = await _store.ListKnownEntitiesAsync(npcName, cancellationToken);
+            var result = await _store.ListKnownEntitiesAsync(scope, cancellationToken);
 
             if (result.Failed)
                 return NpcEntityCatalog.Unavailable;
@@ -76,10 +86,12 @@ namespace RAG.Class.Graph
                     npcName, catalog.AmbiguousKeys.Count, string.Join(", ", catalog.AmbiguousKeys));
             }
 
-            _entries[npcName] = new CacheEntry(catalog, now + _ttlMilliseconds);
+            _entries[key] = new CacheEntry(catalog, now + _ttlMilliseconds);
 
             return catalog;
         }
+
+        private readonly record struct CacheKey(string NpcName, string? Stage);
 
         private sealed record CacheEntry(NpcEntityCatalog Catalog, long ExpiresAt);
     }

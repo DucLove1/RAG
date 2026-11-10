@@ -11,7 +11,7 @@ namespace RAG.Class.Graph
     {
         private static readonly Task<GraphExtraction> Nothing = Task.FromResult(GraphExtraction.Empty);
 
-        public Task<GraphExtraction> ExtractAsync(string npcName, string question, CancellationToken cancellationToken = default) =>
+        public Task<GraphExtraction> ExtractAsync(GraphScope scope, string question, CancellationToken cancellationToken = default) =>
             Nothing;
     }
 }

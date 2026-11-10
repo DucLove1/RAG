@@ -107,7 +107,7 @@ namespace RAG.Controllers
                                                   [FromQuery] string npcName,
                                                   CancellationToken cancellationToken = default)
         {
-            var found = await _chunkTextLookup.GetByCodesAsync(npcName, new[] { code }, cancellationToken);
+            var found = await _chunkTextLookup.GetByCodesAsync(npcName, new[] { code }, cancellationToken: cancellationToken);
 
             return found.TryGetValue(code, out var chunk) ? Ok(chunk) : NotFound(new { code, npcName });
         }

@@ -290,7 +290,10 @@ namespace RAG.Class.Caching.Redis
         // Vận hành
         // ---------------------------------------------------------------------------------------
 
-        public async Task<long> PurgeAsync(string npcName, string npcPersona, CancellationToken cancellationToken = default)
+        public async Task<long> PurgeAsync(string npcName,
+                                           string npcPersona,
+                                           string? stage = null,
+                                           CancellationToken cancellationToken = default)
         {
             try
             {
@@ -298,7 +301,7 @@ namespace RAG.Class.Caching.Redis
                 if (database is null || !_indexEnsured)
                     return 0;
 
-                var search = new Query(BuildTagFilter(AnswerCachePartition.Tag(npcName, npcPersona)))
+                var search = new Query(BuildTagFilter(AnswerCachePartition.Tag(npcName, npcPersona, stage)))
                     .Limit(0, PurgeBatchSize)
                     .Dialect(AnswerCacheFields.Dialect);
 
@@ -422,7 +425,7 @@ namespace RAG.Class.Caching.Redis
         /// sẽ lệch nhau vào đúng ngày ai đó sửa một bên.
         /// </summary>
         private static string BuildTag(SemanticAnswerQuery query) =>
-            AnswerCachePartition.Tag(query.NpcName, query.NpcPersona);
+            AnswerCachePartition.Tag(query.NpcName, query.NpcPersona, query.Stage);
 
         /// <summary>
         /// Khóa document, tất định theo (phân vùng, câu hỏi): hỏi lại ĐÚNG câu cũ thì HSET ghi đè

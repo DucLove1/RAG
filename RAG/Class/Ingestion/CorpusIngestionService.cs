@@ -108,7 +108,8 @@ namespace RAG.Class.Ingestion
                     _chunker.Chunk(entry.Content.Body)
                             .Select(segment => new CorpusChunkPreview(
                                 segment.Ordinal is { } ordinal ? ChunkCodes.Build(entry.DocId, ordinal) : string.Empty,
-                                segment.Text))
+                                segment.Text,
+                                segment.Stage))
                             .ToList()))
                 .ToList();
         }

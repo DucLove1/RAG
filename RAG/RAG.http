@@ -568,6 +568,45 @@ Content-Type: application/json
 
 { "Question": "Trong tấm hình này, thời gian chiếu trên TV đã chỉ rõ tấm hình này được chụp lúc 8h30 chứ không phải 9h" }
 
+### 9. STAGE: target KHONG khai Stage phai van TRUNG du request gui Stage nao
+# Ky vong: weakPointHit = true, giong het case 1 — target cua Johny trong
+# weak-point.json khong khai Stage nen ap dung moi giai doan (xem
+# WeakPointTargetConfig.Stage / LlmWeakPointDetector.ResolveTarget).
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "Trong tấm hình này, thời gian chiếu trên TV đã chỉ rõ tấm hình này được chụp lúc 8h30 chứ không phải 9h", "Stage": 3 }
+
+### 10. STAGE: loc tri thuc theo tung dong trong corpus (corpus/23_johny.md)
+# Luat TICH LUY: o stage n, NPC biet dong khong gan stage + dong gan stage <= n.
+# Ky vong: cau tra loi PHAI nhac duoc chuyen Johny "vo tinh chup thu may anh" -
+# dong nay gan [stage:2], hien o Stage 2 VA Stage 3 (tich luy), KHONG hien o Stage 1.
+POST {{RAG_HostAddress}}/api/query/ask
+Content-Type: application/json
+
+{ "npcName": "Johny", "npcSystem": "dè dặt, hay né tránh", "Question": "tấm ảnh chiếc xe màu đỏ trước nhà Chris là sao vậy", "Stage": 2 }
+
+### 11. STAGE: cung cau hoi nhung gui Stage 1 -> dong [stage:2] KHONG duoc dua vao ngu canh
+# Ky vong: context-debug (xem khoi GraphAdminController) khong con dong "vo tinh chup thu may anh".
+# Doi Stage thanh 3 thi dong do PHAI xuat hien tro lai (tich luy). Dung de doi chieu voi case 10.
+POST {{RAG_HostAddress}}/api/graph/context-debug
+Content-Type: application/json
+
+{ "npcName": "Johny", "question": "tấm ảnh chiếc xe màu đỏ trước nhà Chris là sao vậy", "Stage": 1 }
+
+### 12. STAGE DO THI: danh muc thuc the cua Johny o stage 1 (luat tich luy: biet stage <= n)
+# Ky vong: KHONG co "Tấm ảnh có đồng hồ của Johny", "Tấm ảnh chiếc xe"; CO "Máy ảnh của Johny".
+# Khong goi LLM. Doi stage=2 thi them "Tấm ảnh chiếc xe"; stage=3 thi them tam anh co dong ho.
+GET {{RAG_HostAddress}}/api/graph/catalog-debug?npcName=Johny&stage=1
+
+### 13. STAGE DO THI: canh quanh Johny o stage 2 (ton MOT luot LLM trich thuc the)
+# Ky vong: co canh "vô tình chụp tấm ảnh chiếc xe" (stage 2) va "Thích chụp ảnh" (stage 1, tich luy);
+# KHONG co canh nao co ma_chunk 23_johny#L8..L13 (stage 3).
+POST {{RAG_HostAddress}}/api/graph/local-search-debug
+Content-Type: application/json
+
+{ "npcName": "Johny", "question": "anh chụp những tấm ảnh nào bằng máy ảnh của mình", "Stage": 2 }
+
 ########################################################################################
 # CACHE CAU TRA LOI THEO NGU NGHIA — bo kiem chung CO DINH
 #

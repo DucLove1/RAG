@@ -13,8 +13,8 @@ sự thật cho pipeline, [neo4j-init.cypher](graphrag/neo4j-init.cypher) tạo 
 
 | Nhân vật | Scene | File được nạp |
 |---|---|---|
-| Cảnh sát 1 | 1 | `00`, `10` |
-| Cảnh sát 2 | 1 | `00`, `10` |
+| James (Cảnh sát 1) | 1 | `00`, `10`, `13` |
+| Michael (Cảnh sát 2) | 1 | `00`, `10`, `14` |
 | Wills | 1 | `00`, `11`, `20` |
 | Người đi đường 1 | 2 | `00`, `11` |
 | Người đi đường 2 | 2 | `00`, `11` |
@@ -32,7 +32,7 @@ sự thật cho pipeline, [neo4j-init.cypher](graphrag/neo4j-init.cypher) tạo 
 | File | Nhân vật cùng biết |
 |---|---|
 | `00_boi-canh-chung.md` | Tất cả |
-| `10_chung_canh-sat.md` | Cảnh sát 1, Cảnh sát 2 |
+| `10_chung_canh-sat.md` | James (Cảnh sát 1), Michael (Cảnh sát 2) — chỉ phần chung, xem `13`/`14` cho phần riêng |
 | `11_chung_tin-don-tieng-la-het.md` | Wills, Người đi đường 1, Người đi đường 2 |
 | `12_chung_tin-don-khoa-minh-trong-nha.md` | Người dân ngồi bên đường 1, Người dân ngồi bên đường 2 |
 
@@ -44,16 +44,18 @@ riêng của từng nhân vật.
 | File | Số dòng tri thức | Nội dung |
 |---|---|---|
 | `00_boi-canh-chung.md` | 4 | Bối cảnh vụ án, ai là nạn nhân, hiện trường |
-| `10_chung_canh-sat.md` | 2 | Kết luận giết người rồi tự sát |
-| `11_chung_tin-don-tieng-la-het.md` | 2 | Tiếng la hét và đập phá từ nhà cặp đôi |
+| `10_chung_canh-sat.md` | 3 | Phần chung cả hai cảnh sát đều biết: Chris là chồng tệ, giờ nghe súng, giờ án mạng |
+| `11_chung_tin-don-tieng-la-het.md` | 6 | Tiếng la hét/đập phá, cặp đôi kỳ dị khóa mình trong nhà, Chris đánh Danie, 2 tiếng súng, kết luận giết-rồi-tự-sát |
 | `12_chung_tin-don-khoa-minh-trong-nha.md` | 2 | Cặp đôi kỳ dị, khóa mình trong nhà, tin đồn Chris đánh Danie |
-| `20_wills.md` | 2 | Hai tiếng súng cách nhau 15 phút, nhận định về Chris |
-| `21_brad.md` | 4 | Quá khứ và tính cách Chris, quan hệ với Danie |
+| `13_james.md` | 3 | James (Cảnh sát 1): cửa sổ do nạn nhân quên khóa, kết luận chắc chắn giết-người-rồi-tự-sát |
+| `14_michael.md` | 2 | Michael (Cảnh sát 2): nghi cửa sổ có thể do kẻ đột nhập, không khẳng định kết luận |
+| `20_wills.md` | 3 | Hai tiếng súng cách nhau 15 phút, nghe cãi vã mỗi tối, nhận định về Chris |
+| `21_brad.md` | 5 | Quá khứ và tính cách Chris, quan hệ với Danie, sốc với kết luận tự sát |
 | `22_ong-lao-tiem-banh-mi.md` | 5 | Thói quen của Chris, mốc 4–5 tháng, không có chứng cứ ngoại phạm |
-| `23_johny.md` | 6 | Bằng chứng ngoại phạm, các tấm ảnh, đôi găng tay |
+| `23_johny.md` | 11 | Bằng chứng ngoại phạm, các tấm ảnh, đôi găng tay, quan điểm về Chris, lý giải theo từng `stage` |
 | `24_ba-johny.md` | 3 | Bà Johny là bà của Johny, ba mẹ Johny bạo lực và vụ tự sát tương tự |
 | `25_phap-y.md` | 10 | Kết quả khám nghiệm thi thể Chris và Danie |
-| `26_jack.md` | 5 | Bạn thân cặp đôi, chủ tiệm sửa xe, chuyến thăm tối hôm trước án mạng |
+| `26_jack.md` | 8 | Bạn thân cặp đôi, chủ tiệm sửa xe quen thuộc, 2 lần ghé nhà, xe màu đỏ đối chiếu với ảnh bằng chứng |
 
 ## Cách nạp vào RAG
 
@@ -69,8 +71,37 @@ Luồng đầy đủ cho cả hai nhánh nằm ở [README.md](README.md). Tóm 
    bảng trong `graphrag/ONTOLOGY.md` trước khi `MERGE`.
 5. **Lọc theo nhân vật:** dùng trường `scene` và `nguon` trong frontmatter, hoặc bảng "Nhân
    vật dùng file nào" ở trên, để giới hạn tri thức mỗi NPC truy xuất được.
+6. **Lọc theo `stage` (mịn hơn `scene`, theo từng dòng):** một dòng trong thân file có thể
+   bắt đầu bằng tiền tố `[stage:<so_stage>]` (ví dụ `[stage:3] ...`). Tiền
+   tố này bị tách khỏi nội dung trước khi nhúng và lưu riêng vào payload của đúng chunk đó.
+   Dòng KHÔNG có tiền tố luôn hiển thị (như trước nay). Khi client gửi `Stage` trong request,
+   backend trả về những dòng không gắn stage HOẶC gắn stage `≤` stage đó (luật TÍCH LŨY: ở stage 3
+   NPC biết cả dòng stage 1, 2 và 3). Dùng cho tri thức mà
+   một NPC chỉ nên hé lộ ở một thời điểm cụ thể trong game (ví dụ Johny ở `23_johny.md`), mà
+   không cần nạp lại corpus mỗi khi đổi logic game. Field `Stage` trong `RequestDto` là
+   optional và nhận mã số (`1`, `2`, `3` với Johny) — không gửi thì hành vi y như trước
+   khi có tính năng này. Mỗi state có thể được viết thành một dòng để tạo đúng một chunk.
+   **Cả hai nhánh (vector và đồ thị) dùng chung luật tích lũy** `StageCatalog.IsRevealedAt` /
+   `RevealedAt`. Với đồ thị, luật áp cho danh mục thực thể đưa cho LLM, các cạnh, và nguyên văn
+   kéo theo cạnh; cạnh lập luận bắc qua dòng của hai stage chỉ hiện từ stage lớn hơn. Cache câu
+   trả lời cũng phân vùng theo stage. **Hệ quả khi viết corpus:** vì mọi dòng stage ≤ n đều cùng
+   có mặt, mỗi dòng stage phải là một SỰ THẬT CỘNG THÊM không bao giờ hết đúng ("Johny biết người
+   chơi đã nhặt tấm ảnh X"). KHÔNG đưa vào corpus các dòng mô tả TÌNH HUỐNG của lần gặp ("gặp người
+   chơi trên đường", "gặp tại nhà khi người chơi chưa có ảnh"): đó không phải tri thức của NPC, và ở
+   stage sau chúng mâu thuẫn với dòng của stage trước. Bối cảnh lần gặp do `NpcSystem` mà client gửi
+   mỗi request mô tả.
 
 Chi tiết và code mẫu nằm ở [graphrag/SCHEMA.md §4](graphrag/SCHEMA.md).
+
+> **Cảnh báo (GraphRAG chưa đồng bộ):** việc tách `10_chung_canh-sat.md` thành file chung +
+> `13_james.md` + `14_michael.md` làm lệch nhiều `nguon_chunk: "10_chung_canh-sat#L1"` /
+> `"#L2"` đang trỏ tới James, Michael, Chris, Danie, nhóm "Cảnh sát", nhận định "Chris giết
+> Danie rồi sau đó Chris tự sát", và giả thuyết "Giả thuyết giết người rồi tự sát" trong
+> `graphrag/entities.json`, `graphrag/relationships.json` và `graphrag/neo4j-load.cypher`.
+> Baseline RAG (corpus → Qdrant) không bị ảnh hưởng — nhánh này hiện tắt theo mặc định
+> (`Graph:Enabled = false`). Nếu sau này bật lại nhánh GraphRAG, phải rà lại ba file đó và
+> gán đúng `nguon_chunk` mới (`13_james#Ln`, `14_michael#Ln`, hoặc dòng còn lại của `10_`)
+> trước khi `POST api/graph/load`.
 
 ## Bản đồ mâu thuẫn giữa các lời khai
 
@@ -87,7 +118,7 @@ Cột trái là `ten` của node `:GiaThuyet` trong đồ thị, viết đúng n
 | Giả thuyết Chris mất kiểm soát | Tin đồn Chris đánh Danie, Wills | Brad, Ông lão tiệm bánh mì |
 | Giả thuyết Chris tự bắn mình | Pháp y (vết đạn trên trán, dấu cầm súng tay trái) | Jack |
 | Giả thuyết Danie tự sát hoặc chống cự | — | Pháp y (không dấu cầm súng, không dấu ẩu đả) |
-| Giả thuyết có người thứ ba tại hiện trường | Pháp y, Jack, bà Johny, bộ ảnh của Johny | — |
+| Giả thuyết có người thứ ba tại hiện trường | Pháp y, Jack, bà Johny, bộ ảnh của Johny, Michael (nghi cửa sổ bị đột nhập) | James (bác bỏ, cho là nạn nhân quên khóa cửa sổ) |
 | Giả thuyết Johny theo dõi cặp đôi Chris–Danie | Bộ ảnh ngôi nhà, tấm ảnh ghi lời nói | — |
 
 Đây chính là kết quả truy vấn 5.4 trong `graphrag/SCHEMA.md`. Nếu sau khi build mà truy vấn
@@ -97,7 +128,9 @@ sót `:NhanDinh`. Bộ cạnh chuẩn nằm sẵn trong
 
 > "Vụ án là án đóng kín" không còn là một node riêng — nó chính là mặt sau của *Giả thuyết
 > giết người rồi tự sát*, nên mọi bằng chứng về người thứ ba đều treo vào giả thuyết đó. Cửa
-> sổ mở ở Scene 1 chưa có trong `corpus/`, nên chưa có cạnh tương ứng.
+> sổ mở ở Scene 1 nay đã có trong `corpus/` (`13_james.md`, `14_michael.md`), nhưng graph
+> hiện tại (`graphrag/entities.json`, `relationships.json`, `neo4j-load.cypher`) CHƯA được
+> cập nhật cạnh tương ứng — xem cảnh báo ở cuối phần "Cách nạp vào RAG".
 
 ---
 
@@ -151,20 +184,14 @@ thêm vào sổ tay.
 Sau khi người chơi hỏi hết, người chơi chọn quay về nhà nghỉ ngơi và sáng hôm sau trở lại
 hiện trường điều tra phòng ngủ của cặp đôi.
 
-### Mắt xích chiếc xe (điểm thiết kế cần chốt)
+### Mắt xích chiếc xe (đã chốt: Hướng A)
 
-Tấm ảnh chiếc xe (trong `23_johny.md`) và chuyến thăm của Jack (trong `26_jack.md`) đang
-chạm vào nhau. Có hai hướng, cần chọn một:
-
-- **Hướng A — Jack là red herring:** chiếc xe trong ảnh chính là xe của Jack. Người chơi
-  nghi Jack, hỏi Jack, Jack giải thích là đến sửa xe vào *tối hôm trước*, ngõ cụt đóng lại
-  và người chơi phải quay sang manh mối khác.
-- **Hướng B — hai chiếc xe khác nhau:** xe của Jack ở tối hôm trước, còn chiếc xe trong ảnh
-  chụp vào đêm án mạng, vẫn là dấu vết của kẻ thứ ba. Lúc này Jack chỉ có vai trò phá vỡ
-  giả thuyết cặp đôi bất hòa.
-
-Nếu chọn hướng A, cần bổ sung vào `corpus/26_jack.md` một dòng mô tả chiếc xe của Jack (màu, loại)
-để người chơi đối chiếu được với tấm ảnh.
+Tấm ảnh chiếc xe (trong `23_johny.md`) và chuyến thăm của Jack (trong `26_jack.md`) đã được
+chốt theo **Hướng A — Jack là red herring**: chiếc xe trong ảnh chính là xe màu đỏ của Jack.
+Jack có ghé nhà Chris và Danie hai lần — tối hôm trước án mạng (thăm hỏi, sửa xe) và đúng
+ngày xảy ra vụ án (kiểm tra bảo dưỡng xe gần đây). Người chơi nghi Jack, hỏi Jack, Jack giải
+thích hợp lý, ngõ cụt đóng lại và người chơi phải quay sang manh mối khác (Johny).
+`corpus/26_jack.md` đã có dòng mô tả xe của Jack (màu đỏ) để người chơi đối chiếu với ảnh.
 
 ## Scene 3 — Phòng ngủ của nạn nhân
 

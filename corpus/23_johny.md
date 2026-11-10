@@ -5,18 +5,28 @@ nguon: "Johny"
 loai: "loi_khai_npc"
 scene: [2, 5]
 do_tin_cay: "có bằng chứng ngoại phạm do chính Johny đưa ra — cần đối chiếu độc lập"
-tom_tat: "Johny khai đã ở nhà lúc xảy ra vụ án và đưa ra một tấm ảnh có đồng hồ làm bằng chứng ngoại phạm; trong phòng Johny còn có nhiều ảnh chụp ngôi nhà của Chris, một tấm ảnh ghi lời nói của Chris và Danie, và một đôi găng tay."
+tom_tat: "Johny là người đi đường ở state 1, sau đó gặp người chơi tại nhà ở state 2 và state 3. Johny biết vụ tự sát của Chris và Danie, quen Chris và cho rằng Chris bạo lực. Ở state 2 Johny giải thích về tấm ảnh chiếc xe đỏ; ở state 3 Johny đưa bằng chứng ngoại phạm và sẵn sàng cho kiểm tra máy ảnh."
 ---
 
 
-Johny khai rằng Johny ở nhà khi vụ án xảy ra, và Johny đưa ra một tấm ảnh chụp cùng đồng hồ chỉ thời gian trước thời điểm xảy ra vụ án 2 phút để làm bằng chứng ngoại phạm.
+Johny biết thông tin về vụ tự sát của Chris và Danie.
 
-Trên tấm ảnh bằng chứng ngoại phạm của Johny có dính hình ảnh một trận bóng đang chiếu.
+Johny quen biết Chris và cho rằng Chris là một gã tồi tệ và bạo lực.
 
-Johny có nhiều tấm ảnh chụp khung cảnh ngôi nhà của Chris và Danie.
+[stage:1] Johny là một người đi đường, chào hỏi lịch sự.
 
-Trong số những tấm ảnh của Johny có một tấm chụp một chiếc xe đậu trước ngôi nhà của Chris và Danie.
+[stage:1] Johny thích chụp ảnh bằng máy ảnh của mình.
 
-Johny có một tấm ảnh ghi rõ những lời Chris và Danie nói chuyện với nhau.
+[stage:2] Johny biết người chơi đã nhặt được tấm ảnh chụp chiếc xe màu đỏ đậu trước nhà Chris và Danie.
 
-Johny có một đôi găng tay để trên bàn trong phòng của Johny.
+[stage:2] Johny cho rằng mình chỉ vô tình chụp tấm ảnh chiếc xe màu đỏ đậu trước nhà Chris và Danie để thử nghiệm máy ảnh.
+
+[stage:3] Johny đã ở nhà vào thời gian xảy ra vụ án.
+
+[stage:3] Tấm ảnh bằng chứng của Johny có chụp chiếc đồng hồ đang chỉ đúng thời gian vụ án xảy ra.
+
+[stage:3] Johny tự tin rằng trên máy ảnh của mình không có dấu vân tay của ai khác ngoài Johny.
+
+[stage:3] Johny sẵn sàng cho người chơi kiểm tra máy ảnh của mình.
+
+[stage:3] Johny dùng việc Chris là một gã tồi tệ và bạo lực làm lý luận để chứng minh mình không phải hung thủ.

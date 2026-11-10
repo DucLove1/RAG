@@ -89,10 +89,6 @@ namespace RAG.Extension.Sse
 
                     switch (streamEvent)
                     {
-                        case AskStreamMetaEvent meta:
-                            await WriteEventAsync(response, AskStreamEventNames.Meta, meta, aborted);
-                            break;
-
                         case AskStreamTokenEvent token:
                             await WriteTokenAsync(response, token.Text, aborted);
                             break;

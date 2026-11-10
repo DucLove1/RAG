@@ -6,9 +6,10 @@ Chi tiết đầy đủ kèm số liệu đo: [docs/semantic-router-plan.md](doc
 > **Cập nhật 11/2026 — đã GỠ HẲN khỏi dự án:** node đối chiếu điểm yếu (`IWeakPointDetector`, cấu hình
 > `WeakPoint:*`, `Config/weak-point.json`) và cache câu trả lời theo ngữ nghĩa (`ISemanticAnswerCache`,
 > provider FAISS/Redis, cấu hình `SemanticAnswerCache:*`, endpoint `DELETE api/query/answer-cache`, gói
-> `Faiss.NET.*` và `NRedisStack`, `docker-compose.yml`). Trường `weakPointHit` vẫn còn trong response của
-> `ask` / `ask-stream` nhưng LUÔN là `false`, giữ lại để client cũ không vỡ. Các mục 4c, 5.13, 5.14, 6b
-> (phần Redis) và mọi chỗ nhắc hai node này bên dưới mô tả hành vi CŨ, giữ lại làm lịch sử.
+> `Faiss.NET.*` và `NRedisStack`, `docker-compose.yml`). Trường `weakPointHit` cũng đã bị gỡ: `ask` chỉ còn
+> trả `{ "answer": "..." }`, còn `ask-stream` không còn sự kiện `meta` (chuỗi là `token`* → `done` | `error`).
+> Các mục 4c, 5.13, 5.14, 6b (phần Redis) và mọi chỗ nhắc hai node này bên dưới mô tả hành vi CŨ, giữ lại
+> làm lịch sử.
 > Thêm vào đó: tri thức có **stage** (`[stage:n]` trong corpus, field `Stage` trong request), lọc TÍCH LŨY
 > (ở stage n biết dòng stage ≤ n) ở cả nhánh vector lẫn nhánh đồ thị — xem HUONG_DAN.md.
 
@@ -97,7 +98,7 @@ nhánh truy hồi là cache hit, tổng vẫn đúng 1 lượt gọi API. **Đá
 
 | Method | Route | Chức năng |
 |---|---|---|
-| POST | `api/query/ask` | Hỏi NPC. Trả **object** `{ "answer": "...", "weakPointHit": false }` |
+| POST | `api/query/ask` | Hỏi NPC. Trả **object** `{ "answer": "..." }` |
 | POST | `api/query/ask-stream` | Hỏi NPC, trả lời **từng mảnh** qua SSE. Xem mục 4d |
 | POST | `api/query/compact-history` | **Gộp lịch sử hội thoại** client gửi lên thành một chuỗi `summary`. Xem mục 4e |
 | POST | `api/query/upload` | Nạp tài liệu |
@@ -226,7 +227,7 @@ từ đĩa, câu cũ trúng cache ngay ở request đầu tiên.
 ## 4c. Node đối chiếu điểm yếu (`IWeakPointDetector`)
 
 > **ĐÃ GỠ HẲN.** Các lớp `WeakPoint*`, `WeakPointConfig`, `Config/weak-point.json` và đăng ký DI đã bị xóa;
-> `weakPointHit` trong response luôn là `false` (giữ lại để client cũ không vỡ). Mục này mô tả hành vi CŨ.
+> Trường `weakPointHit` trong response cũng đã bị gỡ. Mục này mô tả hành vi CŨ.
 
 Khi người chơi hỏi trúng **câu chốt** của hung thủ, pipeline thoát ngay và trả về cờ `weakPointHit`
 để client chạy nhịp kịch bản của mình.
@@ -270,20 +271,22 @@ Endpoint **riêng**, `ask` không đổi một dòng nào. Trả Server-Sent Eve
 chữ chạy dần thay vì chờ cả câu.
 
 ```
-event: meta    data: {"weakPointHit":false}         <- LUÔN là sự kiện đầu tiên
 event: token   data: {"text":"..."}                 <- nối vào cuối; 0 hoặc nhiều
 event: done    data: {}
 event: error   data: {"status":429,"title":"..."}   <- chỉ khi lỗi xảy ra SAU khi luồng đã bắt đầu
 ```
 
-Ba nhánh của `AskStreamPipeline` song song từng bước với `AskPipeline`:
+Hai nhánh của `AskStreamPipeline` song song từng bước với `AskPipeline`:
 
 | Nhánh | Hành vi |
 |---|---|
-| Route (tán gẫu) | `meta(false)` rồi stream thật từ LLM |
-| Điểm yếu | `meta(true)` rồi **một token nguyên cục** (lời thoại lấy nguyên văn từ config, không qua LLM). `Reply` được phép rỗng → **0 token** |
-| RAG trúng cache | `meta(false)` rồi **một token nguyên cục** |
-| RAG trượt cache | `meta(false)` rồi stream thật, tích lũy vào `StringBuilder` để ghi cache khi xong |
+| Route có lời đáp cố định | **một token nguyên cục** (lấy nguyên văn từ config, không qua LLM) |
+| Route không có lời đáp cố định | stream thật từ LLM, không truy hồi |
+| Truy hồi (mặc định) | nhúng → dựng ngữ cảnh → stream thật từ LLM |
+
+(Các nhánh điểm yếu và cache câu trả lời trước đây đã gỡ; sự kiện `meta` cũng đã gỡ cùng trường `weakPointHit`
+mà nó mang. Các mục "chỗ dễ sai" bên dưới nhắc `meta`/cache là mô tả CŨ — lý do không phát sự kiện nào trước
+mảnh văn bản đầu tiên vẫn đúng nguyên.)
 
 **Ràng buộc**: đổi thứ tự nhánh ở một lớp thì phải đổi cả lớp kia. Bộ kiểm chứng `S1..S5`
 trong `RAG.http` tồn tại để bắt lúc hai bên lệch nhau.
@@ -570,7 +573,7 @@ RAG/
   Design game.docx                  thiết kế game — đọc khi cần hiểu domain
   Interface/
     IRagPipeline.cs                 IAskService / IIngestionService / IRouteDiagnostics / IRouteAdmin
-    AskResult.cs                    Answer + WeakPointHit (luôn false); trả thẳng ra controller như IngestionResult
+    AskResult.cs                    Answer; trả thẳng ra controller như IngestionResult
     IVectorStore.cs                 + VectorRecord, VectorHit, VectorSearchFilter (KHÔNG có kiểu Qdrant)
     ISemanticRouter.cs              RouteAsync() — KHÔNG nhận float[] (xem §3)
     IRouteExplainer.cs              ExplainAsync() — tách khỏi ISemanticRouter theo ISP
@@ -755,7 +758,7 @@ Phạm vi do người dùng chốt: refactor **sâu** (tách lớp, đổi tên)
 200 kèm câu trả lời rác. `QDRANT__DIMENSIONS` đã bị xoá khỏi `.env` — **nhớ xoá cả trên Render**.
 
 **Thay đổi có thể phá client (đợt node điểm yếu):** `POST api/query/ask` trả **object**
-`{ "answer": "...", "weakPointHit": false }` thay cho chuỗi trần. Đây là kiểu hỏng ÂM THẦM chứ không
+`{ "answer": "...", "weakPointHit": ... }` thay cho chuỗi trần (trường `weakPointHit` sau này đã bị gỡ, chỉ còn `answer`). Đây là kiểu hỏng ÂM THẦM chứ không
 báo lỗi: client không gửi `Accept: application/json` trước đây nhận `text/plain` là chính câu trả
 lời, giờ sẽ cho NPC "nói" ra nguyên cục JSON. Client cũ phải đọc trường `answer`.
 

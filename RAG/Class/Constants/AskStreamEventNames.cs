@@ -1,21 +1,15 @@
 namespace RAG.Class.Constants
 {
     /// <summary>
-    /// Tên bốn loại sự kiện của luồng trả lời. Đây là HỢP ĐỒNG với client game: đổi một chuỗi ở
+    /// Tên ba loại sự kiện của luồng trả lời. Đây là HỢP ĐỒNG với client game: đổi một chuỗi ở
     /// đây là phá client mà không có một lỗi biên dịch nào ở cả hai phía.
     /// <para>
-    /// Chuỗi sự kiện bất biến: <see cref="Meta"/> → <see cref="Token"/>* → (<see cref="Done"/> |
-    /// <see cref="Error"/>). Số token có thể bằng 0.
+    /// Chuỗi sự kiện bất biến: <see cref="Token"/>* → (<see cref="Done"/> | <see cref="Error"/>).
+    /// Số token có thể bằng 0.
     /// </para>
     /// </summary>
     public static class AskStreamEventNames
     {
-        /// <summary>
-        /// Siêu dữ liệu của lượt trả lời, mang <c>weakPointHit</c> (luôn false, giữ lại để client cũ
-        /// không vỡ). Luôn là sự kiện ĐẦU TIÊN.
-        /// </summary>
-        public const string Meta = "meta";
-
         /// <summary>Một mảnh văn bản. Client nối vào cuối phần đã nhận.</summary>
         public const string Token = "token";
 

@@ -17,15 +17,6 @@ namespace RAG.Interface
     public abstract record AskStreamEvent;
 
     /// <summary>
-    /// Siêu dữ liệu của lượt trả lời. Luôn đi TRƯỚC mọi <see cref="AskStreamTokenEvent"/>.
-    /// </summary>
-    /// <param name="WeakPointHit">
-    /// Luôn <c>false</c>, cùng ý nghĩa với trường cùng tên của <see cref="AskResult"/>: giữ lại chỉ để
-    /// client cũ không vỡ.
-    /// </param>
-    public sealed record AskStreamMetaEvent(bool WeakPointHit) : AskStreamEvent;
-
-    /// <summary>
     /// Một mảnh văn bản.
     /// <para>
     /// KHÔNG bảo đảm mảnh trùng với ranh giới từ hay câu — nó là delta của model, có thể là một

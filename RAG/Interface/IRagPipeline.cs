@@ -6,9 +6,6 @@ namespace RAG.Interface
     public interface IAskService
     {
         /// <param name="topK">Số đoạn ngữ cảnh lấy về khi đi đường truy hồi.</param>
-        /// <returns>
-        /// Câu trả lời kèm cờ <c>WeakPointHit</c> (luôn false, giữ lại để client cũ không vỡ).
-        /// </returns>
         /// <param name="history">Lịch sử hội thoại client gửi kèm; <see cref="ConversationHistory.Empty"/> khi không có.</param>
         /// <param name="stage">
         /// Giai đoạn mạch chuyện hiện tại, do client gửi lên; <c>null</c> thì không lọc theo stage
@@ -31,9 +28,9 @@ namespace RAG.Interface
     /// lai phải viết một thứ không ai ở đó gọi tới.
     /// </para>
     /// <para>
-    /// BẤT BIẾN của chuỗi sự kiện: đúng MỘT <see cref="AskStreamMetaEvent"/> luôn đi TRƯỚC mọi
-    /// <see cref="AskStreamTokenEvent"/>. Sự kiện này được phát sau bước nhúng chứ không sớm hơn, để
-    /// lỗi nhúng vẫn còn biến được thành mã HTTP đúng thay vì một sự kiện lỗi trong response 200.
+    /// Sự kiện đầu tiên chính là mảnh văn bản đầu tiên, nên mọi lỗi xảy ra trước nó (nhúng, truy
+    /// hồi, mở kết nối tới LLM) vẫn còn biến được thành mã HTTP đúng thay vì một sự kiện lỗi nằm
+    /// trong response 200.
     /// </para>
     /// <para>
     /// KHÔNG sinh sự kiện <see cref="AskStreamDoneEvent"/> hay <see cref="AskStreamErrorEvent"/>:

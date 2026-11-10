@@ -40,8 +40,7 @@ namespace RAG.Controllers
         /// <summary>
         /// THAY ĐỔI CÓ THỂ PHÁ CLIENT: trước đây endpoint này trả về câu trả lời dưới dạng chuỗi
         /// trần (text/plain với client không gửi Accept: application/json). Nay nó trả về object
-        /// <c>{ "answer": "...", "weakPointHit": false }</c> (weakPointHit luôn false, giữ lại để client cũ không vỡ).
-        /// Client cũ đọc thẳng body làm lời NPC sẽ hiển thị nguyên cục JSON chứ không báo lỗi.
+        /// <c>{ "answer": "..." }</c>. Client cũ đọc thẳng body làm lời NPC sẽ hiển thị nguyên cục JSON chứ không báo lỗi.
         /// </summary>
         [HttpPost("ask")]
         public async Task<IActionResult> Post([FromBody] RequestDto request, CancellationToken cancellationToken = default)
@@ -58,13 +57,12 @@ namespace RAG.Controllers
         /// Server-Sent Events để người chơi thấy chữ chạy dần thay vì chờ cả câu.
         /// <para>
         /// Endpoint RIÊNG chứ không đổi <c>ask</c>: không có cách nào để một client đang đọc
-        /// <c>{ answer, weakPointHit }</c> tự hiểu được một luồng nhiều mảnh, nên đổi tại chỗ là
+        /// <c>{ answer }</c> tự hiểu được một luồng nhiều mảnh, nên đổi tại chỗ là
         /// phá mọi client cùng lúc. Giữ cả hai còn để lại một đường không streaming dùng làm mốc
         /// đối chiếu khi nghi ngờ luồng trả sai.
         /// </para>
         /// <para>
-        /// Chuỗi sự kiện: <c>meta</c> (mang <c>weakPointHit</c>) rồi <c>token</c>* rồi
-        /// <c>done</c> hoặc <c>error</c>. Số token có thể bằng 0. Lỗi xảy ra TRƯỚC mảnh đầu vẫn là
+        /// Chuỗi sự kiện: <c>token</c>* rồi <c>done</c> hoặc <c>error</c>. Số token có thể bằng 0. Lỗi xảy ra TRƯỚC mảnh đầu vẫn là
         /// ProblemDetails với mã đúng, hệt <c>ask</c>; chi tiết ở <see cref="AskStreamSseResult"/>.
         /// </para>
         /// <para>

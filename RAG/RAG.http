@@ -3,7 +3,7 @@
 # ==========================================================================
 # LUU Y HINH DANG PHAN HOI (thay doi co the pha client):
 # POST api/query/ask tra ve OBJECT chu khong con la chuoi tran:
-#   { "answer": "...", "weakPointHit": false }
+#   { "answer": "..." }
 # Moi vi du "ask" ben duoi deu tra ve dang nay.
 #
 # POST api/query/ask-stream la endpoint RIENG tra ve Server-Sent Events tung manh.
@@ -486,7 +486,7 @@ Content-Type: application/json
 # ==========================================================================
 # NODE DIEM YEU (WeakPoint) DA DUOC GO KHOI PIPELINE (AskPipeline / AskStreamPipeline).
 # Cac case 1-9 cu (cau chot, tat node, tiet kiem, dieu kien an toan, stage) nam trong lich su git.
-# Phan hoi van con truong weakPointHit de client cu khong vo, nhung luon la false.
+# Truong weakPointHit cung da bi go khoi phan hoi cua `ask` va khoi luong `ask-stream`.
 # ==========================================================================
 
 ### 10. STAGE: loc tri thuc theo tung dong trong corpus (corpus/23_johny.md)
@@ -619,9 +619,8 @@ Content-Type: application/json
 #    CHUNG MINH DUOC STREAMING. No chi dung de kiem hinh dang phan hoi. Muon chung minh
 #    tung manh that su toi noi thi phai dung `curl -N` (xem khoi CHUNG MINH ben duoi).
 #
-# Chuoi su kien:  meta -> token* -> done | error
-#   event: meta    data: {"weakPointHit":false}         <- LUON la su kien dau tien
-#   event: token   data: {"text":"..."}                 <- noi vao cuoi; co the 0 hoac nhieu
+# Chuoi su kien:  token* -> done | error
+#   event: token  data: {"text":"..."}                 <- noi vao cuoi; co the 0 hoac nhieu
 #   event: done    data: {}                             <- ket thuc binh thuong
 #   event: error   data: {"status":429,"title":"..."}   <- loi SAU khi luong da bat dau
 #
@@ -715,7 +714,6 @@ Content-Type: application/json
 #       var json = line[6..];
 #       switch (eventName)
 #       {
-#           case "meta":  /* doc weakPointHit; bat nhip kich ban neu true */ break;
 #           case "token": /* noi text vao TextMeshPro */                     break;
 #           case "error": /* hien thong bao loi, dung */                     break;
 #           case "done":  return;
@@ -952,7 +950,7 @@ Content-Type: application/json
   ]
 }
 
-### HT-6. Ban streaming cua HT-3: thu tu su kien van la meta -> token... -> done
+### HT-6. Ban streaming cua HT-3: thu tu su kien van la token... -> done
 POST {{RAG_HostAddress}}/api/query/ask-stream
 Content-Type: application/json
 Accept: text/event-stream

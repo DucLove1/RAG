@@ -72,19 +72,19 @@ namespace RAG.Class.Answering
                 // Route có lời đáp cố định (vd. câu ngoài thế giới game → "không biết") thì trả
                 // nguyên văn, không qua LLM để nó không có cơ hội lỡ trả lời.
                 if (route.FixedReply is not null)
-                    return new AskResult(route.FixedReply, WeakPointHit: false);
+                    return new AskResult(route.FixedReply);
 
                 var routedAnswer = await AnswerWithoutRetrievalAsync(
                     npcName, npcSystem, normalizedQuestion, history, route, lengthInstruction, cancellationToken);
 
-                return new AskResult(routedAnswer, WeakPointHit: false);
+                return new AskResult(routedAnswer);
             }
 
             // Từ đây trở xuống là đường nội dung game.
             var answer = await AnswerWithRetrievalAsync(
                 npcName, npcSystem, normalizedQuestion, history, topK, stage, lengthInstruction, cancellationToken);
 
-            return new AskResult(answer, WeakPointHit: false);
+            return new AskResult(answer);
         }
 
         /// <summary>

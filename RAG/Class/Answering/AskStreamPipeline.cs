@@ -79,8 +79,6 @@ namespace RAG.Class.Answering
             // NHÁNH 1 — tán gẫu. Khớp route nghĩa là câu này KHÔNG hỏi nội dung game.
             if (route is not null)
             {
-                yield return new AskStreamMetaEvent(WeakPointHit: false);
-
                 // Lời đáp cố định lấy NGUYÊN VĂN từ cấu hình, không qua LLM, nên không có gì để
                 // stream: phát nguyên cục. Hiệu ứng gõ máy chữ là quyết định TRÌNH BÀY, thuộc về
                 // client — băm nhỏ ở đây còn buộc đẻ thêm một tham số kích thước mảnh trong cấu
@@ -116,17 +114,12 @@ namespace RAG.Class.Answering
             var context = await _contextBuilder.BuildAsync(
                 npcName, normalizedQuestion, questionEmbedding, topK, stage, cancellationToken);
 
-            // Sự kiện ĐẦU TIÊN của nhánh này phát ở ĐÂY chứ không sớm hơn, và đó là quyết định có
-            // chủ đích. Tầng ghi ra dây không gửi một byte nào — kể cả header — trước khi sự kiện
-            // đầu về tay nó; nên mọi thứ nằm phía trên dòng này (nhúng, tìm vector) vẫn
-            // còn biến được thành 429/503/500 kèm ProblemDetails y hệt api/query/ask.
-            //
-            // Phát meta ngay sau bước định tuyến thì header bay đi TRƯỚC bước nhúng, và từ giây đó
-            // một EmbeddingUnavailableException không còn là 503 nữa mà tụt xuống thành một sự kiện
-            // lỗi nằm trong thân một response 200 — đúng thứ mà việc trả đúng mã lỗi vừa được sửa
-            // để tránh. Client không mất gì: cờ trong meta chỉ có ích khi đã có chữ để vẽ.
-            yield return new AskStreamMetaEvent(WeakPointHit: false);
-
+            // Không có sự kiện nào phát trước mảnh văn bản đầu tiên, và đó là có chủ đích. Tầng ghi
+            // ra dây không gửi một byte nào — kể cả header — trước khi sự kiện đầu về tay nó; nên
+            // mọi thứ nằm phía trên (nhúng, tìm vector, mở kết nối tới LLM) vẫn còn biến được thành
+            // 429/503/500 kèm ProblemDetails y hệt api/query/ask. Phát một sự kiện nào đó sớm hơn
+            // thì header bay đi TRƯỚC các bước đó, và một EmbeddingUnavailableException không còn là
+            // 503 nữa mà tụt xuống thành một sự kiện lỗi nằm trong thân một response 200.
             var answerStream = _llmStreamProvider.AskStreamAsync(
                 _promptConfig.BuildSystemPrompt(npcName, npcSystem, lengthInstruction),
                 _conversationFormatter.PrependToAnswerPrompt(

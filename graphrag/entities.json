@@ -6,20 +6,49 @@
     ],
     "nguon_chunk": [
       "00_boi-canh-chung#L1",
+      "00_boi-canh-chung#L2",
+      "00_boi-canh-chung#L3",
+      "00_boi-canh-chung#L4",
       "10_chung_canh-sat#L1",
+      "10_chung_canh-sat#L3",
+      "11_chung_tin-don-tieng-la-het#L1",
+      "11_chung_tin-don-tieng-la-het#L2",
+      "11_chung_tin-don-tieng-la-het#L3",
+      "11_chung_tin-don-tieng-la-het#L4",
+      "11_chung_tin-don-tieng-la-het#L6",
       "12_chung_tin-don-khoa-minh-trong-nha#L1",
       "12_chung_tin-don-khoa-minh-trong-nha#L2",
+      "13_james#L2",
+      "13_james#L3",
+      "14_michael#L2",
       "20_wills#L2",
+      "20_wills#L3",
       "21_brad#L1",
+      "21_brad#L2",
       "21_brad#L3",
+      "21_brad#L4",
+      "21_brad#L5",
       "22_ong-lao-tiem-banh-mi#L3",
       "22_ong-lao-tiem-banh-mi#L4",
       "22_ong-lao-tiem-banh-mi#L5",
+      "23_johny#L1",
+      "23_johny#L2",
       "23_johny#L5",
+      "23_johny#L6",
+      "23_johny#L11",
+      "24_ba-johny#L3",
       "25_phap-y#L6",
+      "25_phap-y#L7",
       "25_phap-y#L8",
       "25_phap-y#L9",
-      "26_jack#L1"
+      "25_phap-y#L10",
+      "26_jack#L1",
+      "26_jack#L3",
+      "26_jack#L4",
+      "26_jack#L5",
+      "26_jack#L6",
+      "26_jack#L7",
+      "26_jack#L8"
     ],
     "thuoc_tinh": {
       "gioi_tinh": "nam",
@@ -35,15 +64,42 @@
     ],
     "nguon_chunk": [
       "00_boi-canh-chung#L1",
+      "00_boi-canh-chung#L2",
+      "00_boi-canh-chung#L3",
+      "00_boi-canh-chung#L4",
+      "10_chung_canh-sat#L3",
+      "11_chung_tin-don-tieng-la-het#L1",
+      "11_chung_tin-don-tieng-la-het#L2",
+      "11_chung_tin-don-tieng-la-het#L3",
+      "11_chung_tin-don-tieng-la-het#L4",
+      "11_chung_tin-don-tieng-la-het#L6",
       "12_chung_tin-don-khoa-minh-trong-nha#L1",
       "12_chung_tin-don-khoa-minh-trong-nha#L2",
+      "13_james#L2",
+      "13_james#L3",
+      "14_michael#L2",
+      "20_wills#L3",
       "21_brad#L2",
+      "21_brad#L4",
+      "22_ong-lao-tiem-banh-mi#L4",
       "22_ong-lao-tiem-banh-mi#L5",
+      "23_johny#L1",
       "23_johny#L5",
+      "23_johny#L6",
+      "24_ba-johny#L3",
+      "25_phap-y#L1",
       "25_phap-y#L2",
       "25_phap-y#L3",
+      "25_phap-y#L4",
       "25_phap-y#L5",
-      "26_jack#L1"
+      "25_phap-y#L10",
+      "26_jack#L1",
+      "26_jack#L3",
+      "26_jack#L4",
+      "26_jack#L5",
+      "26_jack#L6",
+      "26_jack#L7",
+      "26_jack#L8"
     ],
     "thuoc_tinh": {
       "gioi_tinh": "nu",
@@ -61,7 +117,10 @@
       "Cảnh sát 1"
     ],
     "nguon_chunk": [
-      "10_chung_canh-sat#L1"
+      "10_chung_canh-sat#L1",
+      "13_james#L1",
+      "13_james#L2",
+      "13_james#L3"
     ],
     "thuoc_tinh": {
       "gioi_tinh": "nam",
@@ -80,7 +139,9 @@
       "Cảnh sát 2"
     ],
     "nguon_chunk": [
-      "10_chung_canh-sat#L1"
+      "10_chung_canh-sat#L1",
+      "14_michael#L1",
+      "14_michael#L2"
     ],
     "thuoc_tinh": {
       "gioi_tinh": "nam",
@@ -98,7 +159,8 @@
     "nguon_chunk": [
       "11_chung_tin-don-tieng-la-het#L1",
       "20_wills#L1",
-      "20_wills#L2"
+      "20_wills#L2",
+      "20_wills#L3"
     ],
     "thuoc_tinh": {
       "gioi_tinh": "khong_ro",
@@ -188,7 +250,8 @@
       "21_brad#L1",
       "21_brad#L2",
       "21_brad#L3",
-      "21_brad#L4"
+      "21_brad#L4",
+      "21_brad#L5"
     ],
     "thuoc_tinh": {
       "gioi_tinh": "khong_ro",
@@ -227,12 +290,19 @@
     ],
     "nguon_chunk": [
       "23_johny#L1",
+      "23_johny#L2",
       "23_johny#L3",
       "23_johny#L4",
       "23_johny#L5",
       "23_johny#L6",
+      "23_johny#L7",
+      "23_johny#L8",
+      "23_johny#L9",
+      "23_johny#L10",
+      "23_johny#L11",
       "24_ba-johny#L1",
-      "24_ba-johny#L2"
+      "24_ba-johny#L2",
+      "24_ba-johny#L3"
     ],
     "thuoc_tinh": {
       "gioi_tinh": "khong_ro",
@@ -271,10 +341,10 @@
     ],
     "nguon_chunk": [
       "25_phap-y#L1",
-      "25_phap-y#L10",
       "25_phap-y#L3",
       "25_phap-y#L4",
-      "25_phap-y#L7"
+      "25_phap-y#L7",
+      "25_phap-y#L10"
     ],
     "thuoc_tinh": {
       "gioi_tinh": "khong_ro",
@@ -294,7 +364,10 @@
       "26_jack#L2",
       "26_jack#L3",
       "26_jack#L4",
-      "26_jack#L5"
+      "26_jack#L5",
+      "26_jack#L6",
+      "26_jack#L7",
+      "26_jack#L8"
     ],
     "thuoc_tinh": {
       "gioi_tinh": "khong_ro",
@@ -317,6 +390,7 @@
       "00_boi-canh-chung#L1",
       "00_boi-canh-chung#L2",
       "00_boi-canh-chung#L4",
+      "11_chung_tin-don-tieng-la-het#L3",
       "12_chung_tin-don-khoa-minh-trong-nha#L1",
       "26_jack#L3"
     ]
@@ -340,8 +414,13 @@
       "hàng xóm"
     ],
     "nguon_chunk": [
+      "10_chung_canh-sat#L1",
       "11_chung_tin-don-tieng-la-het#L1",
       "11_chung_tin-don-tieng-la-het#L2",
+      "11_chung_tin-don-tieng-la-het#L3",
+      "11_chung_tin-don-tieng-la-het#L4",
+      "11_chung_tin-don-tieng-la-het#L5",
+      "11_chung_tin-don-tieng-la-het#L6",
       "12_chung_tin-don-khoa-minh-trong-nha#L1",
       "12_chung_tin-don-khoa-minh-trong-nha#L2"
     ]
@@ -379,11 +458,16 @@
       "00_boi-canh-chung#L2",
       "00_boi-canh-chung#L4",
       "11_chung_tin-don-tieng-la-het#L1",
+      "11_chung_tin-don-tieng-la-het#L4",
       "12_chung_tin-don-khoa-minh-trong-nha#L2",
+      "13_james#L1",
+      "14_michael#L1",
+      "20_wills#L3",
       "22_ong-lao-tiem-banh-mi#L3",
-      "23_johny#L3",
-      "23_johny#L4",
-      "26_jack#L3"
+      "23_johny#L5",
+      "26_jack#L3",
+      "26_jack#L6",
+      "26_jack#L7"
     ]
   },
   {
@@ -468,18 +552,8 @@
       "DiaDiem"
     ],
     "nguon_chunk": [
-      "23_johny#L1",
-      "23_johny#L6",
+      "23_johny#L7",
       "24_ba-johny#L1"
-    ]
-  },
-  {
-    "ten": "Phòng Johny",
-    "nhan": [
-      "DiaDiem"
-    ],
-    "nguon_chunk": [
-      "23_johny#L6"
     ]
   },
   {
@@ -498,13 +572,14 @@
     ],
     "nguon_chunk": [
       "00_boi-canh-chung#L3",
+      "10_chung_canh-sat#L2",
+      "10_chung_canh-sat#L3",
       "11_chung_tin-don-tieng-la-het#L2",
       "20_wills#L1",
-      "22_ong-lao-tiem-banh-mi#L2",
-      "23_johny#L1"
+      "22_ong-lao-tiem-banh-mi#L2"
     ],
     "thuoc_tinh": {
-      "thu_tu": "6"
+      "thu_tu": "7"
     }
   },
   {
@@ -514,23 +589,12 @@
     ],
     "nguon_chunk": [
       "00_boi-canh-chung#L3",
-      "23_johny#L1",
+      "23_johny#L7",
+      "23_johny#L8",
       "25_phap-y#L5"
     ],
     "thuoc_tinh": {
-      "thu_tu": "8"
-    }
-  },
-  {
-    "ten": "Thời điểm 2 phút trước vụ án",
-    "nhan": [
-      "ThoiGian"
-    ],
-    "nguon_chunk": [
-      "23_johny#L1"
-    ],
-    "thuoc_tinh": {
-      "thu_tu": "7"
+      "thu_tu": "9"
     }
   },
   {
@@ -539,10 +603,11 @@
       "ThoiGian"
     ],
     "nguon_chunk": [
+      "10_chung_canh-sat#L2",
       "20_wills#L1"
     ],
     "thuoc_tinh": {
-      "thu_tu": "9"
+      "thu_tu": "10"
     }
   },
   {
@@ -551,6 +616,7 @@
       "ThoiGian"
     ],
     "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L5",
       "26_jack#L3"
     ],
     "thuoc_tinh": {
@@ -606,6 +672,35 @@
     }
   },
   {
+    "ten": "Ngày xảy ra vụ án",
+    "nhan": [
+      "ThoiGian"
+    ],
+    "nguon_chunk": [
+      "26_jack#L7"
+    ],
+    "thuoc_tinh": {
+      "thu_tu": "6"
+    }
+  },
+  {
+    "ten": "Lúc 21h",
+    "nhan": [
+      "ThoiGian"
+    ],
+    "bi_danh": [
+      "21h",
+      "9 giờ tối"
+    ],
+    "nguon_chunk": [
+      "10_chung_canh-sat#L2",
+      "10_chung_canh-sat#L3"
+    ],
+    "thuoc_tinh": {
+      "thu_tu": "8"
+    }
+  },
+  {
     "ten": "Vụ án Chris–Danie",
     "nhan": [
       "SuKien"
@@ -618,7 +713,10 @@
       "00_boi-canh-chung#L1",
       "00_boi-canh-chung#L2",
       "00_boi-canh-chung#L3",
-      "10_chung_canh-sat#L1",
+      "10_chung_canh-sat#L3",
+      "11_chung_tin-don-tieng-la-het#L6",
+      "13_james#L2",
+      "14_michael#L2",
       "24_ba-johny#L3",
       "25_phap-y#L3"
     ]
@@ -647,7 +745,9 @@
       "SuKien"
     ],
     "nguon_chunk": [
-      "12_chung_tin-don-khoa-minh-trong-nha#L2"
+      "11_chung_tin-don-tieng-la-het#L4",
+      "12_chung_tin-don-khoa-minh-trong-nha#L2",
+      "20_wills#L3"
     ]
   },
   {
@@ -656,6 +756,7 @@
       "SuKien"
     ],
     "nguon_chunk": [
+      "10_chung_canh-sat#L2",
       "20_wills#L1"
     ]
   },
@@ -665,6 +766,7 @@
       "SuKien"
     ],
     "nguon_chunk": [
+      "10_chung_canh-sat#L2",
       "20_wills#L1"
     ]
   },
@@ -684,15 +786,6 @@
     ],
     "nguon_chunk": [
       "22_ong-lao-tiem-banh-mi#L3"
-    ]
-  },
-  {
-    "ten": "Trận bóng",
-    "nhan": [
-      "SuKien"
-    ],
-    "nguon_chunk": [
-      "23_johny#L2"
     ]
   },
   {
@@ -739,6 +832,15 @@
     ],
     "nguon_chunk": [
       "26_jack#L3"
+    ]
+  },
+  {
+    "ten": "Chuyến ghé của Jack đúng ngày xảy ra vụ án",
+    "nhan": [
+      "SuKien"
+    ],
+    "nguon_chunk": [
+      "26_jack#L7"
     ]
   },
   {
@@ -801,40 +903,32 @@
     }
   },
   {
-    "ten": "Tấm ảnh ngoại phạm của Johny",
+    "ten": "Tấm ảnh có đồng hồ của Johny",
     "nhan": [
       "VatChung"
     ],
+    "bi_danh": [
+      "tấm ảnh bằng chứng",
+      "tấm ảnh ngoại phạm của Johny"
+    ],
     "nguon_chunk": [
-      "23_johny#L1",
-      "23_johny#L2"
+      "23_johny#L7",
+      "23_johny#L8"
     ],
     "thuoc_tinh": {
       "trong_so_tay": "True"
     }
   },
   {
-    "ten": "Đồng hồ trong tấm ảnh ngoại phạm",
+    "ten": "Chiếc đồng hồ trong tấm ảnh của Johny",
     "nhan": [
       "VatChung"
     ],
     "nguon_chunk": [
-      "23_johny#L1"
+      "23_johny#L8"
     ],
     "thuoc_tinh": {
       "trong_so_tay": "False"
-    }
-  },
-  {
-    "ten": "Bộ ảnh chụp ngôi nhà nạn nhân",
-    "nhan": [
-      "VatChung"
-    ],
-    "nguon_chunk": [
-      "23_johny#L3"
-    ],
-    "thuoc_tinh": {
-      "trong_so_tay": "True"
     }
   },
   {
@@ -842,44 +936,30 @@
     "nhan": [
       "VatChung"
     ],
+    "bi_danh": [
+      "tấm hình chiếc xe",
+      "tấm ảnh chiếc xe màu đỏ"
+    ],
     "nguon_chunk": [
-      "23_johny#L4"
+      "23_johny#L5",
+      "23_johny#L6",
+      "26_jack#L7",
+      "26_jack#L8"
     ],
     "thuoc_tinh": {
       "trong_so_tay": "True"
     }
   },
   {
-    "ten": "Chiếc xe đậu trước ngôi nhà nạn nhân",
+    "ten": "Chiếc xe màu đỏ đậu trước ngôi nhà nạn nhân",
     "nhan": [
       "VatChung"
     ],
     "nguon_chunk": [
-      "23_johny#L4"
-    ],
-    "thuoc_tinh": {
-      "trong_so_tay": "True"
-    }
-  },
-  {
-    "ten": "Tấm ảnh ghi lời nói của Chris và Danie",
-    "nhan": [
-      "VatChung"
-    ],
-    "nguon_chunk": [
-      "23_johny#L5"
-    ],
-    "thuoc_tinh": {
-      "trong_so_tay": "True"
-    }
-  },
-  {
-    "ten": "Đôi găng tay",
-    "nhan": [
-      "VatChung"
-    ],
-    "nguon_chunk": [
-      "23_johny#L6"
+      "23_johny#L5",
+      "23_johny#L6",
+      "26_jack#L7",
+      "26_jack#L8"
     ],
     "thuoc_tinh": {
       "trong_so_tay": "True"
@@ -987,7 +1067,55 @@
       "VatChung"
     ],
     "nguon_chunk": [
-      "26_jack#L3"
+      "26_jack#L3",
+      "26_jack#L6",
+      "26_jack#L7"
+    ],
+    "thuoc_tinh": {
+      "trong_so_tay": "False"
+    }
+  },
+  {
+    "ten": "Cửa sổ mở ở hiện trường",
+    "nhan": [
+      "VatChung"
+    ],
+    "bi_danh": [
+      "chiếc cửa sổ mở"
+    ],
+    "nguon_chunk": [
+      "13_james#L1",
+      "14_michael#L1"
+    ],
+    "thuoc_tinh": {
+      "trong_so_tay": "True"
+    }
+  },
+  {
+    "ten": "Máy ảnh của Johny",
+    "nhan": [
+      "VatChung"
+    ],
+    "bi_danh": [
+      "máy ảnh"
+    ],
+    "nguon_chunk": [
+      "23_johny#L4",
+      "23_johny#L6",
+      "23_johny#L9",
+      "23_johny#L10"
+    ],
+    "thuoc_tinh": {
+      "trong_so_tay": "True"
+    }
+  },
+  {
+    "ten": "Xe màu đỏ của Jack",
+    "nhan": [
+      "VatChung"
+    ],
+    "nguon_chunk": [
+      "26_jack#L8"
     ],
     "thuoc_tinh": {
       "trong_so_tay": "False"
@@ -999,6 +1127,7 @@
       "DacDiem"
     ],
     "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L3",
       "12_chung_tin-don-khoa-minh-trong-nha#L1"
     ]
   },
@@ -1017,7 +1146,9 @@
       "DacDiem"
     ],
     "nguon_chunk": [
-      "20_wills#L2"
+      "20_wills#L2",
+      "23_johny#L2",
+      "23_johny#L11"
     ]
   },
   {
@@ -1094,16 +1225,40 @@
     ]
   },
   {
+    "ten": "Lịch sự",
+    "nhan": [
+      "DacDiem"
+    ],
+    "nguon_chunk": [
+      "23_johny#L3"
+    ]
+  },
+  {
+    "ten": "Thích chụp ảnh",
+    "nhan": [
+      "DacDiem"
+    ],
+    "nguon_chunk": [
+      "23_johny#L4"
+    ]
+  },
+  {
     "ten": "Giả thuyết giết người rồi tự sát",
     "nhan": [
       "GiaThuyet"
     ],
     "nguon_chunk": [
       "00_boi-canh-chung#L4",
-      "10_chung_canh-sat#L1",
+      "10_chung_canh-sat#L2",
+      "11_chung_tin-don-tieng-la-het#L6",
+      "13_james#L2",
+      "14_michael#L2",
       "20_wills#L1",
-      "25_phap-y#L10",
+      "21_brad#L5",
+      "23_johny#L1",
+      "23_johny#L11",
       "25_phap-y#L8",
+      "25_phap-y#L10",
       "26_jack#L5"
     ],
     "thuoc_tinh": {
@@ -1116,8 +1271,11 @@
       "GiaThuyet"
     ],
     "nguon_chunk": [
+      "10_chung_canh-sat#L1",
       "11_chung_tin-don-tieng-la-het#L2",
+      "11_chung_tin-don-tieng-la-het#L4",
       "12_chung_tin-don-khoa-minh-trong-nha#L2",
+      "20_wills#L3",
       "21_brad#L4",
       "22_ong-lao-tiem-banh-mi#L3",
       "22_ong-lao-tiem-banh-mi#L4",
@@ -1133,10 +1291,12 @@
       "GiaThuyet"
     ],
     "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L4",
       "12_chung_tin-don-khoa-minh-trong-nha#L2",
       "20_wills#L2",
       "21_brad#L3",
-      "22_ong-lao-tiem-banh-mi#L5"
+      "22_ong-lao-tiem-banh-mi#L5",
+      "23_johny#L2"
     ],
     "thuoc_tinh": {
       "trang_thai": "dang_mo"
@@ -1174,10 +1334,13 @@
       "GiaThuyet"
     ],
     "nguon_chunk": [
-      "23_johny#L4",
+      "13_james#L1",
+      "14_michael#L1",
+      "23_johny#L5",
       "24_ba-johny#L3",
       "25_phap-y#L10",
-      "26_jack#L5"
+      "26_jack#L5",
+      "26_jack#L7"
     ],
     "thuoc_tinh": {
       "trang_thai": "dang_mo"
@@ -1189,8 +1352,8 @@
       "GiaThuyet"
     ],
     "nguon_chunk": [
-      "23_johny#L3",
-      "23_johny#L5"
+      "23_johny#L5",
+      "23_johny#L6"
     ],
     "thuoc_tinh": {
       "trang_thai": "dang_mo"
@@ -1202,25 +1365,11 @@
       "NhanDinh"
     ],
     "nguon_chunk": [
-      "10_chung_canh-sat#L1"
+      "13_james#L2"
     ],
     "thuoc_tinh": {
-      "nguoi_khai": "Cảnh sát",
+      "nguoi_khai": "James",
       "do_tin_cay": "trung_binh",
-      "loai": "ket_luan_chuyen_mon"
-    }
-  },
-  {
-    "ten": "Cảnh sát không có thêm thông tin nào khác về vụ án",
-    "nhan": [
-      "NhanDinh"
-    ],
-    "nguon_chunk": [
-      "10_chung_canh-sat#L2"
-    ],
-    "thuoc_tinh": {
-      "nguoi_khai": "Cảnh sát",
-      "do_tin_cay": "cao",
       "loai": "ket_luan_chuyen_mon"
     }
   },
@@ -1398,7 +1547,7 @@
       "NhanDinh"
     ],
     "nguon_chunk": [
-      "23_johny#L1"
+      "23_johny#L7"
     ],
     "thuoc_tinh": {
       "nguoi_khai": "Johny",
@@ -1543,6 +1692,314 @@
     "thuoc_tinh": {
       "nguoi_khai": "Jack",
       "do_tin_cay": "trung_binh",
+      "loai": "suy_doan"
+    }
+  },
+  {
+    "ten": "Chris là một người chồng tệ",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "10_chung_canh-sat#L1"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Người dân khu phố",
+      "do_tin_cay": "thap",
+      "loai": "tin_don"
+    }
+  },
+  {
+    "ten": "Có hai tiếng súng lúc 21h cách nhau 15 phút",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "10_chung_canh-sat#L2"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Cảnh sát",
+      "do_tin_cay": "cao",
+      "loai": "quan_sat_truc_tiep"
+    }
+  },
+  {
+    "ten": "Cửa sổ do nạn nhân mở ra rồi quên khóa",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "13_james#L1"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "James",
+      "do_tin_cay": "thap",
+      "loai": "suy_doan"
+    }
+  },
+  {
+    "ten": "James không biết thêm thông tin nào khác về vụ án",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "13_james#L3"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "James",
+      "do_tin_cay": "cao",
+      "loai": "ket_luan_chuyen_mon"
+    }
+  },
+  {
+    "ten": "Có thể có kẻ đột nhập qua cửa sổ nhưng không tìm thấy dấu vết",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "14_michael#L1"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Michael",
+      "do_tin_cay": "thap",
+      "loai": "suy_doan"
+    }
+  },
+  {
+    "ten": "Có thể nạn nhân đã mở cửa sổ cho thoáng",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "14_michael#L1"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Michael",
+      "do_tin_cay": "thap",
+      "loai": "suy_doan"
+    }
+  },
+  {
+    "ten": "Có thể Chris giết Danie rồi sau đó Chris tự sát",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "14_michael#L2"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Michael",
+      "do_tin_cay": "thap",
+      "loai": "suy_doan"
+    }
+  },
+  {
+    "ten": "Chris và Danie kỳ dị vì thường khóa mình trong nhà",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L3"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Người dân khu phố",
+      "do_tin_cay": "thap",
+      "loai": "tin_don"
+    }
+  },
+  {
+    "ten": "Chris và Danie hay khóa mình trong nhà vì có cãi nhau",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L4"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Người dân khu phố",
+      "do_tin_cay": "thap",
+      "loai": "tin_don"
+    }
+  },
+  {
+    "ten": "Nghe đồn Chris từng đánh Danie",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L4"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Người dân khu phố",
+      "do_tin_cay": "thap",
+      "loai": "tin_don"
+    }
+  },
+  {
+    "ten": "Có hai tiếng súng vào tối hôm trước ngày án mạng",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L5"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Người dân khu phố",
+      "do_tin_cay": "thap",
+      "loai": "tin_don"
+    }
+  },
+  {
+    "ten": "Chris đã phũ phàng giết Danie rồi tự sát",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "11_chung_tin-don-tieng-la-het#L6"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Người dân khu phố",
+      "do_tin_cay": "thap",
+      "loai": "tin_don"
+    }
+  },
+  {
+    "ten": "Thường xuyên có tiếng cãi vã từ nhà Chris và Danie mỗi buổi tối",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "20_wills#L3"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Wills",
+      "do_tin_cay": "trung_binh",
+      "loai": "quan_sat_truc_tiep"
+    }
+  },
+  {
+    "ten": "Không tin vụ án là giết người rồi tự sát với Chris là hung thủ",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "21_brad#L5"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Brad",
+      "do_tin_cay": "trung_binh",
+      "loai": "suy_doan"
+    }
+  },
+  {
+    "ten": "Jack đến nhà Chris và Danie đúng ngày xảy ra vụ án để kiểm tra bảo dưỡng xe",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "26_jack#L7"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Jack",
+      "do_tin_cay": "trung_binh",
+      "loai": "quan_sat_truc_tiep"
+    }
+  },
+  {
+    "ten": "Xe của Jack màu đỏ, cùng màu với chiếc xe trong tấm ảnh",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "26_jack#L8"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Jack",
+      "do_tin_cay": "cao",
+      "loai": "quan_sat_truc_tiep"
+    }
+  },
+  {
+    "ten": "Chris và Danie chết trong một vụ tự sát",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "23_johny#L1"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Johny",
+      "do_tin_cay": "thap",
+      "loai": "suy_doan"
+    }
+  },
+  {
+    "ten": "Chris là một gã tồi tệ và bạo lực",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "23_johny#L2"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Johny",
+      "do_tin_cay": "thap",
+      "loai": "suy_doan"
+    }
+  },
+  {
+    "ten": "Johny chỉ vô tình chụp tấm ảnh chiếc xe để thử máy ảnh",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "23_johny#L6"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Johny",
+      "do_tin_cay": "thap",
+      "loai": "quan_sat_truc_tiep"
+    }
+  },
+  {
+    "ten": "Trên máy ảnh không có dấu vân tay của ai khác ngoài Johny",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "23_johny#L9"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Johny",
+      "do_tin_cay": "thap",
+      "loai": "quan_sat_truc_tiep"
+    }
+  },
+  {
+    "ten": "Johny sẵn sàng cho kiểm tra máy ảnh",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "23_johny#L10"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Johny",
+      "do_tin_cay": "trung_binh",
+      "loai": "quan_sat_truc_tiep"
+    }
+  },
+  {
+    "ten": "Johny không phải hung thủ vì Chris là một gã tồi tệ và bạo lực",
+    "nhan": [
+      "NhanDinh"
+    ],
+    "nguon_chunk": [
+      "23_johny#L11"
+    ],
+    "thuoc_tinh": {
+      "nguoi_khai": "Johny",
+      "do_tin_cay": "thap",
       "loai": "suy_doan"
     }
   }
